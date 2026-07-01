@@ -1,0 +1,40 @@
+import { z } from "zod";
+
+export const txTypeSchema = z.enum(["income", "expense"]);
+
+export const transactionInput = z.object({
+  description: z.string().trim().min(1, "Descrição obrigatória"),
+  amount: z.number().positive("O valor deve ser maior que zero"),
+  type: txTypeSchema,
+  category_id: z.number().int().nullable().default(null),
+  bank_id: z.number().int().nullable().default(null),
+  card_id: z.number().int().nullable().default(null),
+  is_card_payment: z.boolean().default(false),
+  occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+});
+export type TransactionInput = z.infer<typeof transactionInput>;
+
+export const bankInput = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  icon: z.string().trim().min(1).default("🏦"),
+  opening_balance: z.number().default(0),
+});
+export type BankInput = z.infer<typeof bankInput>;
+
+export const cardInput = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  bank_id: z.number().int().nullable().default(null),
+  credit_limit: z.number().min(0).default(0),
+  opening_invoice: z.number().min(0).default(0),
+  closing_day: z.number().int().min(1).max(31).nullable().default(null),
+  due_day: z.number().int().min(1).max(31).nullable().default(null),
+  color: z.string().default("#3b82f6"),
+});
+export type CardInput = z.infer<typeof cardInput>;
+
+export const categoryInput = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  icon: z.string().trim().min(1).default("📌"),
+  kind: txTypeSchema,
+});
+export type CategoryInput = z.infer<typeof categoryInput>;
