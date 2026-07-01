@@ -57,10 +57,10 @@ export default async function Dashboard() {
   const expPct = totalMov > 0 ? (data.finance.expense / totalMov) * 100 : 0;
 
   const stats = [
-    { label: "Saldo do mês", value: data.finance.balance, currency: true, href: "/financas", icon: Wallet, tone: data.finance.balance < 0 ? "text-red-400" : "text-foreground" },
+    { label: "Saldo do mês", value: data.finance.balance, currency: true, href: "/financas", icon: Wallet, tone: data.finance.balance < 0 ? "text-red-600 dark:text-red-400" : "text-foreground" },
     { label: "Eventos hoje", value: data.eventsTodayCount, currency: false, href: "/calendario", icon: Calendar, tone: "text-foreground" },
     { label: "Tarefas pendentes", value: data.pendingCount, currency: false, href: "/tarefas", icon: ListChecks, tone: "text-foreground" },
-    { label: "Faturas abertas", value: data.finance.invoices, currency: true, href: "/financas", icon: CreditCard, tone: "text-amber-400" },
+    { label: "Faturas abertas", value: data.finance.invoices, currency: true, href: "/financas", icon: CreditCard, tone: "text-amber-600 dark:text-amber-400" },
   ];
 
   return (
@@ -165,7 +165,7 @@ export default async function Dashboard() {
           <div className="flex flex-1 flex-col justify-center gap-4 p-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingUp className="h-3.5 w-3.5 text-green-400" /> Receitas</span>
+                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> Receitas</span>
                 <CountUp value={data.finance.income} currency className="font-medium" />
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
@@ -174,7 +174,7 @@ export default async function Dashboard() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingDown className="h-3.5 w-3.5 text-red-400" /> Despesas</span>
+                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-400" /> Despesas</span>
                 <CountUp value={data.finance.expense} currency className="font-medium" />
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
@@ -183,7 +183,7 @@ export default async function Dashboard() {
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-border pt-3">
               <span className="text-xs text-muted-foreground">Saldo do mês</span>
-              <CountUp value={data.finance.balance} currency className={`text-sm font-bold ${data.finance.balance < 0 ? "text-red-400" : "text-green-400"}`} />
+              <CountUp value={data.finance.balance} currency className={`text-sm font-bold ${data.finance.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`} />
             </div>
           </div>
         </div>
@@ -211,7 +211,7 @@ export default async function Dashboard() {
                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_META[t.priority].dot }} />
                     <p className="min-w-0 flex-1 truncate text-sm font-medium">{t.title}</p>
                     {t.due_on && (
-                      <span className={`shrink-0 text-xs ${overdue ? "font-medium text-red-400" : "text-muted-foreground"}`}>
+                      <span className={`shrink-0 text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
                         {formatDateBR(t.due_on)}
                       </span>
                     )}
@@ -232,7 +232,7 @@ function DashboardError({ message }: { message: string }) {
       <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
         Seu Painel
       </h1>
-      <div className="mt-6 rounded-xl border border-amber-300/40 bg-amber-500/10 p-6 text-sm text-amber-300">
+      <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-900 dark:border-amber-300/40 dark:bg-amber-500/10 dark:text-amber-300">
         <p className="font-semibold">Não foi possível montar o painel.</p>
         <p className="mt-1 font-mono text-xs opacity-80">{message}</p>
         <p className="mt-3">

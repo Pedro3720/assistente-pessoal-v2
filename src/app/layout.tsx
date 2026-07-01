@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { DM_Serif_Display, Archivo_Black } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ThemedToaster } from "@/components/providers/themed-toaster";
 import { AnimatedBackground } from "@/components/effects/animated-background";
-import { Toaster } from "sonner";
 
 const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
@@ -39,7 +39,7 @@ export default function RootLayout({
           <AnimatedBackground />
           <div className="relative z-10">{children}</div>
           <div className="grain-overlay" aria-hidden />
-          <Toaster position="top-right" richColors theme="dark" />
+          <ThemedToaster />
         </ThemeProvider>
       </body>
     </html>

@@ -1,6 +1,7 @@
 import { login, signup } from "@/lib/actions/auth";
 import { Input } from "@/components/ui/input";
 import { Reveal } from "@/components/effects/reveal";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function LoginPage({
   searchParams,
@@ -11,6 +12,10 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
+      {/* toggle de tema p/ comparar dark x claro */}
+      <div className="glass fixed right-5 top-5 z-50 rounded-full border border-border p-1 shadow-lg">
+        <ThemeToggle />
+      </div>
       <Reveal className="w-full max-w-sm">
         <div className="glass rounded-3xl border border-border p-8 shadow-2xl">
           <h1
@@ -22,12 +27,12 @@ export default async function LoginPage({
           <p className="mt-1 text-sm text-muted-foreground">Entre para acessar seu painel.</p>
 
           {error && (
-            <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            <p className="mt-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300">
               {error}
             </p>
           )}
           {message && (
-            <p className="mt-4 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+            <p className="mt-4 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               {message}
             </p>
           )}
