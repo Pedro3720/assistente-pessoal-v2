@@ -81,39 +81,40 @@
   --sidebar-ring: #3b82f6;
 }
 
+/* ─── Dark premium (fintech) ─────────────────────────────── */
 .dark {
-  --background: #171717;
-  --foreground: #e5e5e5;
-  --card: #262626;
-  --card-foreground: #e5e5e5;
-  --popover: #262626;
-  --popover-foreground: #e5e5e5;
-  --primary: #3b82f6;
+  --background: #07070b;
+  --foreground: #e8e8ee;
+  --card: #0f0f16;
+  --card-foreground: #e8e8ee;
+  --popover: #0d0d13;
+  --popover-foreground: #e8e8ee;
+  --primary: #4f8cff;
   --primary-foreground: #ffffff;
-  --secondary: #262626;
-  --secondary-foreground: #e5e5e5;
-  --muted: #1f1f1f;
-  --muted-foreground: #a3a3a3;
-  --accent: #1e3a8a;
-  --accent-foreground: #bfdbfe;
+  --secondary: #14141c;
+  --secondary-foreground: #e8e8ee;
+  --muted: #14141c;
+  --muted-foreground: #9a9aa8;
+  --accent: #1a1a24;
+  --accent-foreground: #cdd7ff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #404040;
-  --input: #404040;
-  --ring: #3b82f6;
-  --chart-1: #60a5fa;
-  --chart-2: #3b82f6;
-  --chart-3: #2563eb;
-  --chart-4: #1d4ed8;
-  --chart-5: #1e40af;
-  --sidebar: #171717;
-  --sidebar-foreground: #e5e5e5;
-  --sidebar-primary: #3b82f6;
+  --border: #1c1c26;
+  --input: #20202b;
+  --ring: #4f8cff;
+  --chart-1: #4f8cff;
+  --chart-2: #8b5cf6;
+  --chart-3: #22d3ee;
+  --chart-4: #34d399;
+  --chart-5: #f59e0b;
+  --sidebar: #0a0a10;
+  --sidebar-foreground: #e8e8ee;
+  --sidebar-primary: #4f8cff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e3a8a;
-  --sidebar-accent-foreground: #bfdbfe;
-  --sidebar-border: #404040;
-  --sidebar-ring: #3b82f6;
+  --sidebar-accent: #16161f;
+  --sidebar-accent-foreground: #cdd7ff;
+  --sidebar-border: #17171f;
+  --sidebar-ring: #4f8cff;
 }
 
 @layer base {
@@ -141,5 +142,108 @@
     font-family: var(--font-display), Impact, sans-serif;
     font-weight: 400;
     letter-spacing: -0.02em;
+  }
+}
+
+/* ─── Utilitários de design (efeitos) ────────────────────── */
+@layer utilities {
+  /* vidro translúcido */
+  .glass {
+    background: color-mix(in oklab, var(--card) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+  }
+
+  /* card com brilho e leve elevação no hover */
+  .card-glow {
+    transition:
+      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.35s ease,
+      border-color 0.35s ease;
+    will-change: transform;
+  }
+  .card-glow:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+    box-shadow:
+      0 18px 50px -18px color-mix(in oklab, var(--primary) 55%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--primary) 22%, transparent) inset;
+  }
+
+  /* texto com gradiente */
+  .text-gradient {
+    background: linear-gradient(100deg, var(--foreground), color-mix(in oklab, var(--primary) 85%, white));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* barra de progresso que "cresce" ao aparecer */
+  .bar-grow {
+    transform-origin: left;
+    animation: bar-grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* brilho pulsante suave (badges/detalhes) */
+  .pulse-glow {
+    animation: pulse-glow 3.5s ease-in-out infinite;
+  }
+}
+
+/* ─── Overlay de grão (textura sutil) ────────────────────── */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── Scrollbar custom ───────────────────────────────────── */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--primary) 30%, var(--border));
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--primary) 55%, var(--border));
+  background-clip: content-box;
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-grow,
+  .pulse-glow {
+    animation: none;
+  }
+  .card-glow {
+    transition: none;
   }
 }

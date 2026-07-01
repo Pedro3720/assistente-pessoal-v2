@@ -16,7 +16,7 @@ export default async function AppLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen">
       <Sidebar userEmail={user.email ?? ""} />
       <main className="flex-1 overflow-auto">
         <div className="px-6 py-8 pt-20 md:px-10 md:py-10 md:pt-10">

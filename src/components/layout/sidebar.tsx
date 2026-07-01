@@ -48,7 +48,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-full w-56 transform flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-0 z-40 flex h-full w-56 transform flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-xl transition-transform duration-300 ease-in-out",
           "md:static md:z-auto md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}

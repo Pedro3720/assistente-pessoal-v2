@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Serif_Display, Archivo_Black } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AnimatedBackground } from "@/components/effects/animated-background";
 import { Toaster } from "sonner";
 
 const dmSerif = DM_Serif_Display({
@@ -31,12 +32,14 @@ export default function RootLayout({
       <body className={`${dmSerif.variable} ${archivoBlack.variable}`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
-          <Toaster position="top-right" richColors />
+          <AnimatedBackground />
+          <div className="relative z-10">{children}</div>
+          <div className="grain-overlay" aria-hidden />
+          <Toaster position="top-right" richColors theme="dark" />
         </ThemeProvider>
       </body>
     </html>
