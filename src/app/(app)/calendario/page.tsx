@@ -1,4 +1,5 @@
 import { getEventsForMonth, type EventOccurrence } from "@/lib/data/calendar";
+import { getGoogleConnection } from "@/lib/data/google";
 import { currentYearMonth, shiftMonth } from "@/lib/dates";
 import { CalendarView } from "@/components/calendar/calendar-view";
 
@@ -20,7 +21,11 @@ export default async function CalendarioPage({
     return <CalendarLoadError message={e instanceof Error ? e.message : "Erro desconhecido"} />;
   }
 
-  return <CalendarView occurrences={occurrences} year={year} month={month} offset={offset} />;
+  const google = await getGoogleConnection();
+
+  return (
+    <CalendarView occurrences={occurrences} year={year} month={month} offset={offset} google={google} />
+  );
 }
 
 function CalendarLoadError({ message }: { message: string }) {

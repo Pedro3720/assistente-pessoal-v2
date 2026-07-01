@@ -13,6 +13,8 @@ import {
   EVENT_CATEGORIES, REPEAT_OPTIONS, MONTH_NAMES, WEEKDAY_SHORT,
 } from "@/lib/calendar/constants";
 import { EventModal } from "./event-modal";
+import { GoogleConnectButton } from "./google-connect-button";
+import { GoogleImportButton } from "./google-import-button";
 import type { CalendarEvent } from "@/types/calendar";
 import type { EventOccurrence } from "@/lib/data/calendar";
 
@@ -25,11 +27,13 @@ export function CalendarView({
   year,
   month,
   offset,
+  google,
 }: {
   occurrences: EventOccurrence[];
   year: number;
   month: number;
   offset: number;
+  google: { connected: boolean; email: string | null };
 }) {
   const router = useRouter();
   const today = todayISO();
@@ -127,12 +131,16 @@ export function CalendarView({
             )}
           </div>
         </div>
-        <button
-          onClick={() => openNew()}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> Novo Evento
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <GoogleConnectButton connected={google.connected} email={google.email} />
+          {google.connected && <GoogleImportButton year={year} month={month} />}
+          <button
+            onClick={() => openNew()}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" /> Novo Evento
+          </button>
+        </div>
       </div>
 
       <div className="relative">
