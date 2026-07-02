@@ -49,7 +49,7 @@ export function BankManager({ banks }: { banks: BankWithBalance[] }) {
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
+    <div className="glass card-glow rounded-2xl border border-border p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold">Contas</h3>
         <button
@@ -105,12 +105,12 @@ export function BankManager({ banks }: { banks: BankWithBalance[] }) {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {banks.map((bank) => (
-            <div key={bank.id} className="group relative rounded-xl border bg-card p-4">
+            <div key={bank.id} className="group relative rounded-xl border border-border bg-muted/40 p-4 transition-colors hover:border-primary/40">
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-base">{bank.icon}</span>
                 <span className="truncate text-sm font-medium">{bank.name}</span>
               </div>
-              <p className={`text-lg font-bold ${bank.balance >= 0 ? "text-green-600" : "text-red-600"}`}>
+              <p className={`num text-lg font-semibold ${bank.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                 {formatBRL(bank.balance)}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">saldo atual</p>

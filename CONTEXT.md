@@ -24,7 +24,7 @@ pierre.finance) com animações.
 - **Zod** (validação), **lucide-react** (ícones), **sonner** (toasts), **recharts** (gráficos)
 - **DESIGN/ANIMAÇÃO**: **GSAP** (`gsap`) + **`@gsap/react`** (hook `useGSAP`) + plugin **ScrollTrigger**;
   **Three.js** (`three` + `@types/three`) para o fundo em WebGL; **next-themes** (dark/claro).
-- Fontes: **DM Serif Display** (`--font-sans`, corpo) e **Archivo Black** (`--font-display`, títulos).
+- Fontes (fintech): **Space Grotesk** (`--font-display`, títulos) · **Inter** (`--font-sans`, corpo/UI) · **JetBrains Mono** (`--font-mono`, números/valores via classe `.num`).
 
 ## 3. Localização e regras de ouro
 - **Caminho do projeto: `C:\Projetos\assistente-pessoal-v2`** (rode tudo daqui: `npm run dev`).
@@ -139,14 +139,15 @@ Gerar chave: `node -e "console.log(require('crypto').randomBytes(32).toString('h
 ## 11. CAMADA VISUAL / Design System & Animações (estilo premium — SEGUIR)
 **Bibliotecas de design:** **GSAP** + `@gsap/react` (`useGSAP`) + **ScrollTrigger** (micro-animações/reveals);
 **Three.js** (fundo WebGL); **next-themes** (dark/claro); **Tailwind v4** + utilitários custom.
+**Fontes (fintech):** **Space Grotesk** (títulos) · **Inter** (corpo/UI) · **JetBrains Mono** (números). Valores/datas em coluna usam `.num` (mono + tabular-nums). Escolhidas via skill ui-ux-pro-max.
 
 **Tema:** **dark premium por padrão** (`defaultTheme="dark"`, `enableSystem={false}` no `ThemeProvider`),
 toggle disponível (`components/theme-toggle.tsx`; no Login há um toggle flutuante no canto sup. direito).
-Paletas no `globals.css`: dark = base `#07070b`, primary `#4f8cff`, cards em vidro; light = quase-branco `#f8f9fd`, névoa pastel.
+Paletas no `globals.css` — **fintech azul + verde (sem violeta)**: dark = base `#080b12`, primary azul `#3b82f6`, verde de lucro p/ positivos, cards em vidro; light = quase-branco `#f8f9fd`, névoa pastel. Aurora recolorida azul+verde (objeto `PALETTES` em `animated-background.tsx`).
 
 **Utilitários no `globals.css` (usar nas telas):**
 `.glass` (translúcido + backdrop-blur), `.card-glow` (elevação+brilho no hover), `.bar-grow` (barra cresce via scaleX),
-`.text-gradient`, `.pulse-glow`, `.grain-overlay` (grão, montado 1x no layout), scrollbar custom.
+`.num` (mono + tabular-nums p/ valores), `.text-gradient`, `.pulse-glow`, `.grain-overlay` (grão), scrollbar custom.
 Tudo respeita `prefers-reduced-motion`.
 
 **Componentes de efeito (`src/components/effects/`):**
@@ -172,8 +173,8 @@ para a aurora aparecer; **Sidebar em vidro** (`bg-sidebar/70 backdrop-blur-xl`).
    (`text-green-600 dark:text-green-400`, `text-red-600 dark:text-red-400`, `text-amber-600 dark:text-amber-400`;
    alertas `bg-amber-50 ... dark:bg-amber-500/10 dark:text-amber-300`).
 
-**Status da aplicação visual:** ✅ **Dashboard** e **Login**. ⬜ **Falta aplicar em Finanças, Calendário,
-Tarefas e Senhas** (Reveal/CountUp/glass/card-glow/bar-grow + variantes `dark:`). Decidir o tema padrão final.
+**Status da aplicação visual:** ✅ **Todas as telas** (Dashboard, Login, Finanças, Calendário, Tarefas, Senhas)
+com a nova tipografia, paleta azul+verde, `.num` nos valores, `glass`/`card-glow`/`Reveal`/`bar-grow` e variantes `dark:`.
 
 ## 12. Erros que NÃO repetir (projeto antigo)
 Banco público → Auth+RLS · senha em texto puro → AES · componente de 1.188 linhas → pequenos · categorias em

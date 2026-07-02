@@ -1,20 +1,25 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Archivo_Black } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
 import { AnimatedBackground } from "@/components/effects/animated-background";
 
-const dmSerif = DM_Serif_Display({
+// Corpo/UI — Inter (legível, precisão)
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+
+// Títulos — Space Grotesk (geométrica, técnica, com personalidade)
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-sans",
+  variable: "--font-display",
+  display: "swap",
 });
 
-const archivoBlack = Archivo_Black({
+// Números/valores — JetBrains Mono (tabular, precisão financeira)
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-display",
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${dmSerif.variable} ${archivoBlack.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

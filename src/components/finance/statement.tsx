@@ -30,7 +30,7 @@ export function Statement({
   const catById = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm">
+    <div className="glass card-glow rounded-2xl border border-border">
       <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
@@ -43,7 +43,7 @@ export function Statement({
       {/* saldo anterior */}
       <div className="flex items-center justify-between bg-muted/40 px-5 py-2.5 text-sm">
         <span className="text-muted-foreground">Saldo anterior</span>
-        <span className={`font-medium tabular-nums ${statement.opening >= 0 ? "text-foreground" : "text-red-600"}`}>
+        <span className={`num font-medium ${statement.opening >= 0 ? "text-foreground" : "text-red-600 dark:text-red-400"}`}>
           {formatBRL(statement.opening)}
         </span>
       </div>
@@ -75,11 +75,11 @@ export function Statement({
                     <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-6 text-right">
-                    <span className={`text-sm font-semibold tabular-nums ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                    <span className={`num text-sm font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                       {t.type === "income" ? "+" : "-"}
                       {formatBRL(Number(t.amount))}
                     </span>
-                    <span className="w-28 text-xs tabular-nums text-muted-foreground">
+                    <span className="num w-28 text-xs text-muted-foreground">
                       saldo {formatBRL(t.balance)}
                     </span>
                   </div>
@@ -93,7 +93,7 @@ export function Statement({
       {/* saldo final */}
       <div className="flex items-center justify-between border-t-2 border-border bg-muted/40 px-5 py-3 text-sm">
         <span className="font-semibold">Saldo final</span>
-        <span className={`text-base font-bold tabular-nums ${statement.closing >= 0 ? "text-green-600" : "text-red-600"}`}>
+        <span className={`num text-base font-bold ${statement.closing >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
           {formatBRL(statement.closing)}
         </span>
       </div>

@@ -114,8 +114,7 @@ export default async function Dashboard() {
                 <CountUp
                   value={s.value}
                   currency={s.currency}
-                  className={`block text-2xl font-bold leading-none tracking-tight ${s.tone}`}
-                  style={{ fontFamily: "var(--font-display)" }}
+                  className={`block text-2xl font-semibold leading-none tracking-tight ${s.tone}`}
                 />
                 <p className="mt-2 text-xs text-muted-foreground">{s.label}</p>
               </div>

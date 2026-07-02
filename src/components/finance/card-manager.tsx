@@ -66,7 +66,7 @@ export function CardManager({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
+    <div className="glass card-glow rounded-2xl border border-border p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
@@ -193,16 +193,16 @@ export function CardManager({
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Fatura aberta</span>
-                  <span className={`font-semibold ${card.invoice > 0 ? "text-amber-500" : "text-green-500"}`}>
+                  <span className={`num font-semibold ${card.invoice > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
                     {formatBRL(card.invoice)}
                   </span>
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-accent">
-                  <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${usePct}%` }} />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                  <div className="bar-grow h-1.5 rounded-full bg-primary" style={{ width: `${usePct}%` }} />
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{usePct.toFixed(0)}% utilizado</span>
-                  <span>Limite: {formatBRL(card.credit_limit)}</span>
+                  <span className="num">{usePct.toFixed(0)}% utilizado</span>
+                  <span>Limite: <span className="num">{formatBRL(card.credit_limit)}</span></span>
                 </div>
               </div>
             );

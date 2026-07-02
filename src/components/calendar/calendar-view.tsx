@@ -111,7 +111,7 @@ export function CalendarView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="text-gradient text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
             Calendário
           </h1>
           <div className="mt-3 flex items-center gap-2">
@@ -155,7 +155,7 @@ export function CalendarView({
 
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Grade */}
-        <div className="flex-1 rounded-xl border bg-card p-6 shadow-sm">
+        <div className="glass card-glow flex-1 rounded-2xl border border-border p-6">
           <div className="mb-2 grid grid-cols-7 gap-1">
             {WEEKDAY_SHORT.map((d) => (
               <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
@@ -207,7 +207,7 @@ export function CalendarView({
 
         {/* Agenda lateral */}
         <div className="w-full shrink-0 lg:w-80">
-          <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <div className="glass card-glow rounded-2xl border border-border p-5">
             <div className="mb-4 flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-primary" />
               <h2 className="font-semibold">Agenda do mês</h2>

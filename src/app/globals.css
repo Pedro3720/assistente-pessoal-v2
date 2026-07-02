@@ -7,6 +7,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -83,38 +84,38 @@
 
 /* ─── Dark premium (fintech) ─────────────────────────────── */
 .dark {
-  --background: #07070b;
-  --foreground: #e8e8ee;
-  --card: #0f0f16;
-  --card-foreground: #e8e8ee;
-  --popover: #0d0d13;
-  --popover-foreground: #e8e8ee;
-  --primary: #4f8cff;
+  --background: #080b12;
+  --foreground: #e9edf5;
+  --card: #0e131d;
+  --card-foreground: #e9edf5;
+  --popover: #0c111a;
+  --popover-foreground: #e9edf5;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #14141c;
-  --secondary-foreground: #e8e8ee;
-  --muted: #14141c;
-  --muted-foreground: #9a9aa8;
-  --accent: #1a1a24;
-  --accent-foreground: #cdd7ff;
+  --secondary: #131a27;
+  --secondary-foreground: #e9edf5;
+  --muted: #131a27;
+  --muted-foreground: #94a3b8;
+  --accent: #16202f;
+  --accent-foreground: #cfe0ff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #1c1c26;
-  --input: #20202b;
-  --ring: #4f8cff;
-  --chart-1: #4f8cff;
-  --chart-2: #8b5cf6;
+  --border: #1c2536;
+  --input: #1c2536;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
   --chart-3: #22d3ee;
-  --chart-4: #34d399;
-  --chart-5: #f59e0b;
-  --sidebar: #0a0a10;
-  --sidebar-foreground: #e8e8ee;
-  --sidebar-primary: #4f8cff;
+  --chart-4: #f59e0b;
+  --chart-5: #6366f1;
+  --sidebar: #0a0e16;
+  --sidebar-foreground: #e9edf5;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #16161f;
-  --sidebar-accent-foreground: #cdd7ff;
-  --sidebar-border: #17171f;
-  --sidebar-ring: #4f8cff;
+  --sidebar-accent: #16202f;
+  --sidebar-accent-foreground: #cfe0ff;
+  --sidebar-border: #161d2b;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
@@ -123,7 +124,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans), Georgia, serif;
+    font-family: var(--font-sans), system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   button,
@@ -139,14 +140,21 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-display), Impact, sans-serif;
-    font-weight: 400;
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 }
 
 /* ─── Utilitários de design (efeitos) ────────────────────── */
 @layer utilities {
+  /* números tabulares em mono (valores, moeda, datas em colunas) */
+  .num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
   /* vidro translúcido */
   .glass {
     background: color-mix(in oklab, var(--card) 78%, transparent);

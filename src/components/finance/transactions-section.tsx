@@ -142,7 +142,7 @@ export function TransactionsSection({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
+    <div className="glass card-glow rounded-2xl border border-border p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-semibold">Transações</h3>
         <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export function TransactionsSection({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className={`font-semibold ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                  <span className={`num font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                     {t.type === "income" ? "+" : "-"}
                     {formatBRL(Number(t.amount))}
                   </span>

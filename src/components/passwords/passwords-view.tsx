@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { deletePassword, revealPassword } from "@/lib/actions/password";
 import { PasswordModal } from "./password-modal";
+import { Reveal } from "@/components/effects/reveal";
 import type { PasswordItem } from "@/types/password";
 
 export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
@@ -81,7 +82,7 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="text-gradient text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
             Senhas
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">Cofre criptografado das suas credenciais</p>
@@ -104,9 +105,9 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
         />
       </div>
 
-      <div className="space-y-2">
+      <Reveal stagger className="space-y-2">
         {shown.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border bg-card py-16 text-center">
+          <div className="glass flex flex-col items-center justify-center rounded-2xl border border-border py-16 text-center">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
               <KeyRound className="h-5 w-5 text-muted-foreground" />
             </div>
@@ -119,7 +120,7 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
             const value = revealed[p.id];
             const isRevealed = value !== undefined;
             return (
-              <div key={p.id} className="rounded-xl border bg-card p-4 shadow-sm">
+              <div key={p.id} className="glass card-glow rounded-2xl border border-border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-2">
                     <h3 className="truncate text-sm font-semibold">{p.title}</h3>
@@ -138,7 +139,7 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
                       <KeyRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       {p.has_secret ? (
                         <>
-                          <span className="font-mono text-foreground">
+                          <span className="num text-foreground">
                             {isRevealed ? (value || "(vazia)") : "••••••••••"}
                           </span>
                           <button onClick={() => reveal(p.id)} className="text-muted-foreground hover:text-foreground" title={isRevealed ? "Ocultar" : "Revelar"}>
@@ -182,7 +183,7 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
             );
           })
         )}
-      </div>
+      </Reveal>
 
       {modalOpen && <PasswordModal editing={editing} onClose={() => setModalOpen(false)} />}
     </div>

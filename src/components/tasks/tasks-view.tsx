@@ -8,6 +8,7 @@ import { deleteTask, setTaskStatus } from "@/lib/actions/task";
 import { STATUS_META, PRIORITY_META } from "@/lib/tasks/constants";
 import { todayISO, formatDateBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
+import { Reveal } from "@/components/effects/reveal";
 import type { Task, TaskStatus } from "@/types/task";
 
 type Filter = "all" | TaskStatus;
@@ -65,7 +66,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="text-gradient text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
             Tarefas
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">Organize o que precisa ser feito</p>
@@ -94,9 +95,9 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* lista */}
-      <div className="space-y-2">
+      <Reveal stagger className="space-y-2">
         {shown.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border bg-card py-16 text-center">
+          <div className="glass flex flex-col items-center justify-center rounded-2xl border border-border py-16 text-center">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
               <Plus className="h-5 w-5 text-muted-foreground" />
             </div>
@@ -107,7 +108,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
             const done = t.status === "completed";
             const overdue = t.due_on && !done && t.due_on < today;
             return (
-              <div key={t.id} className="flex items-start gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow">
+              <div key={t.id} className="glass card-glow flex items-start gap-3 rounded-2xl border border-border p-4">
                 <button
                   onClick={() => toggle(t)}
                   className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
@@ -136,9 +137,9 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
                       {PRIORITY_META[t.priority].label}
                     </span>
                     {t.due_on && (
-                      <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600" : "text-muted-foreground"}`}>
+                      <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
                         <CalendarClock className="h-3 w-3" />
-                        {formatDateBR(t.due_on)}
+                        <span className="num">{formatDateBR(t.due_on)}</span>
                         {overdue ? " · atrasada" : ""}
                       </span>
                     )}
@@ -157,7 +158,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
             );
           })
         )}
-      </div>
+      </Reveal>
 
       {modalOpen && <TaskModal editing={editing} onClose={() => setModalOpen(false)} />}
     </div>

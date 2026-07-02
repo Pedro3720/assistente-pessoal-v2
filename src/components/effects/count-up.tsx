@@ -42,7 +42,7 @@ export function CountUp({
   );
 
   return (
-    <span ref={ref} className={className} style={style}>
+    <span ref={ref} className={`num ${className ?? ""}`} style={style}>
       {fmt(value)}
     </span>
   );
