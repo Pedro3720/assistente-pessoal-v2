@@ -185,7 +185,7 @@ export function CardManager({
         ) : (
           cards.map((card) => {
             const usePct = card.credit_limit
-              ? Math.min((card.invoice / card.credit_limit) * 100, 100)
+              ? Math.min((card.utilizado_total / card.credit_limit) * 100, 100)
               : 0;
             return (
               <div key={card.id} className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
@@ -217,22 +217,21 @@ export function CardManager({
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Fatura a pagar</span>
-                  <span className={`num text-lg font-bold ${card.invoice > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
-                    {formatBRL(card.invoice)}
+                  <span className="text-sm text-muted-foreground">Fatura a pagar (este mês)</span>
+                  <span className={`num text-lg font-bold ${card.fatura_mes > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
+                    {formatBRL(card.fatura_mes)}
                   </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Em aberto (próximas) <span className="num text-foreground">{formatBRL(card.em_aberto)}</span></span>
+                  <span>Utilizado <span className="num text-foreground">{formatBRL(card.utilizado_total)}</span></span>
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
                   <div className="bar-grow h-1.5 rounded-full bg-primary" style={{ width: `${usePct}%` }} />
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    Utilizado <span className="num text-foreground">{formatBRL(card.invoice)}</span>{" "}
-                    <span className="num">({usePct.toFixed(0)}%)</span>
-                  </span>
-                  <span>
-                    Limite total <span className="num text-foreground">{formatBRL(card.credit_limit)}</span>
-                  </span>
+                  <span>Disponível <span className={`num ${card.disponivel < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>{formatBRL(card.disponivel)}</span></span>
+                  <span>Limite total <span className="num text-foreground">{formatBRL(card.credit_limit)}</span></span>
                 </div>
               </div>
             );

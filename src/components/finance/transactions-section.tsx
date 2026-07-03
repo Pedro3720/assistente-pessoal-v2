@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Plus, X, ArrowUpRight, ArrowDownRight, Edit3, Trash2,
+  Plus, ArrowUpRight, ArrowDownRight, Edit3, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { todayISO, formatDateBR } from "@/lib/dates";
 import {
   createTransaction, updateTransaction, deleteTransaction,
-  ensureDefaultCategories,
+  ensureDefaultCategories, createInstallmentPurchase, deleteTransactionGroup,
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
@@ -64,6 +64,7 @@ export function TransactionsSection({
   const [bankId, setBankId] = useState("");
   const [cardId, setCardId] = useState("");
   const [isCardPayment, setIsCardPayment] = useState(false);
+  const [parcelas, setParcelas] = useState("1");
   const [saving, setSaving] = useState(false);
 
   const kindCategories = categories.filter((c) => c.kind === type);
@@ -79,6 +80,7 @@ export function TransactionsSection({
     setBankId("");
     setCardId("");
     setIsCardPayment(false);
+    setParcelas("1");
   }
 
   function openNew() {
@@ -121,8 +123,13 @@ export function TransactionsSection({
       occurred_on: date,
     };
     try {
-      if (editingId) await updateTransaction(editingId, input);
-      else await createTransaction(input);
+      if (editingId) {
+        await updateTransaction(editingId, input);
+      } else if (isPurchase && Number(parcelas) > 1) {
+        await createInstallmentPurchase({ ...input, installments: Number(parcelas) });
+      } else {
+        await createTransaction(input);
+      }
       setOpen(false);
       reset();
       router.refresh();
@@ -134,8 +141,14 @@ export function TransactionsSection({
   }
 
   async function remove(id: number) {
+    const t = transactions.find((x) => x.id === id);
     try {
-      await deleteTransaction(id);
+      if (t?.purchase_group) {
+        if (!confirm("Excluir a compra parcelada inteira (todas as parcelas)?")) return;
+        await deleteTransactionGroup(t.purchase_group);
+      } else {
+        await deleteTransaction(id);
+      }
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
@@ -259,6 +272,25 @@ export function TransactionsSection({
               <label className="text-sm font-medium">Valor (R$)</label>
               <MoneyInput value={amount} onChange={setAmount} />
             </div>
+
+            {isPurchase && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Parcelas</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={48}
+                  value={parcelas}
+                  onChange={(e) => setParcelas(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+                />
+                {Number(parcelas) > 1 && parseBRL(amount) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {parcelas}x de {formatBRL(parseBRL(amount) / Number(parcelas))} · 1ª parcela na fatura, o resto em aberto
+                  </p>
+                )}
+              </div>
+            )}
 
             {type === "expense" && (
               <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
