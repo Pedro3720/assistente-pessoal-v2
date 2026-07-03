@@ -1,4 +1,5 @@
-import { login, signup } from "@/lib/actions/auth";
+import Link from "next/link";
+import { login } from "@/lib/actions/auth";
 import { Input } from "@/components/ui/input";
 import { Reveal } from "@/components/effects/reveal";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -59,12 +60,12 @@ export default async function LoginPage({
               >
                 Entrar
               </button>
-              <button
-                formAction={signup}
-                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              <Link
+                href="/cadastro"
+                className="flex flex-1 items-center justify-center rounded-lg border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
               >
                 Criar conta
-              </button>
+              </Link>
             </div>
           </form>
         </div>

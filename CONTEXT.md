@@ -1,65 +1,62 @@
-# Assistente Pessoal v2 — Contexto do Projeto (handoff)
+# Assistente Pessoal v2 — Contexto Completo do Projeto (handoff)
 
-> **Para o assistente/IA que ler isto:** aja como um **analista de sistemas sênior**.
-> Antes de escrever qualquer código, entenda e **siga os padrões descritos aqui**
-> (arquitetura, segurança, design, convenções). Mantenha a consistência com o que já existe:
-> tipagem forte, validação Zod, Server Components + Server Actions, RLS por usuário,
-> componentes pequenos e regra de negócio fora do JSX. Nunca reintroduza os erros do
-> projeto antigo (ver "Erros que NÃO repetir"). Ao criar telas, aplique a **camada visual**
-> (seção 11) para manter o mesmo estilo premium.
+> **Para o assistente/IA que ler isto:** aja como um **analista de sistemas sênior** e como
+> **designer de produto**. Antes de codar, entenda e **siga os padrões** (arquitetura, segurança,
+> design). Mantenha consistência: tipagem forte, Zod, Server Components + Server Actions, RLS por
+> usuário, componentes pequenos, regra de negócio fora do JSX, e a camada visual da seção 11.
+> Nunca reintroduza os erros do projeto antigo (seção 12).
 
 ---
 
-## 1. O que é o projeto
-Aplicativo web de **assistente pessoal de uso individual** que centraliza, num só painel:
-**Finanças, Calendário, Tarefas, Senhas** e um **Dashboard** que agrega tudo, além de
-**sincronização com o Google Calendar**. Reconstrução do zero de um projeto antigo,
-corrigindo falhas graves de segurança e arquitetura. Visual **fintech premium** (inspiração:
-pierre.finance) com animações.
+## 1. O que é
+App web de **assistente pessoal de uso individual** (single-user, sem multi-tenant) que centraliza
+num só painel: **Finanças, Calendário, Tarefas, Senhas** e um **Dashboard** que agrega tudo, com
+**sincronização com o Google Calendar**. É uma **reconstrução do zero** de um projeto antigo cheio
+de falhas graves de segurança e arquitetura. Visual **fintech premium** (inspiração: pierre.finance).
+**Está publicado online (Vercel).**
 
 ## 2. Stack técnica
 - **Next.js 16.2.9** (App Router, Turbopack) + **React 19.2.4** + **TypeScript strict**
 - **Tailwind CSS v4** + componentes estilo shadcn (à mão) + `class-variance-authority`, `clsx`, `tailwind-merge`
 - **Supabase** (Postgres) via `@supabase/ssr` + `@supabase/supabase-js` (Auth + banco)
-- **Zod** (validação), **lucide-react** (ícones), **sonner** (toasts), **recharts** (gráficos)
-- **DESIGN/ANIMAÇÃO**: **GSAP** (`gsap`) + **`@gsap/react`** (hook `useGSAP`) + plugin **ScrollTrigger**;
-  **Three.js** (`three` + `@types/three`) para o fundo em WebGL; **next-themes** (dark/claro).
-- Fontes (fintech): **Space Grotesk** (`--font-display`, títulos) · **Inter** (`--font-sans`, corpo/UI) · **JetBrains Mono** (`--font-mono`, números/valores via classe `.num`).
+- **Zod** (validação), **lucide-react** (ícones), **sonner** (toasts), **recharts**, **next-themes**
+- **DESIGN/ANIMAÇÃO:** **GSAP** + `@gsap/react` (`useGSAP`) + **ScrollTrigger**; **Three.js** (`three` + `@types/three`)
+- **Fontes:** **Space Grotesk** (`--font-display`, títulos) · **Inter** (`--font-sans`, corpo/UI) · **JetBrains Mono** (`--font-mono`, números)
 
-## 3. Localização e regras de ouro
-- **Caminho do projeto: `C:\Projetos\assistente-pessoal-v2`** (rode tudo daqui: `npm run dev`).
-  - Movido de `C:\Pedro\Arquivos Pedro\Assistente-pessoal-v2` (tinha espaço no caminho) — **essa pasta antiga está OBSOLETA, ignore/apague**.
-  - Referência antiga (v1): `C:\Pedro\Arquivos Pedro\Assistente-pessoal-main` (só consulta).
-- **Migrações são aplicadas MANUALMENTE** no Supabase → SQL Editor (a CLI do Supabase é bloqueada pela
-  política de Application Control do Windows — binário não assinado). Ao criar tabela, escreva o SQL
-  **auto-contido** (incluindo `set_updated_at`) e entregue para o usuário colar.
-- Após editar `.env.local`, **reiniciar o `npm run dev`**.
+## 3. Localização, Git e Deploy (Vercel)
+- **Local:** `C:\Projetos\assistente-pessoal-v2` (rode `npm run dev` daqui). Pasta antiga
+  `C:\Pedro\Arquivos Pedro\Assistente-pessoal-v2` está **OBSOLETA**.
+- **Git/GitHub:** repositório `Pedro3720/assistente-pessoal-v2`, branch **`main`**.
+- **Deploy:** **Vercel** (team "Pedro tech" Hobby, projeto `assistente-pessoal-v2`, preset **Next.js**, Root Directory `./`).
+  **Fluxo de publicação:** editar código → `git commit` → `git push` para `main` → **Vercel reconstrói e publica automaticamente**. (Não existe "editar arquivos dentro da Vercel"; ela só builda o GitHub.)
+- **Variáveis de ambiente:** o `.env.local` NÃO vai para o git (`.env*` está no `.gitignore`), então as
+  variáveis precisam ser cadastradas **na Vercel** (Settings → Environment Variables) — ver seção 8.
+- **Migrações de banco:** aplicadas **MANUALMENTE** no Supabase → SQL Editor (a CLI do Supabase é
+  bloqueada pela política de Application Control do Windows — binário não assinado). **MCP do Supabase**
+  (hospedado, via OAuth) está sendo configurado para dar acesso direto ao banco/migrações.
 
 ## 4. Padrões de arquitetura (SEGUIR SEMPRE)
 1. **Server Components buscam dados; Client Components só onde há interatividade** (`"use client"`).
 2. **Leitura** em `src/lib/data/*` (server-only). **Mutação** em `src/lib/actions/*` (Server Actions,
    `"use server"`): validam com **Zod**, injetam `user_id`, chamam `revalidatePath`.
-3. **Regra de negócio/cálculo no `lib/`, nunca no JSX.**
-4. **Tipos** em `src/types/*`; **Zod** em `src/lib/validation/*`.
-5. **RLS por usuário** em toda tabela: policy `own_rows` com `auth.uid() = user_id`.
-6. **Fuso fixo America/Sao_Paulo (-03:00)** via `src/lib/dates.ts` (`todayISO`, `currentYearMonth`,
+3. **Regra de negócio/cálculo no `lib/`, nunca no JSX.** **Tipos** em `src/types/*`; **Zod** em `src/lib/validation/*`.
+4. **RLS por usuário** em toda tabela: policy `own_rows` com `auth.uid() = user_id`.
+5. **Fuso fixo America/Sao_Paulo (-03:00)** via `src/lib/dates.ts` (`todayISO`, `currentYearMonth`,
    `shiftMonth`, `monthBounds`, `monthLabel`, `composeSP`, `spDateParts`, `formatDateBR`). **Nunca**
    `new Date().toISOString().split('T')` para datas locais.
-7. **Dinheiro** via `src/lib/money.ts` (`parseBRL`, `formatBRL`). **Cripto** via `src/lib/crypto.ts`
-   (AES-256-GCM, `APP_ENCRYPTION_KEY`).
-8. **Componentes pequenos** (~<250 linhas). **Páginas tratam erro com graça** (`try/catch` → banner).
-   **Sem `any`**.
+6. **Dinheiro** via `src/lib/money.ts` (`parseBRL`, `formatBRL`). **Cripto** via `src/lib/crypto.ts` (AES-256-GCM).
+7. **Componentes pequenos** (~<250 linhas). **Páginas tratam erro com graça** (`try/catch` → banner). **Sem `any`**.
 
 ## 5. Estrutura de pastas
 ```
 src/
   app/
-    (auth)/login/            # público: page.tsx (form com Server Actions) + toggle de tema
+    (auth)/login/            # público: page.tsx (form + Server Actions) + toggle de tema flutuante
     (app)/                   # protegido (middleware + sessão no layout)
       layout.tsx  page.tsx   # layout (Sidebar); page.tsx = Dashboard
       financas/ calendario/ tarefas/ senhas/   # cada um page.tsx
     api/google/{connect,callback}/route.ts      # OAuth Google
-    layout.tsx  globals.css  # root: fontes, ThemeProvider, AnimatedBackground, grão, ThemedToaster; tokens + utilitários
+    layout.tsx  globals.css  # root: fontes, ThemeProvider, AnimatedBackground, grão, ThemedToaster; tokens+utilitários
   lib/
     supabase/{server,client,middleware}.ts
     actions/{finance,calendar,task,password,auth,google}.ts
@@ -71,14 +68,14 @@ src/
   components/
     ui/{button,input}.tsx · layout/sidebar.tsx · theme-toggle.tsx
     providers/{theme-provider,themed-toaster}.tsx
-    effects/{animated-background,reveal,count-up}.tsx      # << camada visual (GSAP/Three)
+    effects/{animated-background,reveal,count-up}.tsx      # camada visual (GSAP/Three)
     finance/* · calendar/* · tasks/* · passwords/*         # domínio (client)
   types/{finance,calendar,task,password}.ts
-middleware.ts · supabase/migrations/*.sql
+middleware.ts · supabase/migrations/*.sql · CONTEXT.md
 ```
 
 ## 6. Banco de dados (todas as tabelas)
-Todas têm `id bigint identity` (exceto `google_accounts` PK `user_id`), `user_id uuid → auth.users`,
+Todas: `id bigint identity` (exceto `google_accounts` PK `user_id`), `user_id uuid → auth.users`,
 `created_at`, `updated_at` (trigger `set_updated_at`), **RLS** `own_rows` (`auth.uid()=user_id`), índice por `user_id`.
 - **categories**(`name`,`icon`,`kind` income|expense) — no banco (não localStorage).
 - **banks**(`name`,`icon`,`opening_balance`).
@@ -88,25 +85,30 @@ Todas têm `id bigint identity` (exceto `google_accounts` PK `user_id`), `user_i
 - **tasks**(`title`,`description`,`status` pending|in_progress|completed,`priority` low|medium|high,`due_on`).
 - **passwords**(`title`,`username`,`secret`[CRIPTOGRAFADO],`url`,`notes`).
 - **google_accounts**(PK `user_id`,`google_email`,`access_token`[enc],`refresh_token`[enc],`expiry`,`scope`).
-Migrações: `0000_finance`,`0001_calendar`,`0002_tasks`,`0003_passwords`,`0004_google`.
+Migrações (em `supabase/migrations/`): `0000_finance`,`0001_calendar`,`0002_tasks`,`0003_passwords`,`0004_google`.
+Banco é o **mesmo em dev e produção** (projeto Supabase `qlqewlrzjlbwrybwrimt`).
 
 ## 7. Segurança
-- **Auth** Supabase (e-mail/senha). `middleware.ts` protege rotas. Só a **publishable key** vai ao browser.
-- **RLS por usuário** em tudo. Cofre: `secret` = AES-256-GCM cifrada na app; lista não expõe a senha,
-  `revealPassword` decifra 1 sob demanda. Tokens Google também criptografados. `SUPABASE_SECRET_KEY`
-  só servidor (rotacionar — foi exposta no dev).
+- **Auth** Supabase (e-mail/senha). `middleware.ts` protege rotas privadas. Só a **publishable key** vai ao browser.
+- **RLS por usuário** em tudo. **Senhas do cofre**: coluna `secret` = AES-256-GCM (`iv:tag:ciphertext`) cifrada na app
+  com `APP_ENCRYPTION_KEY`; a lista NÃO envia a senha ao cliente — `revealPassword(id)` decifra 1 sob demanda.
+- **Tokens do Google** também criptografados com a mesma chave.
+- `SUPABASE_SECRET_KEY` é **só do servidor** (ignora RLS) — **foi exposta no dev, ROTACIONAR** (e atualizar local + Vercel).
+- `APP_ENCRYPTION_KEY`: **fazer BACKUP** e usar a **MESMA** em dev e na Vercel (mesmo banco) — se perder/trocar, senhas/tokens ficam irrecuperáveis.
 
-## 8. Variáveis de ambiente (`.env.local`)
+## 8. Variáveis de ambiente (`.env.local` local **e** na Vercel)
 ```
-NEXT_PUBLIC_SUPABASE_URL=...                 # client-safe
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...     # client-safe
-SUPABASE_SECRET_KEY=...                       # SÓ servidor (rotacionar)
-APP_ENCRYPTION_KEY=<64 hex/32 bytes>          # SÓ servidor — BACKUP! sem ela, senhas irrecuperáveis
+NEXT_PUBLIC_SUPABASE_URL=https://qlqewlrzjlbwrybwrimt.supabase.co   # client-safe
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...             # client-safe
+SUPABASE_SECRET_KEY=sb_secret_...                                   # SÓ servidor (rotacionar)
+APP_ENCRYPTION_KEY=<64 hex/32 bytes>                                # SÓ servidor — BACKUP! mesma em dev/prod
 GOOGLE_CLIENT_ID=...apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-...
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/callback      # em produção: https://SEU-DOMINIO.vercel.app/api/google/callback
 ```
-Gerar chave: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+Em produção: adicionar o redirect URI de produção em **Google Cloud → Credentials → OAuth client** e setar
+`GOOGLE_REDIRECT_URI` na Vercel com a URL `https://.../api/google/callback`. Gerar chave:
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
 ## 9. Módulos e REGRAS DE NEGÓCIO (invariantes — preservar!)
 ### Finanças
@@ -118,81 +120,78 @@ Gerar chave: `node -e "console.log(require('crypto').randomBytes(32).toString('h
   + Σcompras − Σpagamentos (mín 0). Import OFX/CSV: `lib/parsers/ofx.ts` + auto-categorização no `import-modal`.
   Central: `lib/data/finance.ts` (`getFinanceData`, `getBankStatement`).
 ### Calendário
-- Evento guardado 1x; recorrência expandida em memória por mês em `getEventsForMonth` (`EventOccurrence[]`).
-  `composeSP`/`spDateParts` p/ fuso. **Google sync**: push best-effort no create/update/delete (RRULE);
-  pull `importFromGoogle(year,month)` com dedup por `google_event_id`.
+- Evento guardado 1x; recorrência (none/daily/weekly/monthly) expandida em memória por mês em `getEventsForMonth`
+  (`EventOccurrence[]`). `composeSP`/`spDateParts` p/ fuso. **Google sync**: push best-effort no create/update/delete
+  (`lib/google/calendar.ts`, RRULE); pull `importFromGoogle(year,month)` com dedup por `google_event_id`.
 ### Tarefas
-- `status`/`priority`/`due_on`; filtro por status, conclusão rápida, destaque "atrasada".
+- `status`/`priority`/`due_on`; filtro por status com contadores, conclusão rápida (toggle), destaque "atrasada".
 ### Dashboard (`/`)
 - `getDashboardData` agrega em paralelo `getFinanceData` + `getEventsForMonth`(mês atual+próximo) + `getTasks`.
 ### Senhas
-- `create/update/delete` + `revealPassword` sob demanda + gerador. Update com senha em branco = mantém a atual.
+- `create/update/delete` + `revealPassword` (decifra 1 sob demanda) + gerador. Update com senha em branco = mantém a atual.
 ### Google Calendar
-- OAuth próprio (`access_type=offline`, `prompt=select_account consent`, `state` em cookie), escopos
-  `calendar.events` + `userinfo.email`, `getValidAccessToken` renova. Botões conectar/importar no Calendário.
+- OAuth próprio: `api/google/connect` (`access_type=offline`, `prompt=select_account consent`, `state` anti-CSRF em cookie);
+  `api/google/callback` (troca code por tokens, pega e-mail via userinfo, salva criptografado). Escopos
+  `calendar.events` + `userinfo.email`. `getValidAccessToken` renova com o refresh token. App Google em modo
+  **Testing** (adicionar o e-mail como test user; refresh token expira ~7 dias).
 
 ## 10. Convenções de código
-- UI em **pt-BR**. Tokens semânticos (`bg-card`, `text-muted-foreground`, `border-border`) — respeitar dark/claro.
-- Títulos com `style={{ fontFamily: "var(--font-display)" }}` + `tracking-tighter`.
-- Mutação a partir do client: chamar Server Action, `router.refresh()`, `toast` em erro. Validar com Zod.
+UI em **pt-BR**. Tokens semânticos (`bg-card`, `text-muted-foreground`, `border-border`) — respeitar dark/claro.
+Títulos com `style={{ fontFamily: "var(--font-display)" }}` + `tracking-tighter`. Valores/números com a classe `.num`.
+Mutação a partir do client: chamar Server Action, `router.refresh()`, `toast` em erro. Validar sempre com Zod.
 
-## 11. CAMADA VISUAL / Design System & Animações (estilo premium — SEGUIR)
-**Bibliotecas de design:** **GSAP** + `@gsap/react` (`useGSAP`) + **ScrollTrigger** (micro-animações/reveals);
-**Three.js** (fundo WebGL); **next-themes** (dark/claro); **Tailwind v4** + utilitários custom.
-**Fontes (fintech):** **Space Grotesk** (títulos) · **Inter** (corpo/UI) · **JetBrains Mono** (números). Valores/datas em coluna usam `.num` (mono + tabular-nums). Escolhidas via skill ui-ux-pro-max.
+## 11. CAMADA VISUAL / Design System & Animações (SEGUIR nas telas)
+**Direção de arte:** fintech premium **dark data-first** (fundamentada com o skill `ui-ux-pro-max`): alto contraste,
+números tabulares, status green/amber/red, **azul de confiança + verde de lucro**, evitar roxo/rosa (anti-pattern fintech).
 
-**Tema:** **dark premium por padrão** (`defaultTheme="dark"`, `enableSystem={false}` no `ThemeProvider`),
-toggle disponível (`components/theme-toggle.tsx`; no Login há um toggle flutuante no canto sup. direito).
-Paletas no `globals.css` — **fintech azul + verde (sem violeta)**: dark = base `#080b12`, primary azul `#3b82f6`, verde de lucro p/ positivos, cards em vidro; light = quase-branco `#f8f9fd`, névoa pastel. Aurora recolorida azul+verde (objeto `PALETTES` em `animated-background.tsx`).
+**Bibliotecas:** GSAP + `@gsap/react` (`useGSAP`) + ScrollTrigger; Three.js; next-themes; Tailwind v4 + utilitários.
 
-**Utilitários no `globals.css` (usar nas telas):**
-`.glass` (translúcido + backdrop-blur), `.card-glow` (elevação+brilho no hover), `.bar-grow` (barra cresce via scaleX),
-`.num` (mono + tabular-nums p/ valores), `.text-gradient`, `.pulse-glow`, `.grain-overlay` (grão), scrollbar custom.
-Tudo respeita `prefers-reduced-motion`.
+**Fontes:** **Space Grotesk** (títulos) · **Inter** (corpo/UI) · **JetBrains Mono** (números). Valores/datas em coluna
+usam a classe **`.num`** (`--font-mono` + `tabular-nums`) — dá aquele alinhamento "trading desk".
+
+**Tema:** **dark por padrão** (`defaultTheme="dark"`, `enableSystem={false}`), toggle disponível (`theme-toggle.tsx`;
+no Login há um toggle flutuante no canto). Paletas no `globals.css` — **azul + verde, sem violeta**:
+dark base `#080b12`, primary `#3b82f6`, verde p/ positivos / vermelho p/ negativos; light quase-branco `#f8f9fd`, névoa pastel.
+
+**Utilitários (`globals.css`):** `.glass` (translúcido + backdrop-blur), `.card-glow` (elevação+brilho no hover),
+`.bar-grow` (barra cresce via scaleX), `.num` (mono + tabular-nums), `.text-gradient`, `.pulse-glow`,
+`.grain-overlay` (grão, montado 1x no layout), scrollbar custom. Tudo respeita `prefers-reduced-motion`.
 
 **Componentes de efeito (`src/components/effects/`):**
-- **AnimatedBackground** — fundo Three.js (fullscreen quad + fragment shader fbm/aurora). **Theme-aware**
-  (troca de paleta por uniforms lendo `resolvedTheme`, sem recriar o WebGL) e **interativo** (parallax + halo
-  seguindo o mouse com lerp; pausa com aba oculta; degrada p/ fundo CSS sem WebGL). Montado no **root layout**
-  `fixed inset-0 z-0`; conteúdo em wrapper `relative z-10`. **Calibragem**: objeto `PALETTES` no topo do arquivo
-  (base/c1/c2/w1/w2/vig/mstr).
-- **Reveal** — anima entrada (fade+slide) com GSAP+ScrollTrigger; prop `stagger` anima filhos em sequência.
-- **CountUp** — anima número 0→valor (`currency` formata BRL). SSR mostra valor final; respeita reduced-motion.
-- **ThemedToaster** — Sonner com tema sincronizado.
+- **AnimatedBackground** — fundo Three.js (fullscreen quad + fragment shader fbm/aurora). **Theme-aware** (troca de
+  paleta por uniforms lendo `resolvedTheme`, sem recriar o WebGL) e **interativo** (parallax + halo seguindo o mouse
+  com lerp; pausa com aba oculta; degrada p/ fundo CSS sem WebGL). Root layout `fixed inset-0 z-0`; conteúdo em
+  `relative z-10`. **Calibragem:** objeto `PALETTES` no topo (base/c1/c2/w1/w2/vig/mstr).
+- **Reveal** — entrada fade+slide (GSAP+ScrollTrigger); prop `stagger` anima filhos em sequência.
+- **CountUp** — anima número 0→valor (`currency` = BRL); renderiza com `.num` (mono tabular). **ThemedToaster** — Sonner sincronizado ao tema.
 
-**Integração de layout:** root monta `<AnimatedBackground/>` + `<div className="relative z-10">{children}</div>`
-+ `.grain-overlay` + `<ThemedToaster/>`. `(app)/layout.tsx` com container **transparente** (sem `bg-background`)
-para a aurora aparecer; **Sidebar em vidro** (`bg-sidebar/70 backdrop-blur-xl`).
+**Integração de layout:** root monta `<AnimatedBackground/>` + `<div className="relative z-10">{children}</div>` +
+`.grain-overlay` + `<ThemedToaster/>`. `(app)/layout.tsx` com container **transparente**; **Sidebar em vidro**.
 
-**Como aplicar o design a uma tela nova (padrão):**
-1. Envolver blocos em `<Reveal>` (ou `<Reveal stagger className="grid ...">` para listas/grids).
-2. Valores numéricos → `<CountUp value={n} currency? />`.
-3. Cards → `className="glass card-glow rounded-2xl border border-border"`.
-4. Barras de progresso → `bar-grow` na barra interna (+ `overflow-hidden` no track).
-5. **Legibilidade nos dois temas**: usar variantes `dark:` nas cores fortes
-   (`text-green-600 dark:text-green-400`, `text-red-600 dark:text-red-400`, `text-amber-600 dark:text-amber-400`;
-   alertas `bg-amber-50 ... dark:bg-amber-500/10 dark:text-amber-300`).
+**Como aplicar o design a uma tela nova:** (1) blocos em `<Reveal>` (ou `<Reveal stagger className="grid ...">`);
+(2) números → `<CountUp value={n} currency? />` ou classe `.num`; (3) cards → `glass card-glow rounded-2xl border border-border`;
+(4) barras → `bar-grow` (+ `overflow-hidden` no track); (5) cores legíveis nos 2 temas com variantes `dark:`
+(`text-green-600 dark:text-green-400`, `text-red-600 dark:text-red-400`, `text-amber-600 dark:text-amber-400`).
 
-**Status da aplicação visual:** ✅ **Todas as telas** (Dashboard, Login, Finanças, Calendário, Tarefas, Senhas)
-com a nova tipografia, paleta azul+verde, `.num` nos valores, `glass`/`card-glow`/`Reveal`/`bar-grow` e variantes `dark:`.
+**Status:** ✅ Aplicado em **TODAS as telas** (Dashboard, Login, Finanças, Calendário, Tarefas, Senhas). Nenhuma funcionalidade foi alterada pelo redesign.
 
-## 12. Erros que NÃO repetir (projeto antigo)
-Banco público → Auth+RLS · senha em texto puro → AES · componente de 1.188 linhas → pequenos · categorias em
-localStorage → tabela · `any` → tipos+Zod · bug de fuso (`toISOString`) → `dates.ts` · sem índices → índices por `user_id`.
+## 12. Erros que NÃO repetir (do projeto antigo)
+banco público (anon key + allow_all) → Auth+RLS · senha em texto puro → AES-256-GCM · componente de 1.188 linhas →
+componentes pequenos · categorias em localStorage → tabela `categories` · `any` → tipos+Zod · bug de fuso
+(`toISOString`) → helpers `dates.ts` · sem índices → índices por `user_id` · sync Google falso (stub) → OAuth + API reais.
 
-## 13. Pendências conhecidas (não bloqueiam o uso)
-- **CLI Supabase bloqueada** (política da máquina) → migrações via SQL manual (whitelist à TI em andamento).
-- **App Google em "Testing"** → refresh token expira ~7 dias (reconectar) ou publicar em Production.
-- **Lembretes** (`reminder_minutes`) guardados mas **não disparam notificação** ainda.
-- **Sem testes** automatizados. Rotacionar `SUPABASE_SECRET_KEY`.
-- **Camada visual ainda não aplicada** em Finanças/Calendário/Tarefas/Senhas.
+## 13. Estado atual e pendências
+- ✅ **Todas as 6 fases prontas** (Fundação/Auth, Finanças, Calendário, Tarefas, Dashboard, Senhas) + Google Calendar + **redesign visual completo**.
+- ✅ **Publicado na Vercel** (deploy por push na `main`).
+- 🔧 **MCP do Supabase** (hospedado, OAuth) em configuração — dará acesso direto ao banco/migrações (fim do "SQL manual").
+- ⬜ Configurar `GOOGLE_REDIRECT_URI` de produção + redirect URI no Google Cloud (p/ conectar Google Agenda no site publicado).
+- ⬜ Rotacionar `SUPABASE_SECRET_KEY`. Lembretes (`reminder_minutes`) guardados mas não disparam notificação. Sem testes.
 
 ## 14. Próximos passos possíveis
-- Aplicar a camada visual (seção 11) às telas restantes.
-- Notificações reais de lembrete (eventos/tarefas).
-- Sync bidirecional mais completo com Google (webhooks; propagar exclusões).
-- Publicar o app Google. Testes (unitários de finanças/datas; e2e). Recorrência/subtarefas em tarefas.
+Notificações reais de lembrete · sync bidirecional Google (webhooks/exclusões) · publicar app Google (sair do Testing) ·
+testes (unitários de finanças/datas; e2e) · recorrência/subtarefas em tarefas · calibragem fina do visual.
 
 ---
-**Como continuar:** rode `npm run dev` em `C:\Projetos\assistente-pessoal-v2`, confirme que as 5 migrações
-em `supabase/migrations/` foram aplicadas no Supabase, siga os padrões da seção 4 e aplique o design da seção 11.
+**Como continuar:** rode `npm run dev` em `C:\Projetos\assistente-pessoal-v2`; para publicar, `git commit` + `git push`
+na `main` (deploy automático na Vercel). Confirme que as 5 migrações em `supabase/migrations/` estão aplicadas no
+Supabase. Siga os padrões da seção 4 e o design da seção 11.

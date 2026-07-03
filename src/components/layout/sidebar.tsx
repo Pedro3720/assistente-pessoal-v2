@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
@@ -25,7 +26,15 @@ const navItems = [
   { href: "/senhas", label: "Senhas", icon: Shield },
 ];
 
-export function Sidebar({ userEmail }: { userEmail: string }) {
+export function Sidebar({
+  userEmail,
+  displayName,
+  avatarUrl,
+}: {
+  userEmail: string;
+  displayName: string;
+  avatarUrl: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -49,7 +58,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
       <aside
         className={cn(
           "fixed left-0 top-0 z-40 flex h-full w-56 transform flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-xl transition-transform duration-300 ease-in-out",
-          "md:static md:z-auto md:translate-x-0",
+          "md:sticky md:top-0 md:h-screen md:z-auto md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -100,11 +109,24 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
           })}
         </nav>
 
-        {/* Footer — usuário + sair */}
+        {/* Footer — perfil + sair */}
         <div className="border-t border-sidebar-border px-4 py-4">
-          <p className="truncate px-2 text-xs text-sidebar-foreground/40" title={userEmail}>
-            {userEmail}
-          </p>
+          <Link
+            href="/perfil"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-sidebar-accent"
+            title="Editar perfil"
+          >
+            <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-sidebar-border bg-muted">
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt="" width={32} height={32} className="h-8 w-8 object-cover" unoptimized />
+              ) : null}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-sidebar-foreground">{displayName || "Perfil"}</span>
+              <span className="block truncate text-xs text-sidebar-foreground/40">{userEmail}</span>
+            </span>
+          </Link>
           <form action={logout}>
             <button
               type="submit"

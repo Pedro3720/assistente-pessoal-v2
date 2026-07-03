@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getDashboardData, type DashboardData } from "@/lib/data/dashboard";
+import { getProfile } from "@/lib/data/profile";
 import { formatDateBR } from "@/lib/dates";
 import { PRIORITY_META } from "@/lib/tasks/constants";
 import { Reveal } from "@/components/effects/reveal";
@@ -38,6 +39,8 @@ export default async function Dashboard() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const profile = await getProfile();
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
 
   let data: DashboardData;
   try {
@@ -68,7 +71,7 @@ export default async function Dashboard() {
       {/* header */}
       <Reveal>
         <p className="mb-1 text-sm text-muted-foreground">
-          {greeting}, {user?.email?.split("@")[0]} —
+          {greeting}, {displayName} —
         </p>
         <h1 className="text-gradient text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Seu Painel

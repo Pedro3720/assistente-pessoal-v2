@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { taskInput, statusSchema } from "@/lib/validation/task";
+import { taskInput, statusSchema, reorderInput } from "@/lib/validation/task";
 
 async function ctx() {
   const supabase = await createClient();
@@ -21,8 +21,28 @@ function revalidate() {
 export async function createTask(raw: unknown) {
   const input = taskInput.parse(raw);
   const { supabase, userId } = await ctx();
-  const { error } = await supabase.from("tasks").insert({ ...input, user_id: userId });
+  const { data: top } = await supabase
+    .from("tasks")
+    .select("position")
+    .order("position", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const position = (top?.position ?? 0) - 1;
+  const { error } = await supabase.from("tasks").insert({ ...input, position, user_id: userId });
   if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function reorderTasks(ids: unknown) {
+  const order = reorderInput.parse(ids);
+  const { supabase } = await ctx();
+  const results = await Promise.all(
+    order.map((id, index) =>
+      supabase.from("tasks").update({ position: index }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(failed.error.message);
   revalidate();
 }
 

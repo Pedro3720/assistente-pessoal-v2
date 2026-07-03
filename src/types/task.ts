@@ -8,4 +8,5 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   due_on: string | null; // YYYY-MM-DD
+  position: number;
 }

@@ -15,3 +15,5 @@ export const taskInput = z.object({
     .default(null),
 });
 export type TaskInput = z.infer<typeof taskInput>;
+
+export const reorderInput = z.array(z.number().int()).min(1);

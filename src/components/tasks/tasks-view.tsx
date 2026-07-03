@@ -1,10 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit3, Trash2, Check, CalendarClock } from "lucide-react";
+import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical } from "lucide-react";
 import { toast } from "sonner";
-import { deleteTask, setTaskStatus } from "@/lib/actions/task";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { deleteTask, setTaskStatus, reorderTasks } from "@/lib/actions/task";
 import { STATUS_META, PRIORITY_META } from "@/lib/tasks/constants";
 import { todayISO, formatDateBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
@@ -26,6 +41,12 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [order, setOrder] = useState<Task[]>(tasks);
+  // ressincroniza a ordem local quando o servidor devolve outra lista (após refresh)
+  const orderKey = tasks.map((t) => t.id).join(",");
+  useEffect(() => setOrder(tasks), [orderKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const canReorder = filter === "all";
 
   const counts = useMemo(
     () => ({
@@ -38,8 +59,8 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
   );
 
   const shown = useMemo(
-    () => (filter === "all" ? tasks : tasks.filter((t) => t.status === filter)),
-    [tasks, filter]
+    () => (filter === "all" ? order : order.filter((t) => t.status === filter)),
+    [order, filter]
   );
 
   async function toggle(t: Task) {
@@ -59,6 +80,22 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
+    }
+  }
+
+  async function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = order.findIndex((t) => t.id === active.id);
+    const newIndex = order.findIndex((t) => t.id === over.id);
+    const next = arrayMove(order, oldIndex, newIndex);
+    setOrder(next); // otimista
+    try {
+      await reorderTasks(next.map((t) => t.id));
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao reordenar");
+      setOrder(tasks); // reverte
     }
   }
 
@@ -95,72 +132,128 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* lista */}
-      <Reveal stagger className="space-y-2">
-        {shown.length === 0 ? (
+      {shown.length === 0 ? (
+        <Reveal stagger className="space-y-2">
           <div className="glass flex flex-col items-center justify-center rounded-2xl border border-border py-16 text-center">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
               <Plus className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">Nenhuma tarefa aqui.</p>
           </div>
-        ) : (
-          shown.map((t) => {
-            const done = t.status === "completed";
-            const overdue = t.due_on && !done && t.due_on < today;
-            return (
-              <div key={t.id} className="glass card-glow flex items-start gap-3 rounded-2xl border border-border p-4">
-                <button
-                  onClick={() => toggle(t)}
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                    done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40 hover:border-primary"
-                  }`}
-                  title={done ? "Reabrir" : "Concluir"}
-                >
-                  {done && <Check className="h-3 w-3" />}
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_META[t.priority].dot }} title={`Prioridade ${PRIORITY_META[t.priority].label}`} />
-                    <h3 className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                      {t.title}
-                    </h3>
-                  </div>
-                  {t.description && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{t.description}</p>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_META[t.status].color}`}>
-                      {STATUS_META[t.status].label}
-                    </span>
-                    <span className={`text-[11px] font-medium ${PRIORITY_META[t.priority].text}`}>
-                      {PRIORITY_META[t.priority].label}
-                    </span>
-                    {t.due_on && (
-                      <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
-                        <CalendarClock className="h-3 w-3" />
-                        <span className="num">{formatDateBR(t.due_on)}</span>
-                        {overdue ? " · atrasada" : ""}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-1">
-                  <button onClick={() => { setEditing(t); setModalOpen(true); }} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
-                    <Edit3 className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => remove(t.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </Reveal>
+        </Reveal>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={shown.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {shown.map((t) => {
+                const done = t.status === "completed";
+                const overdue = Boolean(t.due_on && !done && t.due_on < today);
+                return (
+                  <SortableTask
+                    key={t.id}
+                    t={t}
+                    done={done}
+                    overdue={overdue}
+                    canReorder={canReorder}
+                    onToggle={() => toggle(t)}
+                    onEdit={() => { setEditing(t); setModalOpen(true); }}
+                    onRemove={() => remove(t.id)}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
 
       {modalOpen && <TaskModal editing={editing} onClose={() => setModalOpen(false)} />}
+    </div>
+  );
+}
+
+function SortableTask({
+  t,
+  done,
+  overdue,
+  canReorder,
+  onToggle,
+  onEdit,
+  onRemove,
+}: {
+  t: Task;
+  done: boolean;
+  overdue: boolean;
+  canReorder: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: t.id,
+    disabled: !canReorder,
+  });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="glass card-glow flex items-start gap-3 rounded-2xl border border-border p-4"
+    >
+      {canReorder && (
+        <button
+          type="button"
+          className="mt-0.5 cursor-grab touch-none text-muted-foreground/50 hover:text-foreground active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+          title="Arrastar para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        onClick={onToggle}
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+          done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40 hover:border-primary"
+        }`}
+        title={done ? "Reabrir" : "Concluir"}
+      >
+        {done && <Check className="h-3 w-3" />}
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_META[t.priority].dot }} title={`Prioridade ${PRIORITY_META[t.priority].label}`} />
+          <h3 className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+            {t.title}
+          </h3>
+        </div>
+        {t.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{t.description}</p>}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_META[t.status].color}`}>
+            {STATUS_META[t.status].label}
+          </span>
+          <span className={`text-[11px] font-medium ${PRIORITY_META[t.priority].text}`}>
+            {PRIORITY_META[t.priority].label}
+          </span>
+          {t.due_on && (
+            <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+              <CalendarClock className="h-3 w-3" />
+              <span className="num">{formatDateBR(t.due_on)}</span>
+              {overdue ? " · atrasada" : ""}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1">
+        <button onClick={onEdit} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+          <Edit3 className="h-4 w-4" />
+        </button>
+        <button onClick={onRemove} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

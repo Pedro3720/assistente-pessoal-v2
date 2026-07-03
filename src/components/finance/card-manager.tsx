@@ -191,9 +191,9 @@ export function CardManager({
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Fatura aberta</span>
-                  <span className={`num font-semibold ${card.invoice > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Fatura a pagar</span>
+                  <span className={`num text-lg font-bold ${card.invoice > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
                     {formatBRL(card.invoice)}
                   </span>
                 </div>
@@ -201,8 +201,13 @@ export function CardManager({
                   <div className="bar-grow h-1.5 rounded-full bg-primary" style={{ width: `${usePct}%` }} />
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="num">{usePct.toFixed(0)}% utilizado</span>
-                  <span>Limite: <span className="num">{formatBRL(card.credit_limit)}</span></span>
+                  <span>
+                    Utilizado <span className="num text-foreground">{formatBRL(card.invoice)}</span>{" "}
+                    <span className="num">({usePct.toFixed(0)}%)</span>
+                  </span>
+                  <span>
+                    Limite total <span className="num text-foreground">{formatBRL(card.credit_limit)}</span>
+                  </span>
                 </div>
               </div>
             );
