@@ -65,21 +65,26 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
 
   async function toggle(t: Task) {
     const next: TaskStatus = t.status === "completed" ? "pending" : "completed";
+    setOrder((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: next } : x))); // otimista
     try {
       await setTaskStatus(t.id, next);
-      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao atualizar");
+      setOrder(tasks); // reverte
+      router.refresh();
     }
   }
 
   async function remove(id: number) {
     if (!confirm("Excluir esta tarefa?")) return;
+    const snapshot = order;
+    setOrder((prev) => prev.filter((x) => x.id !== id)); // otimista
     try {
       await deleteTask(id);
-      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir");
+      setOrder(snapshot); // reverte
+      router.refresh();
     }
   }
 
