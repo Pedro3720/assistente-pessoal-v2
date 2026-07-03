@@ -61,8 +61,17 @@ export async function createCategory(raw: unknown) {
   return data;
 }
 
+export async function updateCategory(id: number, raw: unknown) {
+  const input = categoryInput.partial().parse(raw);
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("categories").update(input).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
 export async function deleteCategory(id: number) {
   const { supabase } = await ctx();
+  await supabase.from("transactions").update({ category_id: null }).eq("category_id", id);
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidate();

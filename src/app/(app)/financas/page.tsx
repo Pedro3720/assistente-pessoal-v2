@@ -5,6 +5,7 @@ import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
 import { BankManager } from "@/components/finance/bank-manager";
 import { CardManager } from "@/components/finance/card-manager";
+import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
 import { ImportButton } from "@/components/finance/import-button";
@@ -102,7 +103,10 @@ export default async function FinancasPage({
       {/* despesas por categoria + transações */}
       <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="glass card-glow rounded-2xl border border-border p-5">
-          <h3 className="font-semibold">Despesas por categoria</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Despesas por categoria</h3>
+            <CategoryManagerButton categories={categories} />
+          </div>
           <div className="mt-4 space-y-4">
             {expenseByCat.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
