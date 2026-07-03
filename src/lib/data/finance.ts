@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { monthBounds, currentYearMonth } from "@/lib/dates";
+import { monthBounds } from "@/lib/dates";
 import type {
   Bank,
   BankWithBalance,
@@ -64,8 +64,7 @@ export async function getFinanceData(year: number, month: number) {
     return { ...b, balance };
   });
 
-  const { year: cy, month: cm } = currentYearMonth();
-  const curKey = cy * 12 + (cm - 1);
+  const curKey = year * 12 + (month - 1);
   const billingKey = (occurred_on: string) => {
     const [yy, mm] = occurred_on.split("-").map(Number);
     return yy * 12 + (mm - 1);
