@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { monthBounds } from "@/lib/dates";
+import { monthBounds, currentYearMonth } from "@/lib/dates";
 import type {
   Bank,
   BankWithBalance,
@@ -29,7 +29,7 @@ export async function getFinanceData(year: number, month: number) {
     supabase.from("categories").select("*").order("name"),
     supabase
       .from("transactions")
-      .select("id,amount,type,bank_id,card_id,is_card_payment"),
+      .select("id,amount,type,bank_id,card_id,is_card_payment,occurred_on"),
     supabase
       .from("transactions")
       .select("*")
@@ -51,7 +51,7 @@ export async function getFinanceData(year: number, month: number) {
   const categories = (catsRes.data ?? []) as Category[];
   const allTx = (allTxRes.data ?? []) as Pick<
     Transaction,
-    "id" | "amount" | "type" | "bank_id" | "card_id" | "is_card_payment"
+    "id" | "amount" | "type" | "bank_id" | "card_id" | "is_card_payment" | "occurred_on"
   >[];
   const monthTransactions = (monthTxRes.data ?? []) as Transaction[];
 
@@ -64,13 +64,34 @@ export async function getFinanceData(year: number, month: number) {
     return { ...b, balance };
   });
 
+  const { year: cy, month: cm } = currentYearMonth();
+  const curKey = cy * 12 + (cm - 1);
+  const billingKey = (occurred_on: string) => {
+    const [yy, mm] = occurred_on.split("-").map(Number);
+    return yy * 12 + (mm - 1);
+  };
+
   const cards: CardWithInvoice[] = cardsRaw.map((c) => {
-    let invoice = num(c.opening_invoice);
+    let utilizado = num(c.opening_invoice);
+    let faturaMes = num(c.opening_invoice);
     for (const t of allTx) {
       if (t.card_id !== c.id || t.type !== "expense") continue;
-      invoice += t.is_card_payment ? -num(t.amount) : num(t.amount);
+      const delta = t.is_card_payment ? -num(t.amount) : num(t.amount);
+      utilizado += delta;
+      if (t.is_card_payment || billingKey(t.occurred_on) <= curKey) faturaMes += delta;
     }
-    return { ...c, invoice: Math.max(invoice, 0) };
+    utilizado = Math.max(utilizado, 0);
+    faturaMes = Math.max(faturaMes, 0);
+    const em_aberto = Math.max(utilizado - faturaMes, 0);
+    const disponivel = num(c.credit_limit) - utilizado;
+    return {
+      ...c,
+      invoice: faturaMes,
+      fatura_mes: faturaMes,
+      em_aberto,
+      utilizado_total: utilizado,
+      disponivel,
+    };
   });
 
   const income = monthTransactions

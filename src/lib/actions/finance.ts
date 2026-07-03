@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { shiftMonth } from "@/lib/dates";
 import {
   transactionInput,
   bankInput,
   cardInput,
   categoryInput,
+  installmentInput,
   type TransactionInput,
 } from "@/lib/validation/finance";
 import { DEFAULT_CATEGORIES } from "@/lib/finance/defaults";
@@ -157,6 +160,63 @@ export async function updateTransaction(id: number, raw: unknown) {
 export async function deleteTransaction(id: number) {
   const { supabase } = await ctx();
   const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function createInstallmentPurchase(raw: unknown) {
+  const parsed = installmentInput.parse(raw);
+  const { installments, ...core } = parsed;
+  const base = normalizeTx(core);
+
+  if (installments <= 1 || !base.card_id || base.type !== "expense" || base.is_card_payment) {
+    // sem parcelamento: comporta como transação normal
+    const { supabase, userId } = await ctx();
+    const { error } = await supabase.from("transactions").insert({ ...base, user_id: userId });
+    if (error) throw new Error(error.message);
+    revalidate();
+    return;
+  }
+
+  const { supabase, userId } = await ctx();
+  const { data: card } = await supabase
+    .from("credit_cards")
+    .select("closing_day")
+    .eq("id", base.card_id)
+    .single();
+  const closingDay = (card?.closing_day as number | null) ?? null;
+
+  const cents = Math.round(base.amount * 100);
+  const per = Math.floor(cents / installments);
+  const group = randomUUID();
+  const [oy, om, od] = base.occurred_on.split("-").map(Number);
+  const first = closingDay && od > closingDay ? shiftMonth(oy, om, 1) : { year: oy, month: om };
+
+  const rows = Array.from({ length: installments }, (_, i) => {
+    const k = i + 1;
+    const amountCents = k === installments ? cents - per * (installments - 1) : per;
+    const bm = shiftMonth(first.year, first.month, k - 1);
+    const occurred_on = `${bm.year}-${String(bm.month).padStart(2, "0")}-01`;
+    return {
+      ...base,
+      amount: amountCents / 100,
+      occurred_on,
+      description: `${base.description} (${k}/${installments})`,
+      purchase_group: group,
+      installments,
+      installment_no: k,
+      user_id: userId,
+    };
+  });
+
+  const { error } = await supabase.from("transactions").insert(rows);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function deleteTransactionGroup(group: string) {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("transactions").delete().eq("purchase_group", group);
   if (error) throw new Error(error.message);
   revalidate();
 }

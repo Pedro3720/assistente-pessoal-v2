@@ -36,6 +36,9 @@ export interface Transaction {
   card_id: number | null;
   is_card_payment: boolean;
   occurred_on: string; // YYYY-MM-DD
+  purchase_group: string | null;
+  installments: number;
+  installment_no: number;
 }
 
 /** Banco com saldo atual calculado a partir do histórico. */
@@ -43,7 +46,11 @@ export interface BankWithBalance extends Bank {
   balance: number;
 }
 
-/** Cartão com o valor da fatura aberta calculado. */
+/** Cartão com os valores de fatura/limite calculados. */
 export interface CardWithInvoice extends CreditCard {
-  invoice: number;
+  invoice: number;        // = fatura_mes (compat)
+  fatura_mes: number;     // a pagar este mês
+  em_aberto: number;      // parcelas de meses futuros
+  utilizado_total: number;// total consumindo limite
+  disponivel: number;     // credit_limit - utilizado_total
 }

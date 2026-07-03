@@ -38,3 +38,8 @@ export const categoryInput = z.object({
   kind: txTypeSchema,
 });
 export type CategoryInput = z.infer<typeof categoryInput>;
+
+export const installmentInput = transactionInput.extend({
+  installments: z.number().int().min(1).max(48).default(1),
+});
+export type InstallmentInput = z.infer<typeof installmentInput>;
