@@ -12,6 +12,7 @@ import {
   createTransaction, updateTransaction, deleteTransaction,
   ensureDefaultCategories,
 } from "@/lib/actions/finance";
+import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
 import type {
   BankWithBalance, CardWithInvoice, Category, Transaction, TxType,
@@ -216,159 +217,139 @@ export function TransactionsSection({
       </div>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-popover p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <button onClick={() => setOpen(false)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
-                <X className="h-5 w-5" />
-              </button>
-              <h2 className="text-lg font-semibold">{editingId ? "Editar" : "Nova"} Transação</h2>
-              <div className="w-9" />
+        <Modal onClose={() => setOpen(false)} title={`${editingId ? "Editar" : "Nova"} Transação`}>
+          <div className="space-y-4">
+            {/* tipo */}
+            <div className="grid grid-cols-2 gap-2">
+              {(["expense", "income"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setType(t);
+                    setCategoryId("");
+                    if (t === "income") {
+                      setCardId("");
+                      setIsCardPayment(false);
+                    }
+                  }}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    type === t
+                      ? t === "expense"
+                        ? "border border-red-300 bg-red-50 text-red-600"
+                        : "border border-green-300 bg-green-50 text-green-700"
+                      : "border border-border bg-muted text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  {t === "expense" ? "Despesa" : "Receita"}
+                </button>
+              ))}
             </div>
 
-            <div className="mt-6 space-y-4">
-              {/* tipo */}
-              <div className="grid grid-cols-2 gap-2">
-                {(["expense", "income"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setType(t);
-                      setCategoryId("");
-                      if (t === "income") {
-                        setCardId("");
-                        setIsCardPayment(false);
-                      }
-                    }}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                      type === t
-                        ? t === "expense"
-                          ? "border border-red-300 bg-red-50 text-red-600"
-                          : "border border-green-300 bg-green-50 text-green-700"
-                        : "border border-border bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {t === "expense" ? "Despesa" : "Receita"}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Descrição</label>
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Mercado do mês"
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              />
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Descrição</label>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Valor (R$)</label>
+              <MoneyInput value={amount} onChange={setAmount} />
+            </div>
+
+            {type === "expense" && (
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
                 <input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Mercado do mês"
-                  className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+                  type="checkbox"
+                  checked={isCardPayment}
+                  onChange={(e) => {
+                    setIsCardPayment(e.target.checked);
+                    if (e.target.checked) setCategoryId("");
+                  }}
+                  className="accent-primary"
                 />
-              </div>
+                É pagamento de fatura de cartão
+              </label>
+            )}
 
+            {!isCardPayment && (
               <div className="space-y-1">
-                <label className="text-sm font-medium">Valor (R$)</label>
-                <MoneyInput value={amount} onChange={setAmount} />
-              </div>
-
-              {/* pagamento de fatura */}
-              {type === "expense" && (
-                <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={isCardPayment}
-                    onChange={(e) => {
-                      setIsCardPayment(e.target.checked);
-                      if (e.target.checked) setCategoryId("");
-                    }}
-                    className="accent-primary"
-                  />
-                  É pagamento de fatura de cartão
-                </label>
-              )}
-
-              {/* categoria (some em pagamento de fatura) */}
-              {!isCardPayment && (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Categoria</label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
-                  >
-                    <option value="">Sem categoria</option>
-                    {kindCategories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon} {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* cartão: compra (despesa) ou fatura paga */}
-              {type === "expense" && cards.length > 0 && (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">
-                    {isCardPayment ? "Cartão pago" : "Cartão (compra)"}
-                  </label>
-                  <select
-                    value={cardId}
-                    onChange={(e) => setCardId(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
-                  >
-                    <option value="">{isCardPayment ? "Selecione o cartão" : "Sem cartão"}</option>
-                    {cards.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                        {isCardPayment ? ` — fatura ${formatBRL(c.invoice)}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* conta bancária (desabilitada em compra no cartão) */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Conta</label>
+                <label className="text-sm font-medium">Categoria</label>
                 <select
-                  value={isPurchase ? "" : bankId}
-                  disabled={isPurchase}
-                  onChange={(e) => setBankId(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm disabled:opacity-50"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
                 >
-                  <option value="">{isPurchase ? "— compra vai para a fatura —" : "Sem conta"}</option>
-                  {banks.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.icon} {b.name}
+                  <option value="">Sem categoria</option>
+                  {kindCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon} {c.name}
                     </option>
                   ))}
                 </select>
               </div>
+            )}
 
+            {type === "expense" && cards.length > 0 && (
               <div className="space-y-1">
-                <label className="text-sm font-medium">Data</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                <label className="text-sm font-medium">
+                  {isCardPayment ? "Cartão pago" : "Cartão (compra)"}
+                </label>
+                <select
+                  value={cardId}
+                  onChange={(e) => setCardId(e.target.value)}
                   className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
-                />
+                >
+                  <option value="">{isCardPayment ? "Selecione o cartão" : "Sem cartão"}</option>
+                  {cards.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {isCardPayment ? ` — fatura ${formatBRL(c.invoice)}` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
+            )}
 
-              <button
-                onClick={save}
-                disabled={saving}
-                className="mt-2 w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Conta</label>
+              <select
+                value={isPurchase ? "" : bankId}
+                disabled={isPurchase}
+                onChange={(e) => setBankId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm disabled:opacity-50"
               >
-                {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar transação"}
-              </button>
+                <option value="">{isPurchase ? "— compra vai para a fatura —" : "Sem conta"}</option>
+                {banks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.icon} {b.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Data</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              />
+            </div>
+
+            <button
+              onClick={save}
+              disabled={saving}
+              className="mt-2 w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar transação"}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
