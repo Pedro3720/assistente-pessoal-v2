@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { Upload } from "lucide-react";
+import { resizeImage } from "@/lib/images";
 
 export const PRESET_AVATARS = [
   "/avatars/preset-1.svg",
@@ -37,11 +38,22 @@ export function AvatarPicker({
     if (fileRef.current) fileRef.current.value = ""; // limpa upload ao escolher preset
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     setPresetUrl(null); // foto própria vence o preset
-    setPreview(URL.createObjectURL(f));
+    try {
+      const small = await resizeImage(f, 512, 0.85);
+      // injeta o arquivo reduzido de volta no input, para o form enviar o pequeno
+      if (fileRef.current) {
+        const dt = new DataTransfer();
+        dt.items.add(small);
+        fileRef.current.files = dt.files;
+      }
+      setPreview(URL.createObjectURL(small));
+    } catch {
+      setPreview(URL.createObjectURL(f)); // fallback: usa o original
+    }
   }
 
   return (
