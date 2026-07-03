@@ -13,6 +13,11 @@ export async function getProfile(): Promise<Profile | null> {
     .select("id, display_name, phone, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Perfil é "chrome" (nome/avatar). Se a leitura falhar (ex.: tabela ainda
+    // não migrada), degrada para null em vez de derrubar toda a área logada.
+    console.error("getProfile falhou:", error.message);
+    return null;
+  }
   return (data as Profile | null) ?? null;
 }
