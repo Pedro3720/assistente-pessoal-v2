@@ -10,6 +10,7 @@ import {
   Wallet,
   ListChecks,
   Shield,
+  Lightbulb,
   Menu,
   X,
   LogOut,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/financas", label: "Finanças", icon: Wallet },
   { href: "/tarefas", label: "Tarefas", icon: ListChecks },
   { href: "/senhas", label: "Senhas", icon: Shield },
+  { href: "/sugestoes", label: "Sugestões", icon: Lightbulb },
 ];
 
 export function Sidebar({
