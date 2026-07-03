@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X, CreditCard } from "lucide-react";
+import { Plus, Trash2, X, CreditCard, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
-import { createCard, deleteCard } from "@/lib/actions/finance";
+import { createCard, updateCard, deleteCard } from "@/lib/actions/finance";
 import { CARD_COLORS } from "@/lib/finance/defaults";
 import { MoneyInput } from "./money-input";
 import type { BankWithBalance, CardWithInvoice } from "@/types/finance";
@@ -27,29 +27,45 @@ export function CardManager({
   const [closing, setClosing] = useState("");
   const [due, setDue] = useState("");
   const [color, setColor] = useState(CARD_COLORS[0]);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   function reset() {
     setName(""); setBankId(""); setLimit(""); setOpening("");
-    setClosing(""); setDue(""); setColor(CARD_COLORS[0]); setAdding(false);
+    setClosing(""); setDue(""); setColor(CARD_COLORS[0]);
+    setAdding(false); setEditingId(null);
+  }
+
+  function openEdit(card: CardWithInvoice) {
+    setEditingId(card.id);
+    setName(card.name);
+    setBankId(card.bank_id ? String(card.bank_id) : "");
+    setLimit(card.credit_limit ? formatBRL(card.credit_limit).replace("R$", "").trim() : "");
+    setOpening(card.opening_invoice ? formatBRL(card.opening_invoice).replace("R$", "").trim() : "");
+    setClosing(card.closing_day ? String(card.closing_day) : "");
+    setDue(card.due_day ? String(card.due_day) : "");
+    setColor(card.color);
+    setAdding(true);
   }
 
   async function save() {
     if (!name.trim()) return;
     setSaving(true);
+    const input = {
+      name: name.trim(),
+      bank_id: bankId ? Number(bankId) : null,
+      credit_limit: parseBRL(limit) || 0,
+      opening_invoice: parseBRL(opening) || 0,
+      closing_day: closing ? Number(closing) : null,
+      due_day: due ? Number(due) : null,
+      color,
+    };
     try {
-      await createCard({
-        name: name.trim(),
-        bank_id: bankId ? Number(bankId) : null,
-        credit_limit: parseBRL(limit) || 0,
-        opening_invoice: parseBRL(opening) || 0,
-        closing_day: closing ? Number(closing) : null,
-        due_day: due ? Number(due) : null,
-        color,
-      });
+      if (editingId) await updateCard(editingId, input);
+      else await createCard(input);
       reset();
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao criar cartão");
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar cartão");
     } finally {
       setSaving(false);
     }
@@ -151,7 +167,7 @@ export function CardManager({
               disabled={saving || !name.trim()}
               className="flex-1 rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {saving ? "Salvando..." : "Criar cartão"}
+              {saving ? "Salvando..." : editingId ? "Salvar alterações" : "Criar cartão"}
             </button>
             <button
               onClick={reset}
@@ -183,13 +199,22 @@ export function CardManager({
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => remove(card.id)}
-                    className="rounded p-1.5 text-muted-foreground hover:text-red-500"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => openEdit(card)}
+                      className="rounded p-1.5 text-muted-foreground hover:text-primary"
+                      title="Editar"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => remove(card.id)}
+                      className="rounded p-1.5 text-muted-foreground hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Fatura a pagar</span>
