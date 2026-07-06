@@ -28,7 +28,8 @@
 - Branch `main` = `origin/main` = **commit `25de56b`** (publicado na Vercel).
 - Última grande entrega: **Melhorias v3** (itens #3–#10) + correção de bug da revisão final. Já em produção.
 - **Pendências que dependem SÓ de você** — ver seção 4.
-- **Próxima feature já planejada, NÃO implementada:** painel de administração de sugestões — ver seção 5.
+- **Painel admin de sugestões:** IMPLEMENTADO e merjado na `main` (pode faltar push + as env vars
+  `ADMIN_EMAIL`/`SUPABASE_SECRET_KEY`). Ver seção 5.
 
 ## 3. O que já foi entregue (histórico)
 ### 3.1 Base (antes deste ciclo)
@@ -71,7 +72,10 @@ Commits `fbc1bf9`..`25de56b`:
 3. **Segurança:** a `SUPABASE_SECRET_KEY` foi exposta em chat antes — **recomendado rotacionar** no painel do
    Supabase e atualizar no `.env.local` e na Vercel.
 
-## 5. PRÓXIMA FEATURE — Painel admin de Sugestões (planejado, NÃO implementado)
+## 5. Painel admin de Sugestões — IMPLEMENTADO (merjado na `main`; falta push + env)
+**Status:** pronto e revisado (4 tasks + revisão final "ready to merge"), merjado na `main`. Para ATIVAR em
+produção: dar `git push origin main` E setar as env vars (abaixo). Sem as env, o app não quebra — o painel
+apenas não aparece e `/admin/sugestoes` redireciona (fecha por padrão).
 Objetivo: uma aba onde **só o dono** vê **todas** as sugestões de **todos** os usuários (com o **e-mail** de quem
 enviou), podendo marcar feito/aberto e excluir.
 - **Spec:** `docs/superpowers/specs/2026-07-03-admin-sugestoes-design.md`
