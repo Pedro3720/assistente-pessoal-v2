@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/actions/auth";
@@ -32,13 +33,19 @@ export function Sidebar({
   userEmail,
   displayName,
   avatarUrl,
+  isAdmin = false,
 }: {
   userEmail: string;
   displayName: string;
   avatarUrl: string | null;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  const items = isAdmin
+    ? [...navItems, { href: "/admin/sugestoes", label: "Admin", icon: Cog }]
+    : navItems;
 
   return (
     <>
@@ -77,7 +84,7 @@ export function Sidebar({
 
         {/* Nav */}
         <nav className="flex-1 space-y-0.5 px-4 py-5">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             const isActive =
               item.href === "/"

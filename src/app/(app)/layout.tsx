@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/data/profile";
 import { Sidebar } from "@/components/layout/sidebar";
+import { isAdminEmail } from "@/lib/auth/admin";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   const profile = await getProfile();
+  const isAdmin = isAdminEmail(user.email);
 
   return (
     <div className="flex min-h-screen">
@@ -20,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         userEmail={user.email ?? ""}
         displayName={profile?.display_name ?? ""}
         avatarUrl={profile?.avatar_url ?? null}
+        isAdmin={isAdmin}
       />
       <main className="flex-1">
         <div className="px-6 py-8 pt-20 md:px-10 md:py-10 md:pt-10">{children}</div>
