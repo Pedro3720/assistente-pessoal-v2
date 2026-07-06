@@ -8,3 +8,8 @@ export interface Suggestion {
   status: SuggestionStatus;
   created_at: string;
 }
+
+export interface SuggestionWithAuthor extends Suggestion {
+  author_email: string;
+  author_name: string | null;
+}

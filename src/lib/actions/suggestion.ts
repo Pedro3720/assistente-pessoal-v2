@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { assertAdmin } from "@/lib/auth/admin";
 import { suggestionInput, suggestionStatus } from "@/lib/validation/suggestion";
 import { uploadImageFile } from "@/lib/storage/upload";
 
@@ -47,4 +49,21 @@ export async function deleteSuggestion(id: number): Promise<void> {
   const { error } = await supabase.from("suggestions").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/sugestoes");
+}
+
+export async function adminSetSuggestionStatus(id: number, status: unknown): Promise<void> {
+  await assertAdmin();
+  const value = suggestionStatus.parse(status);
+  const admin = createAdminClient();
+  const { error } = await admin.from("suggestions").update({ status: value }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/sugestoes");
+}
+
+export async function adminDeleteSuggestion(id: number): Promise<void> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("suggestions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/sugestoes");
 }

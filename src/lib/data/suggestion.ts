@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Suggestion } from "@/types/suggestion";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { assertAdmin } from "@/lib/auth/admin";
+import type { Suggestion, SuggestionWithAuthor } from "@/types/suggestion";
 
 export async function getSuggestions(): Promise<Suggestion[]> {
   const supabase = await createClient();
@@ -9,4 +11,37 @@ export async function getSuggestions(): Promise<Suggestion[]> {
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Suggestion[];
+}
+
+export async function getAllSuggestions(): Promise<SuggestionWithAuthor[]> {
+  await assertAdmin();
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("suggestions")
+    .select("id, user_id, title, description, image_url, status, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as (Suggestion & { user_id: string })[];
+
+  const { data: usersData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const emailById = new Map<string, string>(
+    (usersData?.users ?? []).map((u) => [u.id, u.email ?? ""])
+  );
+
+  const { data: profs } = await admin.from("profiles").select("id, display_name");
+  const nameById = new Map<string, string | null>(
+    ((profs ?? []) as { id: string; display_name: string | null }[]).map((p) => [p.id, p.display_name])
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    image_url: r.image_url,
+    status: r.status,
+    created_at: r.created_at,
+    author_email: emailById.get(r.user_id) || "—",
+    author_name: nameById.get(r.user_id) ?? null,
+  }));
 }
