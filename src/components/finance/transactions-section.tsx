@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
-import { todayISO, formatDateBR } from "@/lib/dates";
+import { formatDateBR } from "@/lib/dates";
 import {
   createTransaction, updateTransaction, deleteTransaction,
   ensureDefaultCategories, createInstallmentPurchase, deleteTransactionGroup,
@@ -25,11 +25,15 @@ export function TransactionsSection({
   categories,
   banks,
   cards,
+  defaultDate,
+  monthLabel,
 }: {
   transactions: Transaction[];
   categories: Category[];
   banks: BankWithBalance[];
   cards: CardWithInvoice[];
+  defaultDate: string;
+  monthLabel: string;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
@@ -59,13 +63,14 @@ export function TransactionsSection({
   const [type, setType] = useState<TxType>("expense");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(defaultDate);
   const [categoryId, setCategoryId] = useState("");
   const [bankId, setBankId] = useState("");
   const [cardId, setCardId] = useState("");
   const [isCardPayment, setIsCardPayment] = useState(false);
   const [parcelas, setParcelas] = useState("1");
   const [saving, setSaving] = useState(false);
+  const [fullOpen, setFullOpen] = useState(false);
 
   const kindCategories = categories.filter((c) => c.kind === type);
   const isPurchase = type === "expense" && !!cardId && !isCardPayment;
@@ -75,7 +80,7 @@ export function TransactionsSection({
     setType("expense");
     setDescription("");
     setAmount("");
-    setDate(todayISO());
+    setDate(defaultDate);
     setCategoryId("");
     setBankId("");
     setCardId("");
@@ -155,24 +160,32 @@ export function TransactionsSection({
     }
   }
 
+  const filterTabs = (["all", "income", "expense"] as const).map((f) => (
+    <button
+      key={f}
+      onClick={() => setFilter(f)}
+      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+        filter === f
+          ? "bg-primary text-primary-foreground"
+          : "bg-accent text-accent-foreground hover:bg-accent/80"
+      }`}
+    >
+      {f === "all" ? "Todas" : f === "income" ? "Receitas" : "Despesas"}
+    </button>
+  ));
+
   return (
     <div className="glass card-glow rounded-2xl border border-border p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-semibold">Transações</h3>
-        <div className="flex items-center gap-2">
-          {(["all", "income", "expense"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                filter === f
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent text-accent-foreground hover:bg-accent/80"
-              }`}
-            >
-              {f === "all" ? "Todas" : f === "income" ? "Receitas" : "Despesas"}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {filterTabs}
+          <button
+            onClick={() => setFullOpen(true)}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+          >
+            Ver todas
+          </button>
           <button
             onClick={openNew}
             className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
@@ -188,46 +201,46 @@ export function TransactionsSection({
             Nenhuma transação neste mês.
           </p>
         ) : (
-          shown.map((t) => {
-            const cat = t.category_id ? catById.get(t.category_id) : null;
-            return (
-              <div
-                key={t.id}
-                className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent/30"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className={`shrink-0 rounded-full p-2 ${t.type === "income" ? "bg-green-100" : "bg-red-100"}`}>
-                    {t.type === "income" ? (
-                      <ArrowUpRight className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <ArrowDownRight className="h-4 w-4 text-red-600" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{t.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cat ? `${cat.icon} ${cat.name}` : "Sem categoria"}
-                      {t.is_card_payment ? " · 💳 pagamento" : ""} · {formatDateBR(t.occurred_on)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className={`num font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                    {t.type === "income" ? "+" : "-"}
-                    {formatBRL(Number(t.amount))}
-                  </span>
-                  <button onClick={() => openEdit(t)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
-                    <Edit3 className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => remove(t.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          shown.map((t) => (
+            <TxRow
+              key={t.id}
+              t={t}
+              cat={t.category_id ? catById.get(t.category_id) ?? null : null}
+              onEdit={() => openEdit(t)}
+              onRemove={() => remove(t.id)}
+            />
+          ))
         )}
       </div>
+
+      {fullOpen && (
+        <Modal size="full" title={`Transações — ${monthLabel}`} onClose={() => setFullOpen(false)}>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {filterTabs}
+            <button
+              onClick={openNew}
+              className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5" /> Nova
+            </button>
+          </div>
+          <div className="space-y-2">
+            {shown.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
+            ) : (
+              shown.map((t) => (
+                <TxRow
+                  key={t.id}
+                  t={t}
+                  cat={t.category_id ? catById.get(t.category_id) ?? null : null}
+                  onEdit={() => openEdit(t)}
+                  onRemove={() => remove(t.id)}
+                />
+              ))
+            )}
+          </div>
+        </Modal>
+      )}
 
       {open && (
         <Modal onClose={() => setOpen(false)} title={`${editingId ? "Editar" : "Nova"} Transação`}>
@@ -383,6 +396,51 @@ export function TransactionsSection({
           </div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+function TxRow({
+  t,
+  cat,
+  onEdit,
+  onRemove,
+}: {
+  t: Transaction;
+  cat: Category | null;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent/30">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className={`shrink-0 rounded-full p-2 ${t.type === "income" ? "bg-green-100" : "bg-red-100"}`}>
+          {t.type === "income" ? (
+            <ArrowUpRight className="h-4 w-4 text-green-600" />
+          ) : (
+            <ArrowDownRight className="h-4 w-4 text-red-600" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate font-medium">{t.description}</p>
+          <p className="text-xs text-muted-foreground">
+            {cat ? `${cat.icon} ${cat.name}` : "Sem categoria"}
+            {t.is_card_payment ? " · 💳 pagamento" : ""} · {formatDateBR(t.occurred_on)}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className={`num font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+          {t.type === "income" ? "+" : "-"}
+          {formatBRL(Number(t.amount))}
+        </span>
+        <button onClick={onEdit} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+          <Edit3 className="h-4 w-4" />
+        </button>
+        <button onClick={onRemove} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
