@@ -43,3 +43,17 @@ export const installmentInput = transactionInput.extend({
   installments: z.number().int().min(1).max(48).default(1),
 });
 export type InstallmentInput = z.infer<typeof installmentInput>;
+
+export const transferInput = z
+  .object({
+    description: z.string().trim().min(1, "Descrição obrigatória"),
+    amount: z.number().positive("O valor deve ser maior que zero"),
+    from_bank_id: z.number().int(),
+    to_bank_id: z.number().int(),
+    occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  })
+  .refine((v) => v.from_bank_id !== v.to_bank_id, {
+    message: "Escolha contas diferentes",
+    path: ["to_bank_id"],
+  });
+export type TransferInput = z.infer<typeof transferInput>;

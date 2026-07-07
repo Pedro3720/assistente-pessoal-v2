@@ -10,6 +10,7 @@ import {
   cardInput,
   categoryInput,
   installmentInput,
+  transferInput,
   type TransactionInput,
 } from "@/lib/validation/finance";
 import { DEFAULT_CATEGORIES } from "@/lib/finance/defaults";
@@ -217,6 +218,37 @@ export async function createInstallmentPurchase(raw: unknown) {
 export async function deleteTransactionGroup(group: string) {
   const { supabase } = await ctx();
   const { error } = await supabase.from("transactions").delete().eq("purchase_group", group);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function createTransfer(raw: unknown) {
+  const input = transferInput.parse(raw);
+  const { supabase, userId } = await ctx();
+  const group = randomUUID();
+  const base = {
+    description: input.description,
+    amount: input.amount,
+    category_id: null,
+    card_id: null,
+    is_card_payment: false,
+    occurred_on: input.occurred_on,
+    is_transfer: true,
+    transfer_group: group,
+    user_id: userId,
+  };
+  const rows = [
+    { ...base, type: "expense" as const, bank_id: input.from_bank_id },
+    { ...base, type: "income" as const, bank_id: input.to_bank_id },
+  ];
+  const { error } = await supabase.from("transactions").insert(rows);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function deleteTransferGroup(group: string) {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("transactions").delete().eq("transfer_group", group);
   if (error) throw new Error(error.message);
   revalidate();
 }

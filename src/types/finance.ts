@@ -39,6 +39,8 @@ export interface Transaction {
   purchase_group: string | null;
   installments: number;
   installment_no: number;
+  is_transfer: boolean;
+  transfer_group: string | null;
 }
 
 /** Banco com saldo atual calculado a partir do histórico. */
