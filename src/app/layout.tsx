@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
@@ -15,15 +15,16 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-// Números/valores — JetBrains Mono (tabular, precisão financeira)
-const jetbrainsMono = JetBrains_Mono({
+// Números/valores — IBM Plex Mono (tabular, mais suave que JetBrains)
+const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Assistente Pessoal",
+  title: "Zênite Assistente Pessoal",
   description: "Agenda, finanças, tarefas e mais — em um só lugar.",
 };
 
@@ -34,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${plexMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
