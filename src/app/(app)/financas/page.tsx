@@ -1,6 +1,6 @@
 import { Wallet, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 import { getFinanceData, getBankStatement } from "@/lib/data/finance";
-import { currentYearMonth, shiftMonth, monthLabel } from "@/lib/dates";
+import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
 import { BankManager } from "@/components/finance/bank-manager";
@@ -22,6 +22,11 @@ export default async function FinancasPage({
 
   const { year: cy, month: cm } = currentYearMonth();
   const { year, month } = shiftMonth(cy, cm, offset);
+
+  const defaultDate =
+    year === cy && month === cm
+      ? todayISO()
+      : `${year}-${String(month).padStart(2, "0")}-01`;
 
   let data: Awaited<ReturnType<typeof getFinanceData>>;
   try {
@@ -141,6 +146,8 @@ export default async function FinancasPage({
             categories={categories}
             banks={banks}
             cards={cards}
+            defaultDate={defaultDate}
+            monthLabel={monthLabel(year, month)}
           />
         </div>
       </Reveal>
