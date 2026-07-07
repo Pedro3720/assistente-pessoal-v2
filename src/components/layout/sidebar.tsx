@@ -72,13 +72,16 @@ export function Sidebar({
         )}
       >
         {/* Brand */}
-        <div className="flex h-[72px] items-center justify-between border-b border-sidebar-border px-6">
-          <span
-            className="text-lg font-bold tracking-tight text-sidebar-foreground"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Assistente
-          </span>
+        <div className="flex h-[72px] items-center justify-between border-b border-sidebar-border px-4">
+          <Link href="/" onClick={() => setOpen(false)} className="flex min-w-0 items-center gap-2">
+            <Image src="/logo.png" alt="Zênite" width={32} height={32} className="h-8 w-8 shrink-0 invert dark:invert-0" />
+            <span className="min-w-0 leading-tight">
+              <span className="block text-base font-bold tracking-tight text-sidebar-foreground" style={{ fontFamily: "var(--font-display)" }}>
+                Zênite
+              </span>
+              <span className="block truncate text-[10px] text-sidebar-foreground/40">Assistente Pessoal</span>
+            </span>
+          </Link>
           <ThemeToggle />
         </div>
 
