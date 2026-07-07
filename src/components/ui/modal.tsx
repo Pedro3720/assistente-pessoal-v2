@@ -12,10 +12,12 @@ export function Modal({
   onClose,
   title,
   children,
+  size = "md",
 }: {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  size?: "md" | "full";
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -40,7 +42,9 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-popover p-6 shadow-xl"
+        className={`overflow-y-auto rounded-2xl border border-border bg-popover p-6 shadow-xl ${
+          size === "full" ? "max-h-[92vh] w-[95vw] max-w-4xl" : "max-h-[90vh] w-full max-w-md"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (
