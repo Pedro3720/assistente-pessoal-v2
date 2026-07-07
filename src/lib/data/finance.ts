@@ -94,13 +94,13 @@ export async function getFinanceData(year: number, month: number) {
   });
 
   const income = monthTransactions
-    .filter((t) => t.type === "income")
+    .filter((t) => t.type === "income" && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
   // Compra no cartão CONTA como despesa do mês (visão de competência) e mantém
   // sua categoria. Pagamento de fatura NÃO é despesa nova — é quitação de dívida —
   // então fica de fora do total e da quebra por categoria (evita contar duas vezes).
   const expense = monthTransactions
-    .filter((t) => t.type === "expense" && !t.is_card_payment)
+    .filter((t) => t.type === "expense" && !t.is_card_payment && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
 
   return {

@@ -48,7 +48,7 @@ export default async function FinancasPage({
 
   const byCat = new Map<string, { icon: string; total: number }>();
   for (const t of monthTransactions) {
-    if (t.type !== "expense" || t.is_card_payment) continue;
+    if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "📌";
