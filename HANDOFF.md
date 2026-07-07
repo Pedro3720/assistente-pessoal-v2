@@ -1,120 +1,102 @@
-# ROTEIRO DE CONTINUIDADE — Assistente Pessoal v2
+# ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
-> **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está,
-> o que já foi feito, o que falta, e a próxima feature (já especificada e planejada, pronta para
-> executar). Data desta atualização: **2026-07-03**.
+> **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-07.**
 
 ---
 
-## 0. Como usar este roteiro
-- O jeito de trabalhar aqui é: **brainstorming → spec → plano → execução (subagentes) → merge → push**.
-  Os specs ficam em `docs/superpowers/specs/` e os planos em `docs/superpowers/plans/`.
-- Antes de mexer no Next.js, note o aviso do `AGENTS.md`: **esta versão foge do treino** — leia os guias
-  em `node_modules/next/dist/docs/` antes de codar rotas/Server Actions/config.
+## 0. Como trabalhar aqui
+- Fluxo padrão: **brainstorming → spec → plano → execução (subagentes SDD) → merge → push**.
+  Specs em `docs/superpowers/specs/`, planos em `docs/superpowers/plans/`.
+- Antes de codar no Next.js, o `AGENTS.md` avisa: **esta versão foge do treino** — leia os guias em
+  `node_modules/next/dist/docs/` antes de rotas/Server Actions/config.
+- Cada mudança é validada por **`npm run build`** (não há framework de testes) + verificação manual no app.
 
 ## 1. Identidade e caminhos (ATENÇÃO — pegadinha)
-- **Projeto REAL e ativo:** `C:\Projetos\assistente-pessoal-v2` (é aqui que se trabalha; `npm run dev`).
-- **NÃO confundir** com `C:\Pedro\Arquivos Pedro\Assistente-pessoal-main` — essa é uma versão antiga/de
-  referência (o Claude Code às vezes abre o shell nela). Sempre use caminhos absolutos para o projeto real.
-- **GitHub:** `https://github.com/Pedro3720/assistente-pessoal-v2.git` — branch `main`.
-- **Deploy (Vercel):** `push` na `main` → a Vercel builda e publica sozinha. Não se edita nada "dentro da Vercel".
-- **Supabase:** projeto `qlqewlrzjlbwrybwrimt` (mesmo banco em dev e prod). URL/chaves no `.env.local` (NÃO commitado).
-- **CLI do Supabase é BLOQUEADA nesta máquina** (política de Application Control do Windows). Toda migração
-  é aplicada **manualmente**: copiar o SQL de `supabase/migrations/*.sql` e rodar no **Supabase → SQL Editor**.
+- **Projeto REAL e ativo:** `C:\Projetos\assistente-pessoal-v2` (`npm run dev` aqui).
+- **NÃO confundir** com `C:\Pedro\Arquivos Pedro\Assistente-pessoal-main` — versão antiga/referência (o
+  Claude Code às vezes abre o shell nela). Sempre usar caminhos absolutos para o projeto real.
+- **GitHub:** `https://github.com/Pedro3720/assistente-pessoal-v2.git`, branch `main`.
+- **Deploy (Vercel):** `git push origin main` → a Vercel builda e publica sozinha.
+- **Supabase:** projeto `qlqewlrzjlbwrybwrimt` (mesmo banco dev e prod). Chaves no `.env.local` (NÃO commitado;
+  a `SUPABASE_SECRET_KEY` foi **rotacionada em 2026-07-07** — o valor atual está no `.env.local`).
+- **CLI do Supabase é BLOQUEADA nesta máquina** (Application Control do Windows). **Toda migração é rodada
+  MANUALMENTE**: copiar o SQL de `supabase/migrations/*.sql` e colar no **Supabase → SQL Editor**.
 - Stack: Next 16.2.9 (App Router) · React 19 · TS strict · Tailwind v4 · @supabase/ssr + supabase-js · Zod ·
-  GSAP + Three.js (visual) · lucide-react · sonner · @dnd-kit (reordenar tarefas).
+  GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
-## 2. Estado atual (2026-07-03)
-- Branch `main` = `origin/main` = **commit `25de56b`** (publicado na Vercel).
-- Última grande entrega: **Melhorias v3** (itens #3–#10) + correção de bug da revisão final. Já em produção.
-- **Pendências que dependem SÓ de você** — ver seção 4.
-- **Painel admin de sugestões:** IMPLEMENTADO e merjado na `main` (pode faltar push + as env vars
-  `ADMIN_EMAIL`/`SUPABASE_SECRET_KEY`). Ver seção 5.
+## 2. Estado atual (2026-07-07)
+- **`main` = `origin/main` = commit `d277cae`** (publicado na Vercel).
+- App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
+- **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
+  Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
+- **Migrações aplicadas no Supabase:** `0000`–`0008`. ⚠️ **FALTA rodar a `0009_tx_transfer.sql`** (transferência
+  entre contas) — ver seção 4.
 
-## 3. O que já foi entregue (histórico)
-### 3.1 Base (antes deste ciclo)
-6 fases + Google Calendar + redesign visual premium. Migrações `0000_finance` … `0004_google` aplicadas.
+## 3. Histórico do que já foi entregue
+### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
+6 fases + Google Calendar + redesign; depois: saudação com nome, sidebar, reordenar tarefas, cartões
+(fatura/utilizado/limite), máscara de R$, **cadastro** (tabela `profiles` + bucket `avatars`, migr. 0005/0006),
+tarefas otimistas, foto redimensionada, editar cartão, **parcelamento** (colunas `purchase_group/installments/
+installment_no`, migr. 0007), modal via **portal**, aba **/sugestoes** (tabela `suggestions` + bucket, migr. 0008),
+CRUD de categorias. Correção do 500 (tabela `profiles` faltava).
 
-### 3.2 Melhorias v2 (itens #3–#8) — spec/plano `2026-07-02-melhorias-v2*`
-Nome na saudação, sidebar inteira à esquerda, reordenar tarefas (arrastar), cartões com fatura/utilizado/limite,
-máscara automática de R$ nos inputs, e **página de cadastro** com nome/telefone/foto. Backbone: tabela
-`profiles` + bucket `avatars` (migrações **0005_profiles**, **0006_task_position**).
+### 3.2 Painel Admin de Sugestões — FEITO e no ar
+Só o dono (`ADMIN_EMAIL`) vê todas as sugestões de todos com e-mail, marca feito/exclui. Rota `/admin/sugestoes`
+(guardada), link "Admin" na sidebar só p/ o dono. Cliente **service role** em `lib/supabase/admin.ts`
+(`import "server-only"`), sempre atrás de `assertAdmin()` (`lib/auth/admin.ts`). `getAllSuggestions()`,
+`adminSetSuggestionStatus`, `adminDeleteSuggestion`. Sem migração. Specs/planos `2026-07-03-admin-sugestoes*`.
 
-### 3.3 Correção do erro 500 na Vercel
-Causa: a tabela `profiles` (migração 0005) não tinha sido aplicada, e `getProfile()` era chamado no layout de
-toda página logada sem try/catch → 500. **Corrigido:** você rodou a 0005; e o `getProfile` foi endurecido para
-degradar em `null` (commit `c5e299d`). 
+### 3.3 Implementação das SUGESTÕES dos usuários (em ondas — 2026-07-07)
+A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs/planos `2026-07-07-*`):
+- **Onda 1 (FEITA, no ar):** rebrand **Zênite** + **logo** + favicon (sug. #9/#15) e **números em IBM Plex Mono**
+  (#3). Fechada a #13 (pergunta "onde ficam as sugestões" → tabela `suggestions` + bucket). Script de logo:
+  `scripts/gen-logo.mjs` (sharp: fundo transparente + favicon em ladrilho escuro).
+- **Onda 2.1 (FEITA, no ar):** transações — a nova transação nasce com a **data do mês visualizado** (corrige
+  o falso "não registra mais que 4" #6a: as transações sempre salvaram; só não apareciam se o mês aberto era
+  outro) + botão **"Ver todas"** abre a lista completa editável em **tela cheia** (`Modal size="full"`) (#6b).
+- **Onda 2.2 (FEITA, no ar — falta migração 0009):** **transferência entre contas** (#8). Colunas
+  `is_transfer`/`transfer_group` em `transactions`; `createTransfer` cria 2 lançamentos (saída da origem +
+  entrada no destino, `is_transfer=true`); `deleteTransferGroup`. Transferência **não** conta em Receitas/
+  Despesas nem na quebra por categoria (só move os saldos). UI: checkbox "É transferência" + "Conta destino".
 
-### 3.4 Melhorias v3 (itens #3–#10) — spec/plano `2026-07-03-melhorias-v3*`
-Commits `fbc1bf9`..`25de56b`:
-- **#3** Tarefas: concluir/excluir **instantâneo** (UI otimista).
-- **#4** Perfil: foto **redimensionada no navegador** antes do upload (resolveu o erro de "unexpected response").
-- **#5** **Editar** cartão de crédito.
-- **#6** Cartão com **parcelamento**: colunas novas em `transactions` (`purchase_group/installments/installment_no`);
-  ação `createInstallmentPurchase` (expande em N parcelas por mês de fatura) + `deleteTransactionGroup`; e os 5
-  valores por cartão: **Fatura a pagar (mês) / Em aberto / Utilizado / Disponível / Limite total**.
-- **#7** Modal de nova transação via **portal** (não fica mais atrás dos cards). Componente novo `components/ui/modal.tsx`.
-- **#8** Aba de **Sugestões** (`/sugestoes`): tabela `suggestions` + bucket `suggestions`; usuário registra texto+print.
-- **#9** Google: o código já força `prompt: "select_account consent"` (seletor de conta). É questão de **config de
-  produção**, não de código (ver seção 4).
-- **#10** **CRUD de categorias** de receita/despesa (gerenciador na página de Finanças).
-- Bug corrigido na revisão final (`25de56b`): valores do cartão respeitam o mês navegado (usavam "hoje").
-- Utilitários novos reaproveitáveis: `components/ui/modal.tsx` (portal), `lib/images.ts` (`resizeImage`),
-  `lib/storage/upload.ts` (`uploadImageFile(supabase, bucket, userId, file)`).
+### 3.4 SUGESTÕES QUE FALTAM (próximas ondas)
+- **#7** Ver **assinaturas recorrentes** ativas.
+- **#11** Aba de **planejamento mensal** (gastos/ganhos previstos ainda não realizados).
+- **#14** **Recuperação de senha** (Supabase Auth tem reset por e-mail nativo).
+- **#10** **Notificações de lembretes** (a maior/mais complexa — decidir o meio: push/e-mail; deixar por último).
+Sugestão de ordem: #7 → #14 → #11 → #10. Cada uma: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
-1. **Rodar no Supabase → SQL Editor** (se ainda não rodou), nesta ordem:
-   - `supabase/migrations/20260701000007_tx_installments.sql` — senão criar compra parcelada falha.
-   - `supabase/migrations/20260701000008_suggestions.sql` — senão a página `/sugestoes` dá 500 (resto funciona).
-   *(Como confirmar rápido: no app, criar uma sugestão e uma compra parcelada; se funcionarem, as migrações rodaram.)*
-2. **#9 Google (config de produção):** na Vercel, `GOOGLE_REDIRECT_URI` = `https://<seu-domínio>/api/google/callback`
-   (não localhost) e adicionar esse mesmo redirect no Google Cloud Console (OAuth client). O código já força o seletor.
-3. **Segurança:** a `SUPABASE_SECRET_KEY` foi exposta em chat antes — **recomendado rotacionar** no painel do
-   Supabase e atualizar no `.env.local` e na Vercel.
+1. **Rodar `supabase/migrations/20260701000009_tx_transfer.sql`** no Supabase → SQL Editor — senão **criar
+   transferência dá erro** (o resto do app funciona). (As migrações 0000–0008 já foram rodadas.)
+   *Confirmar rápido: no app, criar uma transferência entre 2 contas; se salvar, a 0009 rodou.*
+- (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY.)
 
-## 5. Painel admin de Sugestões — IMPLEMENTADO (merjado na `main`; falta push + env)
-**Status:** pronto e revisado (4 tasks + revisão final "ready to merge"), merjado na `main`. Para ATIVAR em
-produção: dar `git push origin main` E setar as env vars (abaixo). Sem as env, o app não quebra — o painel
-apenas não aparece e `/admin/sugestoes` redireciona (fecha por padrão).
-Objetivo: uma aba onde **só o dono** vê **todas** as sugestões de **todos** os usuários (com o **e-mail** de quem
-enviou), podendo marcar feito/aberto e excluir.
-- **Spec:** `docs/superpowers/specs/2026-07-03-admin-sugestoes-design.md`
-- **Plano (4 tasks, código completo):** `docs/superpowers/plans/2026-07-03-admin-sugestoes.md`
-- **Resumo técnico:** cliente Supabase com **service role** (`lib/supabase/admin.ts`, `import "server-only"`),
-  usado sempre atrás de `assertAdmin()` (`lib/auth/admin.ts`, compara com env **`ADMIN_EMAIL`**); `getAllSuggestions()`
-  lê tudo + e-mails via `auth.admin.listUsers()`; ações `adminSetSuggestionStatus`/`adminDeleteSuggestion`; página
-  protegida `/admin/sugestoes`; link "Admin" na sidebar só para o dono. **Sem migração de banco.**
-- **Passos manuais desta feature (env):** adicionar **`ADMIN_EMAIL=pedrovvp12@gmail.com`** no `.env.local` e na
-  Vercel; garantir **`SUPABASE_SECRET_KEY`** também na Vercel (hoje só no `.env.local`).
-- **Como executar no próximo chat:** siga o plano com a skill `superpowers:subagent-driven-development` (um subagente
-  por task, revisão entre elas), OU `superpowers:executing-plans`. Setup: `git checkout main && git pull --ff-only`
-  então `git checkout -b feat/admin-sugestoes`; ao terminar, `superpowers:finishing-a-development-branch` → merge na
-  `main` → `git push origin main`.
-
-## 6. Regras de ouro / convenções (não repetir erros antigos)
+## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
-  `"use server"`, validam **Zod** em `src/lib/validation/*`, injetam `user_id` via `auth.getUser()`, `revalidatePath`).
-  Tipos em `src/types/*`. **RLS `own_rows`** (auth.uid()=user_id) em toda tabela. Sem `any`. Componentes pequenos.
-- **Service role:** NUNCA no browser. Só em módulo `server-only`, sempre depois de `assertAdmin()`.
+  `"use server"`, Zod em `src/lib/validation/*`, `user_id` via `auth.getUser()`, `revalidatePath`). Tipos em
+  `src/types/*`. **RLS `own_rows`** em toda tabela. Sem `any`. Componentes pequenos, regra de negócio fora do JSX.
+- **Service role** (bypassa RLS): só em `lib/supabase/admin.ts` (`server-only`), **sempre** após `assertAdmin()`.
 - **Datas:** fuso SP fixo via `src/lib/dates.ts` (nunca `toISOString().split`). **Dinheiro:** `src/lib/money.ts`
-  (`formatBRL`/`parseBRL`). **Cripto:** `src/lib/crypto.ts` (AES-256-GCM, chave `APP_ENCRYPTION_KEY` — se perder, senhas/tokens irrecuperáveis).
-- **Sem framework de testes** no repo: o "gate" de cada mudança é **`npm run build`** passando (TS strict) +
-  verificação manual rodando o app. Migrações são entregues como SQL para rodar manualmente.
-- **Modais** devem usar `components/ui/modal.tsx` (portal) — senão o `fixed` fica preso atrás dos cards (por causa do
-  `transform` do `<Reveal>`/`glass`).
-- **Uploads de imagem:** redimensionar no cliente com `resizeImage` (lib/images.ts) e subir via `uploadImageFile`
-  (lib/storage/upload.ts); o limite de Server Action está em 4MB (`next.config.ts`).
+  (`formatBRL`/`parseBRL`). **Cripto:** `src/lib/crypto.ts` (AES-256-GCM, `APP_ENCRYPTION_KEY` — se perder,
+  senhas/tokens irrecuperáveis).
+- **Modais:** usar `components/ui/modal.tsx` (portal; props `onClose`, `title?`, `size?: "md"|"full"`) — senão o
+  `fixed` fica preso atrás dos cards (transform do `<Reveal>`/`glass`).
+- **Uploads de imagem:** redimensionar no cliente com `resizeImage` (`lib/images.ts`) e subir via `uploadImageFile`
+  (`lib/storage/upload.ts`); limite de Server Action = 4MB (`next.config.ts`).
+- **Finanças (modelo):** compra no cartão não mexe no saldo (bank_id null) e vira fatura; `is_card_payment` abate
+  fatura e sai da conta; **parcelamento** = N linhas por mês de fatura (`installments`/`installment_no`/
+  `purchase_group`); **transferência** = 2 linhas (`is_transfer`/`transfer_group`), fora de receita/despesa.
+  Compras parceladas e transferências **excluem-se** dos totais/categoria; ambas ajustam saldos.
 
-## 7. Backlog — achados "Minor" deferidos (opcionais, não urgentes)
-- `Modal` sem focus-trap / `role="dialog"` / aria-modal (acessibilidade).
-- `resizeImage` rejeita em erro de leitura em vez de cair no arquivo original (callers têm try/catch).
-- Cartão `openEdit`: checagem truthy trata limite/`bank_id` = 0 como vazio.
-- Exclusões usam `confirm()` nativo (padrão do app).
-- Editar uma parcela individual desalinha o grupo (sem edição estrutural no MVP).
-- Bucket `suggestions` só tem policy de `insert` (não `update`); inerte porque o caminho usa `Date.now()`.
+## 6. Backlog — "Minor" deferidos (opcionais)
+- `Modal` sem focus-trap/`role="dialog"`/aria (a11y). · `resizeImage` rejeita em erro de leitura (callers têm
+  try/catch). · Cartão `openEdit`: checagem truthy trata `0` como vazio. · Exclusões usam `confirm()` nativo. ·
+  Editar 1 parcela desalinha o grupo. · Bucket `suggestions`/`avatars` sem policy de `update` (inerte, path com
+  `Date.now()`). · `defaultDate` (finanças) poderia reusar `monthBounds().start`.
 
-## 8. Documentos de referência no repo
-- `AGENTS.md` / `CLAUDE.md` — instruções do projeto (ler docs do Next antes de codar).
-- `CONTEXT.md` — contexto detalhado do projeto (histórico anterior).
-- `docs/superpowers/specs/` e `docs/superpowers/plans/` — specs e planos (v2, v3, admin-sugestoes).
+## 7. Documentos no repo
+- `AGENTS.md` / `CLAUDE.md` (instruções), `CONTEXT.md` (contexto histórico detalhado).
+- `docs/superpowers/specs/` e `docs/superpowers/plans/` — todos os specs e planos por onda/feature.
 - `.superpowers/sdd/progress.md` — ledger da última execução por subagentes (não versionado).
