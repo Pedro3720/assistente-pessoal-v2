@@ -11,6 +11,7 @@ import { formatDateBR } from "@/lib/dates";
 import {
   createTransaction, updateTransaction, deleteTransaction,
   ensureDefaultCategories, createInstallmentPurchase, deleteTransactionGroup,
+  createTransfer, deleteTransferGroup,
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
@@ -68,6 +69,8 @@ export function TransactionsSection({
   const [bankId, setBankId] = useState("");
   const [cardId, setCardId] = useState("");
   const [isCardPayment, setIsCardPayment] = useState(false);
+  const [isTransfer, setIsTransfer] = useState(false);
+  const [toBankId, setToBankId] = useState("");
   const [parcelas, setParcelas] = useState("1");
   const [saving, setSaving] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
@@ -86,6 +89,8 @@ export function TransactionsSection({
     setCardId("");
     setIsCardPayment(false);
     setParcelas("1");
+    setIsTransfer(false);
+    setToBankId("");
   }
 
   function openNew() {
@@ -94,6 +99,10 @@ export function TransactionsSection({
   }
 
   function openEdit(t: Transaction) {
+    if (t.transfer_group) {
+      toast.info("Para alterar uma transferência, exclua e recrie.");
+      return;
+    }
     setEditingId(t.id);
     setType(t.type);
     setDescription(t.description);
@@ -130,6 +139,19 @@ export function TransactionsSection({
     try {
       if (editingId) {
         await updateTransaction(editingId, input);
+      } else if (isTransfer) {
+        if (!bankId || !toBankId) {
+          toast.error("Escolha a conta de origem e a de destino.");
+          setSaving(false);
+          return;
+        }
+        await createTransfer({
+          description: description.trim(),
+          amount: value,
+          from_bank_id: Number(bankId),
+          to_bank_id: Number(toBankId),
+          occurred_on: date,
+        });
       } else if (isPurchase && Number(parcelas) > 1) {
         await createInstallmentPurchase({ ...input, installments: Number(parcelas) });
       } else {
@@ -148,7 +170,10 @@ export function TransactionsSection({
   async function remove(id: number) {
     const t = transactions.find((x) => x.id === id);
     try {
-      if (t?.purchase_group) {
+      if (t?.transfer_group) {
+        if (!confirm("Excluir a transferência (os dois lançamentos)?")) return;
+        await deleteTransferGroup(t.transfer_group);
+      } else if (t?.purchase_group) {
         if (!confirm("Excluir a compra parcelada inteira (todas as parcelas)?")) return;
         await deleteTransactionGroup(t.purchase_group);
       } else {
@@ -306,21 +331,45 @@ export function TransactionsSection({
             )}
 
             {type === "expense" && (
-              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={isCardPayment}
-                  onChange={(e) => {
-                    setIsCardPayment(e.target.checked);
-                    if (e.target.checked) setCategoryId("");
-                  }}
-                  className="accent-primary"
-                />
-                É pagamento de fatura de cartão
-              </label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={isCardPayment}
+                    onChange={(e) => {
+                      setIsCardPayment(e.target.checked);
+                      if (e.target.checked) {
+                        setCategoryId("");
+                        setIsTransfer(false);
+                        setToBankId("");
+                      }
+                    }}
+                    className="accent-primary"
+                  />
+                  Pagamento de fatura
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={isTransfer}
+                    onChange={(e) => {
+                      setIsTransfer(e.target.checked);
+                      if (e.target.checked) {
+                        setIsCardPayment(false);
+                        setCategoryId("");
+                        setCardId("");
+                      } else {
+                        setToBankId("");
+                      }
+                    }}
+                    className="accent-primary"
+                  />
+                  Transferência entre contas
+                </label>
+              </div>
             )}
 
-            {!isCardPayment && (
+            {!isCardPayment && !isTransfer && (
               <div className="space-y-1">
                 <label className="text-sm font-medium">Categoria</label>
                 <select
@@ -338,7 +387,7 @@ export function TransactionsSection({
               </div>
             )}
 
-            {type === "expense" && cards.length > 0 && (
+            {type === "expense" && cards.length > 0 && !isTransfer && (
               <div className="space-y-1">
                 <label className="text-sm font-medium">
                   {isCardPayment ? "Cartão pago" : "Cartão (compra)"}
@@ -360,7 +409,7 @@ export function TransactionsSection({
             )}
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Conta</label>
+              <label className="text-sm font-medium">{isTransfer ? "Conta origem" : "Conta"}</label>
               <select
                 value={isPurchase ? "" : bankId}
                 disabled={isPurchase}
@@ -375,6 +424,26 @@ export function TransactionsSection({
                 ))}
               </select>
             </div>
+
+            {isTransfer && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Conta destino</label>
+                <select
+                  value={toBankId}
+                  onChange={(e) => setToBankId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione a conta destino</option>
+                  {banks
+                    .filter((b) => String(b.id) !== bankId)
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.icon} {b.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-1">
               <label className="text-sm font-medium">Data</label>
@@ -424,7 +493,7 @@ function TxRow({
         <div className="min-w-0">
           <p className="truncate font-medium">{t.description}</p>
           <p className="text-xs text-muted-foreground">
-            {cat ? `${cat.icon} ${cat.name}` : "Sem categoria"}
+            {t.is_transfer ? "🔄 transferência" : cat ? `${cat.icon} ${cat.name}` : "Sem categoria"}
             {t.is_card_payment ? " · 💳 pagamento" : ""} · {formatDateBR(t.occurred_on)}
           </p>
         </div>
