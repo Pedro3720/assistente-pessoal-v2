@@ -56,3 +56,27 @@ export interface CardWithInvoice extends CreditCard {
   utilizado_total: number;// total consumindo limite
   disponivel: number;     // credit_limit - utilizado_total
 }
+
+export interface Subscription {
+  id: number;
+  name: string;
+  icon: string;
+  amount: number;
+  billing_day: number | null;
+  category_id: number | null;
+  bank_id: number | null;
+  card_id: number | null;
+  active: boolean;
+}
+
+/** Candidato detectado no histórico (ainda não é uma assinatura salva). */
+export interface SubscriptionCandidate {
+  key: string; // descrição normalizada (chave de dedupe)
+  name: string; // descrição legível (ocorrência mais recente)
+  amount: number; // valor sugerido (ocorrência mais recente)
+  billing_day: number; // dia do mês mais frequente
+  months: number; // em quantos meses distintos apareceu
+  category_id: number | null;
+  bank_id: number | null;
+  card_id: number | null;
+}
