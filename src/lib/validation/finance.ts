@@ -57,3 +57,15 @@ export const transferInput = z
     path: ["to_bank_id"],
   });
 export type TransferInput = z.infer<typeof transferInput>;
+
+export const subscriptionInput = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  icon: z.string().trim().min(1).default("🔁"),
+  amount: z.number().positive("O valor deve ser maior que zero"),
+  billing_day: z.number().int().min(1).max(31).nullable().default(null),
+  category_id: z.number().int().nullable().default(null),
+  bank_id: z.number().int().nullable().default(null),
+  card_id: z.number().int().nullable().default(null),
+  active: z.boolean().default(true),
+});
+export type SubscriptionInput = z.infer<typeof subscriptionInput>;
