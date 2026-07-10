@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
-const PUBLIC_ROUTES = ["/login", "/cadastro"];
+const AUTH_PAGES = ["/login", "/cadastro", "/recuperar-senha"];
+const PUBLIC_PREFIXES = [...AUTH_PAGES, "/api/auth"];
 
 /**
  * Renova a sessão do usuário a cada request e protege as rotas privadas.
@@ -39,7 +40,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = PUBLIC_ROUTES.some((r) => path.startsWith(r));
+  const isPublic = PUBLIC_PREFIXES.some((r) => path.startsWith(r));
+  const isAuthPage = AUTH_PAGES.some((r) => path.startsWith(r));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
@@ -47,7 +49,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublic) {
+  if (user && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
