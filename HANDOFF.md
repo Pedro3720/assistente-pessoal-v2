@@ -26,12 +26,12 @@
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
 ## 2. Estado atual (2026-07-10)
-- **`main` = `origin/main` = commit `887a112`** (publicado na Vercel).
+- **`main` = `origin/main` = commit `6bf8402`** (publicado na Vercel).
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
-- **Migrações aplicadas no Supabase:** `0000`–`0009` (a `0009` foi rodada pelo usuário). ⚠️ **FALTA rodar a
-  `0010_subscriptions.sql`** (assinaturas recorrentes) — ver seção 4.
+- **Migrações aplicadas no Supabase:** `0000`–`0010` (todas rodadas pelo usuário). Não há migração pendente.
+  ⚠️ Pendência de config do #14 (Redirect URLs) — ver seção 4.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -55,30 +55,40 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
 - **Onda 2.1 (FEITA, no ar):** transações — a nova transação nasce com a **data do mês visualizado** (corrige
   o falso "não registra mais que 4" #6a: as transações sempre salvaram; só não apareciam se o mês aberto era
   outro) + botão **"Ver todas"** abre a lista completa editável em **tela cheia** (`Modal size="full"`) (#6b).
-- **Onda 2.2 (FEITA, no ar — falta migração 0009):** **transferência entre contas** (#8). Colunas
+- **Onda 2.2 (FEITA, no ar):** **transferência entre contas** (#8). Colunas
   `is_transfer`/`transfer_group` em `transactions`; `createTransfer` cria 2 lançamentos (saída da origem +
   entrada no destino, `is_transfer=true`); `deleteTransferGroup`. Transferência **não** conta em Receitas/
   Despesas nem na quebra por categoria (só move os saldos). UI: checkbox "É transferência" + "Conta destino".
-- **Onda 3 (FEITA, no ar — falta migração 0010):** **assinaturas recorrentes** (#7). Tabela `subscriptions`
+- **Onda 3 (FEITA, no ar):** **assinaturas recorrentes** (#7). Tabela `subscriptions`
   (migr. 0010); rastreador **híbrido** (cadastro manual + detector de candidatos no histórico) e **só de
   referência** (não lança transações). Seção nova em /financas: total mensal, lista de ativas/pausadas,
   "próxima cobrança", chips de candidatos com "+Adicionar" pré-preenchido. Detecção: despesas dos últimos
   6 meses, ≥3 meses/±15%, exclui parcelados (`installments=1`), oculta já cadastradas; a query cai em
   fallback vazio se a tabela não existir (não quebra a página). `getSubscriptions` (data),
   `create/update/deleteSubscription` (actions). Só mensal. Specs/planos `2026-07-10-assinaturas*`.
+- **Onda 4 (FEITA, no ar — falta config Redirect URLs):** **recuperação + troca de senha** (#14), sobre o
+  Supabase Auth nativo (sem migração). Fluxo A (deslogado): link "Esqueceu a senha?" no login →
+  `/recuperar-senha` (mensagem neutra anti-enumeração) → e-mail → `/api/auth/callback`
+  (`exchangeCodeForSession`, `next` validado contra open redirect) → `/redefinir-senha` → cai logado em `/`.
+  Fluxo B (logado): seção "Trocar senha" em /perfil. Compartilham a action `updatePassword` (retorna
+  `{error?}`) e o componente `NewPasswordForm` (`mode: reset|change`). Middleware refinado: `/recuperar-senha`
+  e `/api/auth/*` públicos, `/redefinir-senha` protegido. **Escolha: mesmo-dispositivo** (fluxo PKCE; há aviso
+  na tela). Specs/planos `2026-07-10-recuperacao-senha*`.
 
 ### 3.4 SUGESTÕES QUE FALTAM (próximas ondas)
 - **#11** Aba de **planejamento mensal** (gastos/ganhos previstos ainda não realizados).
-- **#14** **Recuperação de senha** (Supabase Auth tem reset por e-mail nativo).
 - **#10** **Notificações de lembretes** (a maior/mais complexa — decidir o meio: push/e-mail; deixar por último).
-Sugestão de ordem: #14 → #11 → #10. Cada uma: brainstorming → spec → plano → SDD → merge → push.
+Sugestão de ordem: #11 → #10. Cada uma: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
-1. **Rodar `supabase/migrations/20260701000010_subscriptions.sql`** no Supabase → SQL Editor — senão a seção
-   de **Assinaturas** fica vazia (o resto de /financas funciona: há fallback gracioso). As migrações
-   0000–0009 já foram rodadas.
-   *Confirmar rápido: em /financas, criar uma assinatura; se salvar e entrar no total mensal, a 0010 rodou.*
-- (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY; migração 0009 rodada.)
+1. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
+   **Site URL** (domínio Vercel) e adicionar aos **Redirect URLs** o `…/api/auth/callback` (produção) **e**
+   `http://localhost:3000/api/auth/callback` (local). Sem isso o link do e-mail cai no Site URL e o fluxo
+   quebra. Os e-mails saem pelo SMTP padrão do Supabase (limite baixo no free — ok p/ uso pessoal).
+   *Confirmar: em /login → "Esqueceu a senha?" → pedir reset → abrir o link no mesmo dispositivo → definir
+   nova senha → cai logado. E em /perfil → "Trocar senha".*
+- (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY; migrações
+  0000–0010 rodadas.)
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
