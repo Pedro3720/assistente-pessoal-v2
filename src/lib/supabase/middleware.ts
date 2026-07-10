@@ -7,8 +7,10 @@ const AUTH_PAGES = ["/login", "/cadastro", "/recuperar-senha"];
 const PUBLIC_PREFIXES = [...AUTH_PAGES, "/api/auth"];
 
 /**
- * Renova a sessão do usuário a cada request e protege as rotas privadas.
- * Sem sessão → redireciona para /login. Com sessão em /login → vai para o painel.
+ * Renova a sessão a cada request e protege as rotas.
+ * Sem sessão numa rota não-pública → /login (públicas: páginas de auth + /api/auth).
+ * Com sessão numa página de auth (/login, /cadastro, /recuperar-senha) → vai para o painel.
+ * /redefinir-senha é protegido (exige sessão — a de recuperação serve).
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

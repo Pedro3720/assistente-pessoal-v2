@@ -24,7 +24,11 @@ export function NewPasswordForm({ mode }: { mode: "reset" | "change" }) {
     }
     setSaving(true);
     try {
-      await updatePassword(password);
+      const result = await updatePassword(password);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
       if (mode === "reset") {
         toast.success("Senha redefinida! Você já está conectado.");
         router.push("/");

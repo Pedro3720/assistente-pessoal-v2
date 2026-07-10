@@ -130,10 +130,12 @@ export async function requestPasswordReset(formData: FormData): Promise<void> {
   );
 }
 
-export async function updatePassword(newPassword: string): Promise<void> {
-  const { password } = passwordInput.parse({ password: newPassword });
+export async function updatePassword(newPassword: string): Promise<{ error?: string }> {
+  const parsed = passwordInput.safeParse({ password: newPassword });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) return { error: error.message };
   revalidatePath("/", "layout");
+  return {};
 }
