@@ -51,6 +51,10 @@ export default async function RecuperarSenhaPage({
             </button>
           </form>
 
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Abra o link no mesmo dispositivo e navegador em que fez este pedido.
+          </p>
+
           <Link href="/login" className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground hover:underline">
             Voltar para o login
           </Link>
