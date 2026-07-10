@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signupInput } from "@/lib/validation/profile";
 import { uploadAvatarFile } from "@/lib/storage/avatar";
+import { headers } from "next/headers";
+import { resetRequestInput, passwordInput } from "@/lib/validation/auth";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -104,4 +106,34 @@ export async function logout() {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+export async function requestPasswordReset(formData: FormData): Promise<void> {
+  const parsed = resetRequestInput.safeParse({ email: String(formData.get("email") ?? "") });
+  if (!parsed.success) {
+    redirect(`/recuperar-senha?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
+  }
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const origin = `${proto}://${host}`;
+
+  const supabase = await createClient();
+  // Ignora o resultado de propósito: sempre mostra a mesma mensagem neutra (anti-enumeração).
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${origin}/api/auth/callback`,
+  });
+  redirect(
+    `/recuperar-senha?message=${encodeURIComponent(
+      "Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha."
+    )}`
+  );
+}
+
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { password } = passwordInput.parse({ password: newPassword });
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }
