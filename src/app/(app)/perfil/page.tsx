@@ -1,6 +1,7 @@
 import { getProfile } from "@/lib/data/profile";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { Reveal } from "@/components/effects/reveal";
+import { NewPasswordForm } from "@/components/auth/new-password-form";
 
 export default async function PerfilPage() {
   const profile = await getProfile();
@@ -15,6 +16,13 @@ export default async function PerfilPage() {
       </Reveal>
       <Reveal>
         <ProfileForm profile={profile} />
+      </Reveal>
+      <Reveal>
+        <div className="glass rounded-2xl border border-border p-6">
+          <h2 className="font-semibold">Trocar senha</h2>
+          <p className="mb-4 mt-1 text-sm text-muted-foreground">Defina uma nova senha de acesso.</p>
+          <NewPasswordForm mode="change" />
+        </div>
       </Reveal>
     </div>
   );

@@ -57,6 +57,12 @@ export default async function LoginPage({
               <Input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" required />
             </div>
 
+            <div className="text-right">
+              <Link href="/recuperar-senha" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+                Esqueceu a senha?
+              </Link>
+            </div>
+
             <div className="flex gap-2 pt-1">
               <button
                 formAction={login}
