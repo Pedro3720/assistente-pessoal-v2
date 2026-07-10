@@ -1,5 +1,5 @@
 import { Wallet, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
-import { getFinanceData, getBankStatement } from "@/lib/data/finance";
+import { getFinanceData, getBankStatement, getSubscriptions } from "@/lib/data/finance";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
@@ -8,6 +8,7 @@ import { CardManager } from "@/components/finance/card-manager";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
+import { SubscriptionsSection } from "@/components/finance/subscriptions-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { Reveal } from "@/components/effects/reveal";
 import { CountUp } from "@/components/effects/count-up";
@@ -42,9 +43,10 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const statement = selectedBankId
-    ? await getBankStatement(selectedBankId, year, month)
-    : null;
+  const [statement, subs] = await Promise.all([
+    selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
+    getSubscriptions(year, month),
+  ]);
 
   const byCat = new Map<string, { icon: string; total: number }>();
   for (const t of monthTransactions) {
@@ -103,6 +105,18 @@ export default async function FinancasPage({
       <Reveal stagger className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <BankManager banks={banks} />
         <CardManager cards={cards} banks={banks} />
+      </Reveal>
+
+      {/* assinaturas recorrentes */}
+      <Reveal>
+        <SubscriptionsSection
+          subscriptions={subs.subscriptions}
+          candidates={subs.candidates}
+          monthlyTotal={subs.monthlyTotal}
+          categories={categories}
+          banks={banks}
+          cards={cards}
+        />
       </Reveal>
 
       {/* despesas por categoria + transações */}
