@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { monthBounds } from "@/lib/dates";
+import { monthBounds, shiftMonth } from "@/lib/dates";
 import type {
   Bank,
   BankWithBalance,
@@ -7,6 +7,8 @@ import type {
   CardWithInvoice,
   Category,
   Transaction,
+  Subscription,
+  SubscriptionCandidate,
 } from "@/types/finance";
 
 const num = (v: unknown) => Number(v) || 0;
@@ -168,3 +170,157 @@ export async function getBankStatement(bankId: number, year: number, month: numb
 }
 
 export type BankStatement = Awaited<ReturnType<typeof getBankStatement>>;
+
+// ─── Assinaturas ──────────────────────────────────────────
+
+/** Normaliza a descrição para agrupar cobranças iguais. */
+function normalizeDesc(desc: string): string {
+  return desc
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\(\d+\/\d+\)\s*$/, "") // remove sufixo de parcela "(1/12)"
+    .replace(/\s+/g, " ");
+}
+
+function median(nums: number[]): number {
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/** Valor que mais se repete (usado para o dia de cobrança). */
+function mode(nums: number[]): number {
+  const counts = new Map<number, number>();
+  let best = nums[0];
+  let bestCount = 0;
+  for (const n of nums) {
+    const c = (counts.get(n) ?? 0) + 1;
+    counts.set(n, c);
+    if (c > bestCount) {
+      bestCount = c;
+      best = n;
+    }
+  }
+  return best;
+}
+
+type TxSlim = Pick<
+  Transaction,
+  "description" | "amount" | "occurred_on" | "category_id" | "bank_id" | "card_id"
+>;
+
+/** Deriva candidatos a assinatura a partir do histórico de despesas. */
+function detectCandidates(txs: TxSlim[], existing: Subscription[]): SubscriptionCandidate[] {
+  const existingKeys = new Set(existing.map((s) => normalizeDesc(s.name)));
+
+  type Group = {
+    key: string;
+    latestName: string;
+    latestDate: string;
+    latestAmount: number;
+    latestCategory: number | null;
+    latestBank: number | null;
+    latestCard: number | null;
+    months: Set<string>;
+    days: number[];
+    amounts: number[];
+  };
+  const groups = new Map<string, Group>();
+
+  for (const t of txs) {
+    const key = normalizeDesc(t.description);
+    if (!key) continue;
+    const amount = num(t.amount);
+    const monthKey = t.occurred_on.slice(0, 7); // YYYY-MM
+    const day = Number(t.occurred_on.slice(8, 10));
+    let g = groups.get(key);
+    if (!g) {
+      g = {
+        key,
+        latestName: t.description.trim(),
+        latestDate: t.occurred_on,
+        latestAmount: amount,
+        latestCategory: t.category_id,
+        latestBank: t.bank_id,
+        latestCard: t.card_id,
+        months: new Set(),
+        days: [],
+        amounts: [],
+      };
+      groups.set(key, g);
+    }
+    g.months.add(monthKey);
+    g.days.push(day);
+    g.amounts.push(amount);
+    if (t.occurred_on >= g.latestDate) {
+      g.latestName = t.description.trim();
+      g.latestDate = t.occurred_on;
+      g.latestAmount = amount;
+      g.latestCategory = t.category_id;
+      g.latestBank = t.bank_id;
+      g.latestCard = t.card_id;
+    }
+  }
+
+  const out: SubscriptionCandidate[] = [];
+  for (const g of groups.values()) {
+    if (existingKeys.has(g.key)) continue;
+    if (g.months.size < 3) continue;
+    const med = median(g.amounts);
+    const spread = Math.max(...g.amounts) - Math.min(...g.amounts);
+    if (med <= 0 || spread > 0.15 * med) continue;
+    out.push({
+      key: g.key,
+      name: g.latestName,
+      amount: g.latestAmount,
+      billing_day: mode(g.days),
+      months: g.months.size,
+      category_id: g.latestCategory,
+      bank_id: g.latestBank,
+      card_id: g.latestCard,
+    });
+  }
+  out.sort((a, b) => b.months - a.months || b.amount - a.amount);
+  return out.slice(0, 5);
+}
+
+/**
+ * Assinaturas do usuário + candidatos detectados nos últimos 6 meses de despesas
+ * (exclui pagamento de fatura e transferência) + total mensal das ativas.
+ */
+export async function getSubscriptions(year: number, month: number) {
+  const supabase = await createClient();
+  const from = shiftMonth(year, month, -5); // janela de 6 meses (inclui o atual)
+  const { start } = monthBounds(from.year, from.month);
+  const { end } = monthBounds(year, month);
+
+  const [subsRes, txRes] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .order("active", { ascending: false })
+      .order("amount", { ascending: false }),
+    supabase
+      .from("transactions")
+      .select("description,amount,occurred_on,category_id,bank_id,card_id")
+      .eq("type", "expense")
+      .eq("is_card_payment", false)
+      .eq("is_transfer", false)
+      .gte("occurred_on", start)
+      .lte("occurred_on", end)
+      .order("occurred_on", { ascending: true }),
+  ]);
+  if (subsRes.error) throw new Error(subsRes.error.message);
+  if (txRes.error) throw new Error(txRes.error.message);
+
+  const subscriptions = (subsRes.data ?? []) as Subscription[];
+  const txs = (txRes.data ?? []) as TxSlim[];
+
+  const monthlyTotal = subscriptions
+    .filter((s) => s.active)
+    .reduce((sum, s) => sum + num(s.amount), 0);
+
+  return { subscriptions, candidates: detectCandidates(txs, subscriptions), monthlyTotal };
+}
+
+export type SubscriptionsData = Awaited<ReturnType<typeof getSubscriptions>>;
