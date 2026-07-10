@@ -11,6 +11,7 @@ import {
   categoryInput,
   installmentInput,
   transferInput,
+  subscriptionInput,
   type TransactionInput,
 } from "@/lib/validation/finance";
 import { DEFAULT_CATEGORIES } from "@/lib/finance/defaults";
@@ -259,6 +260,32 @@ export async function bulkCreateTransactions(raw: unknown) {
   const { supabase, userId } = await ctx();
   const rows = arr.map((t) => ({ ...normalizeTx(t), user_id: userId }));
   const { error } = await supabase.from("transactions").insert(rows);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+// ─── Assinaturas ──────────────────────────────────────────
+export async function createSubscription(raw: unknown) {
+  const input = subscriptionInput.parse(raw);
+  const { supabase, userId } = await ctx();
+  const { error } = await supabase
+    .from("subscriptions")
+    .insert({ ...input, user_id: userId });
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function updateSubscription(id: number, raw: unknown) {
+  const input = subscriptionInput.partial().parse(raw);
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("subscriptions").update(input).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function deleteSubscription(id: number) {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("subscriptions").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidate();
 }
