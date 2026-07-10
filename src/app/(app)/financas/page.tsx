@@ -45,7 +45,11 @@ export default async function FinancasPage({
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
   const [statement, subs] = await Promise.all([
     selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
-    getSubscriptions(year, month),
+    getSubscriptions(year, month).catch(() => ({
+      subscriptions: [],
+      candidates: [],
+      monthlyTotal: 0,
+    })),
   ]);
 
   const byCat = new Map<string, { icon: string; total: number }>();

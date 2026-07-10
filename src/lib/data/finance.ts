@@ -306,9 +306,11 @@ export async function getSubscriptions(year: number, month: number) {
       .eq("type", "expense")
       .eq("is_card_payment", false)
       .eq("is_transfer", false)
+      .eq("installments", 1)
       .gte("occurred_on", start)
       .lte("occurred_on", end)
-      .order("occurred_on", { ascending: true }),
+      .order("occurred_on", { ascending: true })
+      .order("id", { ascending: true }),
   ]);
   if (subsRes.error) throw new Error(subsRes.error.message);
   if (txRes.error) throw new Error(txRes.error.message);
