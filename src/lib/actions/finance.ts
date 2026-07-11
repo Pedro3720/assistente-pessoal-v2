@@ -352,7 +352,11 @@ export async function realizePlannedItem(id: number) {
     .from("planned_items")
     .update({ transaction_id: (tx as { id: number }).id })
     .eq("id", id);
-  if (linkErr) throw new Error(linkErr.message);
+  if (linkErr) {
+    // compensa: remove a transação recém-criada para não deixar órfã
+    await supabase.from("transactions").delete().eq("id", (tx as { id: number }).id);
+    throw new Error(linkErr.message);
+  }
   revalidate();
 }
 
