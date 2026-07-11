@@ -80,3 +80,26 @@ export interface SubscriptionCandidate {
   bank_id: number | null;
   card_id: number | null;
 }
+
+export interface PlannedItem {
+  id: number;
+  description: string;
+  amount: number;
+  type: TxType;
+  category_id: number | null;
+  bank_id: number | null;
+  card_id: number | null;
+  due_date: string;              // YYYY-MM-DD (data prevista)
+  transaction_id: number | null; // null = a realizar; preenchido = realizado
+}
+
+/** Despesa prevista sugerida a partir de uma assinatura ativa (#7). */
+export interface PlanSuggestion {
+  key: string;              // nome normalizado (chave de dedupe)
+  name: string;             // nome da assinatura
+  amount: number;           // valor mensal da assinatura
+  due_date: string;         // mês visualizado + billing_day (com clamp do dia)
+  category_id: number | null;
+  bank_id: number | null;
+  card_id: number | null;
+}
