@@ -12,8 +12,10 @@ import {
   installmentInput,
   transferInput,
   subscriptionInput,
+  plannedItemInput,
   type TransactionInput,
 } from "@/lib/validation/finance";
+import type { PlannedItem } from "@/types/finance";
 import { DEFAULT_CATEGORIES } from "@/lib/finance/defaults";
 
 async function ctx() {
@@ -286,6 +288,86 @@ export async function updateSubscription(id: number, raw: unknown) {
 export async function deleteSubscription(id: number) {
   const { supabase } = await ctx();
   const { error } = await supabase.from("subscriptions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+// ─── Planejamento mensal ──────────────────────────────────
+export async function createPlannedItem(raw: unknown) {
+  const input = plannedItemInput.parse(raw);
+  const { supabase, userId } = await ctx();
+  const { error } = await supabase
+    .from("planned_items")
+    .insert({ ...input, user_id: userId });
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function updatePlannedItem(id: number, raw: unknown) {
+  const input = plannedItemInput.partial().parse(raw);
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("planned_items").update(input).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+export async function deletePlannedItem(id: number) {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("planned_items").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+/** Lança a transação real a partir do item e vincula (transaction_id). */
+export async function realizePlannedItem(id: number) {
+  const { supabase, userId } = await ctx();
+  const { data, error: readErr } = await supabase
+    .from("planned_items")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (readErr) throw new Error(readErr.message);
+  const item = data as PlannedItem;
+  if (item.transaction_id != null) return; // já realizado
+
+  const txInput = normalizeTx({
+    description: item.description,
+    amount: Number(item.amount),
+    type: item.type,
+    category_id: item.category_id,
+    bank_id: item.bank_id,
+    card_id: item.card_id,
+    is_card_payment: false,
+    occurred_on: item.due_date,
+  });
+
+  const { data: tx, error: insErr } = await supabase
+    .from("transactions")
+    .insert({ ...txInput, user_id: userId })
+    .select("id")
+    .single();
+  if (insErr) throw new Error(insErr.message);
+
+  const { error: linkErr } = await supabase
+    .from("planned_items")
+    .update({ transaction_id: (tx as { id: number }).id })
+    .eq("id", id);
+  if (linkErr) throw new Error(linkErr.message);
+  revalidate();
+}
+
+/** Desfaz: remove a transação vinculada (a FK on delete set null volta o item a pendente). */
+export async function unrealizePlannedItem(id: number) {
+  const { supabase } = await ctx();
+  const { data, error: readErr } = await supabase
+    .from("planned_items")
+    .select("transaction_id")
+    .eq("id", id)
+    .single();
+  if (readErr) throw new Error(readErr.message);
+  const txId = (data as { transaction_id: number | null }).transaction_id;
+  if (txId == null) return;
+  const { error } = await supabase.from("transactions").delete().eq("id", txId);
   if (error) throw new Error(error.message);
   revalidate();
 }
