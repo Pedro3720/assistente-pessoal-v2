@@ -69,3 +69,14 @@ export const subscriptionInput = z.object({
   active: z.boolean().default(true),
 });
 export type SubscriptionInput = z.infer<typeof subscriptionInput>;
+
+export const plannedItemInput = z.object({
+  description: z.string().trim().min(1, "Descrição obrigatória"),
+  amount: z.number().positive("O valor deve ser maior que zero"),
+  type: txTypeSchema,
+  category_id: z.number().int().nullable().default(null),
+  bank_id: z.number().int().nullable().default(null),
+  card_id: z.number().int().nullable().default(null),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+});
+export type PlannedItemInput = z.infer<typeof plannedItemInput>;
