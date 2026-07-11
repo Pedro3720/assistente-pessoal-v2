@@ -26,7 +26,6 @@ export function MonthNav({ label, offset }: { label: string; offset: number }) {
       </span>
       <button
         onClick={() => go(offset + 1)}
-        disabled={offset >= 0}
         className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-30"
         aria-label="Próximo mês"
       >

@@ -1,5 +1,5 @@
 import { Wallet, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
-import { getFinanceData, getBankStatement, getSubscriptions } from "@/lib/data/finance";
+import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
@@ -9,6 +9,7 @@ import { CategoryManagerButton } from "@/components/finance/category-manager-but
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
 import { SubscriptionsSection } from "@/components/finance/subscriptions-section";
+import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { Reveal } from "@/components/effects/reveal";
 import { CountUp } from "@/components/effects/count-up";
@@ -19,7 +20,7 @@ export default async function FinancasPage({
   searchParams: Promise<{ m?: string; conta?: string }>;
 }) {
   const { m, conta } = await searchParams;
-  const offset = Math.min(0, Number(m) || 0); // não navega para o futuro
+  const offset = Number(m) || 0; // permite meses futuros (planejamento)
 
   const { year: cy, month: cm } = currentYearMonth();
   const { year, month } = shiftMonth(cy, cm, offset);
@@ -43,12 +44,17 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs] = await Promise.all([
+  const [statement, subs, plan] = await Promise.all([
     selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
     getSubscriptions(year, month).catch(() => ({
       subscriptions: [],
       candidates: [],
       monthlyTotal: 0,
+    })),
+    getMonthlyPlan(year, month).catch(() => ({
+      items: [],
+      suggestions: [],
+      totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
     })),
   ]);
 
@@ -120,6 +126,21 @@ export default async function FinancasPage({
           categories={categories}
           banks={banks}
           cards={cards}
+        />
+      </Reveal>
+
+      {/* planejamento mensal */}
+      <Reveal>
+        <PlanningSection
+          items={plan.items}
+          suggestions={plan.suggestions}
+          previstoReceber={plan.totals.previstoReceber}
+          previstoPagar={plan.totals.previstoPagar}
+          saldoPrevisto={plan.totals.saldoPrevisto}
+          categories={categories}
+          banks={banks}
+          cards={cards}
+          defaultDate={defaultDate}
         />
       </Reveal>
 
