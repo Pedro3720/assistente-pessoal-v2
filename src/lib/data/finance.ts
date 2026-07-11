@@ -9,6 +9,8 @@ import type {
   Transaction,
   Subscription,
   SubscriptionCandidate,
+  PlannedItem,
+  PlanSuggestion,
 } from "@/types/finance";
 
 const num = (v: unknown) => Number(v) || 0;
@@ -326,3 +328,80 @@ export async function getSubscriptions(year: number, month: number) {
 }
 
 export type SubscriptionsData = Awaited<ReturnType<typeof getSubscriptions>>;
+
+// ─── Planejamento mensal ──────────────────────────────────
+
+/**
+ * Itens previstos do mês (due_date no mês) + sugestões vindas das assinaturas
+ * ativas ainda não previstas neste mês + totais previstos.
+ * Reusa normalizeDesc (seção Assinaturas) para deduplicar as sugestões.
+ * Fallback vazio se a tabela `planned_items` ainda não existir (não quebra a página).
+ */
+export async function getMonthlyPlan(year: number, month: number) {
+  const supabase = await createClient();
+  const { start, end } = monthBounds(year, month);
+
+  const [itemsRes, subsRes] = await Promise.all([
+    supabase
+      .from("planned_items")
+      .select("*")
+      .gte("due_date", start)
+      .lte("due_date", end)
+      .order("transaction_id", { ascending: true, nullsFirst: true })
+      .order("due_date", { ascending: true }),
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("active", true)
+      .order("amount", { ascending: false }),
+  ]);
+
+  const emptyTotals = { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 };
+  if (itemsRes.error) {
+    return { items: [] as PlannedItem[], suggestions: [] as PlanSuggestion[], totals: emptyTotals };
+  }
+
+  const items = (itemsRes.data ?? []) as PlannedItem[];
+  const subs = subsRes.error ? [] : ((subsRes.data ?? []) as Subscription[]);
+
+  // dedupe: assinatura cujo nome já existe como item previsto neste mês não vira sugestão
+  const plannedKeys = new Set(items.map((i) => normalizeDesc(i.description)));
+  const lastDay = Number(end.slice(8, 10));
+  const suggestions: PlanSuggestion[] = subs
+    .filter((s) => !plannedKeys.has(normalizeDesc(s.name)))
+    .map((s) => {
+      const day = Math.min(s.billing_day ?? 1, lastDay);
+      const due_date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      return {
+        key: normalizeDesc(s.name),
+        name: s.name,
+        amount: num(s.amount),
+        due_date,
+        category_id: s.category_id,
+        bank_id: s.bank_id,
+        card_id: s.card_id,
+      };
+    });
+
+  let previstoReceber = 0;
+  let previstoPagar = 0;
+  let pendentes = 0;
+  for (const i of items) {
+    if (i.type === "income") previstoReceber += num(i.amount);
+    else previstoPagar += num(i.amount);
+    if (i.transaction_id === null) pendentes += 1;
+  }
+
+  return {
+    items,
+    suggestions,
+    totals: {
+      previstoReceber,
+      previstoPagar,
+      saldoPrevisto: previstoReceber - previstoPagar,
+      pendentes,
+    },
+  };
+}
+
+export type MonthlyPlanData = Awaited<ReturnType<typeof getMonthlyPlan>>;
