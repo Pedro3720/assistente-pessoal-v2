@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, Overpass_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
@@ -15,8 +15,8 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-// Números/valores — IBM Plex Mono (tabular, mais suave que JetBrains)
-const plexMono = IBM_Plex_Mono({
+// Números/valores — Overpass Mono (tabular; zero liso, sem ponto/corte no meio)
+const overpassMono = Overpass_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-mono",
@@ -35,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${plexMono.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${overpassMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
