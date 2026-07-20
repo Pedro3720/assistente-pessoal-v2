@@ -5,6 +5,7 @@ export interface Suggestion {
   title: string;
   description: string | null;
   image_url: string | null;
+  image_urls: string[];
   status: SuggestionStatus;
   created_at: string;
 }

@@ -9,6 +9,12 @@ import { adminSetSuggestionStatus, adminDeleteSuggestion } from "@/lib/actions/s
 import { formatDateBR } from "@/lib/dates";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 
+/** Imagens de uma sugestão (usa image_urls; cai para image_url em linhas antigas). */
+function imagesOf(s: SuggestionWithAuthor): string[] {
+  if (s.image_urls?.length) return s.image_urls;
+  return s.image_url ? [s.image_url] : [];
+}
+
 export function AdminSuggestionsView({ suggestions }: { suggestions: SuggestionWithAuthor[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<"todas" | "aberto" | "feito">("todas");
@@ -79,10 +85,14 @@ export function AdminSuggestionsView({ suggestions }: { suggestions: SuggestionW
                 </button>
               </div>
             </div>
-            {s.image_url && (
-              <a href={s.image_url} target="_blank" rel="noopener noreferrer" className="mt-3 block">
-                <Image src={s.image_url} alt="print" width={480} height={270} className="max-h-60 w-auto rounded-lg border border-border object-contain" unoptimized />
-              </a>
+            {imagesOf(s).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {imagesOf(s).map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                    <Image src={url} alt={`print ${i + 1}`} width={480} height={270} className="max-h-60 w-auto rounded-lg border border-border object-contain" unoptimized />
+                  </a>
+                ))}
+              </div>
             )}
           </div>
         ))

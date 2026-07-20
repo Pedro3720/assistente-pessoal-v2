@@ -7,7 +7,7 @@ export async function getSuggestions(): Promise<Suggestion[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("suggestions")
-    .select("id, title, description, image_url, status, created_at")
+    .select("id, title, description, image_url, image_urls, status, created_at")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Suggestion[];
@@ -19,7 +19,7 @@ export async function getAllSuggestions(): Promise<SuggestionWithAuthor[]> {
 
   const { data, error } = await admin
     .from("suggestions")
-    .select("id, user_id, title, description, image_url, status, created_at")
+    .select("id, user_id, title, description, image_url, image_urls, status, created_at")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as (Suggestion & { user_id: string })[];
@@ -39,6 +39,7 @@ export async function getAllSuggestions(): Promise<SuggestionWithAuthor[]> {
     title: r.title,
     description: r.description,
     image_url: r.image_url,
+    image_urls: r.image_urls,
     status: r.status,
     created_at: r.created_at,
     author_email: emailById.get(r.user_id) || "sem e-mail",

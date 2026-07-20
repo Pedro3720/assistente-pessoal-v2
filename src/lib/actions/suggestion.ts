@@ -19,16 +19,19 @@ async function ctx() {
 export async function createSuggestion(formData: FormData): Promise<void> {
   const { supabase, userId } = await ctx();
 
-  let image_url: string | null = null;
-  const file = formData.get("image_file");
-  if (file instanceof File && file.size > 0) {
-    image_url = await uploadImageFile(supabase, "suggestions", userId, file);
+  const files = formData
+    .getAll("image_files")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  const image_urls: string[] = [];
+  for (const file of files) {
+    image_urls.push(await uploadImageFile(supabase, "suggestions", userId, file));
   }
 
   const input = suggestionInput.parse({
     title: formData.get("title"),
     description: (formData.get("description") as string) || null,
-    image_url,
+    image_url: image_urls[0] ?? null,
+    image_urls,
   });
 
   const { error } = await supabase.from("suggestions").insert({ ...input, user_id: userId });
