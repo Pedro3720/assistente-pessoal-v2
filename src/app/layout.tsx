@@ -25,7 +25,7 @@ const overpassMono = Overpass_Mono({
 
 export const metadata: Metadata = {
   title: "Zênite Assistente Pessoal",
-  description: "Agenda, finanças, tarefas e mais — em um só lugar.",
+  description: "Agenda, finanças, tarefas e mais, tudo em um só lugar.",
 };
 
 export default function RootLayout({

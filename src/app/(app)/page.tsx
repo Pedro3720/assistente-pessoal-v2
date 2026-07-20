@@ -71,7 +71,7 @@ export default async function Dashboard() {
       {/* header */}
       <Reveal>
         <p className="mb-1 text-sm text-muted-foreground">
-          {greeting}, {displayName} —
+          {greeting}, {displayName}
         </p>
         <h1 className="text-gradient text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Seu Painel
@@ -238,7 +238,7 @@ function DashboardError({ message }: { message: string }) {
         <p className="font-semibold">Não foi possível montar o painel.</p>
         <p className="mt-1 font-mono text-xs opacity-80">{message}</p>
         <p className="mt-3">
-          O painel lê as tabelas de Finanças, Calendário e Tarefas — verifique se as três migrações
+          O painel lê as tabelas de Finanças, Calendário e Tarefas. Verifique se as três migrações
           já foram rodadas no SQL Editor do Supabase.
         </p>
       </div>

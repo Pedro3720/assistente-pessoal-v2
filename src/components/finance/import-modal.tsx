@@ -195,7 +195,7 @@ export function ImportModal({
             <h2 className="text-base font-semibold">Importar Extrato</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {step === "upload" && "Selecione um arquivo OFX ou CSV do seu banco"}
-              {step === "categorize" && `${rows.length} transações em "${fileName}" — revise e importe`}
+              {step === "categorize" && `${rows.length} transações em "${fileName}": revise e importe`}
               {step === "done" && `${importedCount} transações importadas`}
             </p>
           </div>

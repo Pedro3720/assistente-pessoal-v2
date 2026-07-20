@@ -41,7 +41,7 @@ export async function getAllSuggestions(): Promise<SuggestionWithAuthor[]> {
     image_url: r.image_url,
     status: r.status,
     created_at: r.created_at,
-    author_email: emailById.get(r.user_id) || "—",
+    author_email: emailById.get(r.user_id) || "sem e-mail",
     author_name: nameById.get(r.user_id) ?? null,
   }));
 }

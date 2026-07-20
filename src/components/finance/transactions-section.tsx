@@ -239,7 +239,7 @@ export function TransactionsSection({
       </div>
 
       {fullOpen && (
-        <Modal size="full" title={`Transações — ${monthLabel}`} onClose={() => setFullOpen(false)}>
+        <Modal size="full" title={`Transações de ${monthLabel}`} onClose={() => setFullOpen(false)}>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {filterTabs}
             <button
@@ -401,7 +401,7 @@ export function TransactionsSection({
                   {cards.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
-                      {isCardPayment ? ` — fatura ${formatBRL(c.invoice)}` : ""}
+                      {isCardPayment ? ` (fatura ${formatBRL(c.invoice)})` : ""}
                     </option>
                   ))}
                 </select>
@@ -416,7 +416,7 @@ export function TransactionsSection({
                 onChange={(e) => setBankId(e.target.value)}
                 className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm disabled:opacity-50"
               >
-                <option value="">{isPurchase ? "— compra vai para a fatura —" : "Sem conta"}</option>
+                <option value="">{isPurchase ? "compra vai para a fatura" : "Sem conta"}</option>
                 {banks.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.icon} {b.name}
