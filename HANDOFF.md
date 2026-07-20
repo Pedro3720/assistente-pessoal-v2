@@ -26,12 +26,12 @@
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
 ## 2. Estado atual (2026-07-10)
-- **`main` = `origin/main` = commit `4232454`** (publicado na Vercel).
+- **`main` = `origin/main` = commit `c53fa4c`** (publicado na Vercel).
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
-- **Migrações aplicadas no Supabase:** `0000`–`0010` rodadas. ⚠️ **FALTA rodar a `0011_planned_items.sql`**
-  (planejamento mensal) + a config do #14 (Redirect URLs) — ver seção 4.
+- **Migrações aplicadas no Supabase:** `0000`–`0011` rodadas. ⚠️ **FALTA rodar a `0012_suggestion_images.sql`**
+  (várias imagens por sugestão) + a config do #14 (Redirect URLs) — ver seção 4.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -84,23 +84,35 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
   existir), `create/update/delete/realize/unrealizePlannedItem` (actions). **Obs:** implementada por uma
   sessão paralela (empurrada ao GitHub) e **adotada**; review da branch corrigiu duplo-clique no Realizar
   (update atômico) e dedup de sugestões. Specs/planos `2026-07-10-planejamento-mensal*`.
+- **Onda 6 (FEITA, no ar — falta migração 0012):** lote de melhorias de UX (branch `feat/melhorias-ux`).
+  **#3** fonte dos números → Overpass Mono (zero liso, sem ponto/corte) em `layout.tsx`. **#16** remoção dos
+  travessões (—) dos textos visíveis. **#23** cartões de resumo do Dashboard alinhados em qualquer largura
+  (rótulo com altura reservada). **#20** sidebar minimizável no desktop (botão "Recolher", `md:w-16`, só
+  ícones + tooltip, preferência em localStorage). **#18** agenda lateral do calendário mostra só eventos de
+  hoje em diante (grid mantém todos). **#17** sugestões com **várias imagens** + prévia antes de enviar
+  (migr. 0012 add `image_urls text[]`). *Obs: mudanças visuais não puderam ser conferidas por screenshot
+  (ferramenta travando) — o usuário valida no ar; a fonte do #3 é troca de 1 linha se não agradar.*
 
 ### 3.4 SUGESTÕES QUE FALTAM (próximas ondas)
-- **#10** **Notificações de lembretes** (a maior/mais complexa — decidir o meio: push/e-mail; deixar por último).
+- **#10** **Notificações de lembretes** — decidido: **notificação no navegador** (Web Notifications/Push),
+  **sem e-mail**; futuro: push no app mobile. É a maior; brainstorming → spec → plano → SDD.
 Cada uma: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
-1. **Planejamento (#11) — rodar `supabase/migrations/20260701000011_planned_items.sql`** no Supabase → SQL
-   Editor. Sem ela, a seção de planejamento em /financas aparece vazia (fallback gracioso — não quebra a
-   página). *Confirmar: em /financas, criar uma "conta prevista"; se salvar, a 0011 rodou.*
-2. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
+1. **Sugestões (#17) — rodar `supabase/migrations/20260701000012_suggestion_images.sql`** no Supabase → SQL
+   Editor. Sem ela, anexar imagem na sugestão dá erro (coluna `image_urls` não existe).
+2. **Verificar no ar a Onda 6** (fonte #3, sidebar #20, alinhamento #23, agenda #18) — não deu pra conferir
+   por screenshot aqui. Se o zero da fonte não agradar, é troca de 1 linha em `layout.tsx`.
+3. **Sugestões — no `/admin/sugestoes`:** excluir a **#19** e a **#22**; marcar como "feito" as entregues
+   (#3, #16, #17, #18, #20, #23 e as anteriores #7/#8/#11/#14).
+4. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
    **Site URL** (domínio Vercel) e adicionar aos **Redirect URLs** o `…/api/auth/callback` (produção) **e**
    `http://localhost:3000/api/auth/callback` (local). Sem isso o link do e-mail cai no Site URL e o fluxo
    quebra. Os e-mails saem pelo SMTP padrão do Supabase (limite baixo no free — ok p/ uso pessoal).
    *Confirmar: em /login → "Esqueceu a senha?" → pedir reset → abrir o link no mesmo dispositivo → definir
    nova senha → cai logado. E em /perfil → "Trocar senha".*
 - (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY; migrações
-  0000–0010 rodadas.)
+  0000–0011 rodadas.)
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
