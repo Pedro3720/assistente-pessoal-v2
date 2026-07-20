@@ -26,12 +26,12 @@
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
 ## 2. Estado atual (2026-07-10)
-- **`main` = `origin/main` = commit `6bf8402`** (publicado na Vercel).
+- **`main` = `origin/main` = commit `4232454`** (publicado na Vercel).
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
-- **Migrações aplicadas no Supabase:** `0000`–`0010` (todas rodadas pelo usuário). Não há migração pendente.
-  ⚠️ Pendência de config do #14 (Redirect URLs) — ver seção 4.
+- **Migrações aplicadas no Supabase:** `0000`–`0010` rodadas. ⚠️ **FALTA rodar a `0011_planned_items.sql`**
+  (planejamento mensal) + a config do #14 (Redirect URLs) — ver seção 4.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -75,13 +75,25 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
   e `/api/auth/*` públicos, `/redefinir-senha` protegido. **Escolha: mesmo-dispositivo** (fluxo PKCE; há aviso
   na tela). Specs/planos `2026-07-10-recuperacao-senha*`.
 
+- **Onda 5 (FEITA, no ar — falta migração 0011):** **planejamento mensal** (#11). Tabela `planned_items`
+  (migr. 0011); **seção dentro de /financas** (não é aba própria), abaixo de Assinaturas. Lista **contas
+  previstas** (a pagar/receber) do mês (mês deriva de `due_date`); **Realizar** lança a transação real e
+  vincula via `transaction_id` (FK `on delete set null` = status: null=pendente, preenchido=realizado);
+  **Desfazer** apaga a transação. Assinaturas ativas (#7) viram **sugestões** ("+adicionar"). MonthNav do
+  /financas passou a permitir **meses futuros**. `getMonthlyPlan` (data, com fallback vazio se a tabela não
+  existir), `create/update/delete/realize/unrealizePlannedItem` (actions). **Obs:** implementada por uma
+  sessão paralela (empurrada ao GitHub) e **adotada**; review da branch corrigiu duplo-clique no Realizar
+  (update atômico) e dedup de sugestões. Specs/planos `2026-07-10-planejamento-mensal*`.
+
 ### 3.4 SUGESTÕES QUE FALTAM (próximas ondas)
-- **#11** Aba de **planejamento mensal** (gastos/ganhos previstos ainda não realizados).
 - **#10** **Notificações de lembretes** (a maior/mais complexa — decidir o meio: push/e-mail; deixar por último).
-Sugestão de ordem: #11 → #10. Cada uma: brainstorming → spec → plano → SDD → merge → push.
+Cada uma: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
-1. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
+1. **Planejamento (#11) — rodar `supabase/migrations/20260701000011_planned_items.sql`** no Supabase → SQL
+   Editor. Sem ela, a seção de planejamento em /financas aparece vazia (fallback gracioso — não quebra a
+   página). *Confirmar: em /financas, criar uma "conta prevista"; se salvar, a 0011 rodou.*
+2. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
    **Site URL** (domínio Vercel) e adicionar aos **Redirect URLs** o `…/api/auth/callback` (produção) **e**
    `http://localhost:3000/api/auth/callback` (local). Sem isso o link do e-mail cai no Site URL e o fluxo
    quebra. Os e-mails saem pelo SMTP padrão do Supabase (limite baixo no free — ok p/ uso pessoal).
