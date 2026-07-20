@@ -73,6 +73,8 @@ export function CalendarView({
   }, [filtered]);
 
   const sortedDates = useMemo(() => [...byDate.keys()].sort(), [byDate]);
+  // Agenda lateral: só datas de hoje em diante (eventos passados ficam só no grid).
+  const agendaDates = useMemo(() => sortedDates.filter((d) => d >= today), [sortedDates, today]);
 
   const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -231,13 +233,17 @@ export function CalendarView({
                 </button>
               ))}
             </div>
-            {sortedDates.length === 0 ? (
+            {agendaDates.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                {search || catFilter ? "Nenhum evento encontrado." : "Nenhum evento neste mês."}
+                {search || catFilter
+                  ? "Nenhum evento encontrado."
+                  : sortedDates.length > 0
+                    ? "Os eventos deste mês já passaram."
+                    : "Nenhum evento neste mês."}
               </p>
             ) : (
               <div className="max-h-[500px] space-y-4 overflow-y-auto">
-                {sortedDates.map((dateStr) => (
+                {agendaDates.map((dateStr) => (
                   <div key={dateStr}>
                     <p className="mb-1.5 text-xs font-medium text-muted-foreground">{formatDateBR(dateStr)}</p>
                     {byDate.get(dateStr)!.map((o) => (
