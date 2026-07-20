@@ -119,7 +119,7 @@ export default async function Dashboard() {
                   currency={s.currency}
                   className={`block text-2xl font-semibold leading-none tracking-tight ${s.tone}`}
                 />
-                <p className="mt-2 text-xs text-muted-foreground">{s.label}</p>
+                <p className="mt-2 flex min-h-8 items-start text-xs leading-tight text-muted-foreground">{s.label}</p>
               </div>
             </Link>
           );
