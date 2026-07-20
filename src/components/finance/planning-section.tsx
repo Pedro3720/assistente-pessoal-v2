@@ -68,6 +68,7 @@ export function PlanningSection({
   const [categoryId, setCategoryId] = useState("");
   const [pay, setPay] = useState("");
   const [saving, setSaving] = useState(false);
+  const [realizingId, setRealizingId] = useState<number | null>(null);
 
   const catById = new Map(categories.map((c) => [c.id, c]));
   const bankById = new Map(banks.map((b) => [b.id, b]));
@@ -147,12 +148,16 @@ export function PlanningSection({
   }
 
   async function realize(i: PlannedItem) {
+    if (realizingId != null) return; // evita duplo clique → transação duplicada
+    setRealizingId(i.id);
     try {
       await realizePlannedItem(i.id);
       toast.success("Lançado em Finanças.");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao realizar");
+    } finally {
+      setRealizingId(null);
     }
   }
 
@@ -263,6 +268,7 @@ export function PlanningSection({
                 cat={i.category_id ? catById.get(i.category_id) ?? null : null}
                 payLabel={payLabel(i)}
                 onRealize={() => realize(i)}
+                realizing={realizingId === i.id}
                 onEdit={() => openEdit(i)}
                 onRemove={() => remove(i)}
               />
@@ -406,6 +412,7 @@ function PlanRow({
   cat,
   payLabel,
   onRealize,
+  realizing = false,
   onUnrealize,
   onEdit,
   onRemove,
@@ -415,6 +422,7 @@ function PlanRow({
   cat: Category | null;
   payLabel: string | null;
   onRealize?: () => void;
+  realizing?: boolean;
   onUnrealize?: () => void;
   onEdit?: () => void;
   onRemove: () => void;
@@ -457,7 +465,8 @@ function PlanRow({
         {onRealize && (
           <button
             onClick={onRealize}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-accent"
+            disabled={realizing}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-accent disabled:opacity-40"
             title="Realizar (lançar em Finanças)"
           >
             <Check className="h-4 w-4" />

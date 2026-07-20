@@ -364,24 +364,27 @@ export async function getMonthlyPlan(year: number, month: number) {
   const items = (itemsRes.data ?? []) as PlannedItem[];
   const subs = subsRes.error ? [] : ((subsRes.data ?? []) as Subscription[]);
 
-  // dedupe: assinatura cujo nome já existe como item previsto neste mês não vira sugestão
-  const plannedKeys = new Set(items.map((i) => normalizeDesc(i.description)));
+  // dedupe: assinatura cujo nome já existe como item previsto neste mês não vira sugestão;
+  // e duas assinaturas com o mesmo nome normalizado geram só uma sugestão (evita key duplicada).
+  const seen = new Set(items.map((i) => normalizeDesc(i.description)));
   const lastDay = Number(end.slice(8, 10));
-  const suggestions: PlanSuggestion[] = subs
-    .filter((s) => !plannedKeys.has(normalizeDesc(s.name)))
-    .map((s) => {
-      const day = Math.min(s.billing_day ?? 1, lastDay);
-      const due_date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      return {
-        key: normalizeDesc(s.name),
-        name: s.name,
-        amount: num(s.amount),
-        due_date,
-        category_id: s.category_id,
-        bank_id: s.bank_id,
-        card_id: s.card_id,
-      };
+  const suggestions: PlanSuggestion[] = [];
+  for (const s of subs) {
+    const key = normalizeDesc(s.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const day = Math.min(s.billing_day ?? 1, lastDay);
+    const due_date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    suggestions.push({
+      key,
+      name: s.name,
+      amount: num(s.amount),
+      due_date,
+      category_id: s.category_id,
+      bank_id: s.bank_id,
+      card_id: s.card_id,
     });
+  }
 
   let previstoReceber = 0;
   let previstoPagar = 0;

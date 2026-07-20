@@ -348,14 +348,19 @@ export async function realizePlannedItem(id: number) {
     .single();
   if (insErr) throw new Error(insErr.message);
 
-  const { error: linkErr } = await supabase
+  // Vínculo atômico: só casa se o item ainda estiver pendente (transaction_id null).
+  // Em corrida (duplo clique), a 2ª chamada casa 0 linhas e desfaz a própria transação,
+  // evitando dois lançamentos e uma transação órfã.
+  const { data: linked, error: linkErr } = await supabase
     .from("planned_items")
     .update({ transaction_id: (tx as { id: number }).id })
-    .eq("id", id);
-  if (linkErr) {
-    // compensa: remove a transação recém-criada para não deixar órfã
+    .eq("id", id)
+    .is("transaction_id", null)
+    .select("id");
+  if (linkErr || !linked || linked.length === 0) {
     await supabase.from("transactions").delete().eq("id", (tx as { id: number }).id);
-    throw new Error(linkErr.message);
+    if (linkErr) throw new Error(linkErr.message);
+    return; // item já realizado por outra chamada — evita transação duplicada
   }
   revalidate();
 }
