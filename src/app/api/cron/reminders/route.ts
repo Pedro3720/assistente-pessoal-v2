@@ -8,7 +8,8 @@ export const runtime = "nodejs";
 type SubRow = { id: number; endpoint: string; p256dh: string; auth: string };
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -31,12 +32,16 @@ export async function POST(req: NextRequest) {
       ref_id: r.ref_id,
       occurred_on: r.occurred_on,
     });
-    if (dErr) continue;
+    if (dErr) {
+      if (dErr.code !== "23505") console.error("notified_reminders insert:", dErr.message);
+      continue;
+    }
 
-    const { data: subs } = await admin
+    const { data: subs, error: subErr } = await admin
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth")
       .eq("user_id", r.user_id);
+    if (subErr) console.error("push_subscriptions select:", subErr.message);
 
     const payload = JSON.stringify({ title: r.title, body: r.body, url: r.url, tag: r.tag });
     for (const s of (subs ?? []) as SubRow[]) {
