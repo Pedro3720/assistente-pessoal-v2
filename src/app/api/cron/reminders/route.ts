@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
   let sent = 0;
 
   for (const r of due) {
-    // dedup: insere ANTES de enviar; violacao da unique = ja enviado -> pula
+    // Dedup: grava ANTES de enviar para evitar duplo envio entre ticks do cron.
+    // Trade-off consciente: uma falha transitória de envio marca como enviado e não re-tenta.
     const { error: dErr } = await admin.from("notified_reminders").insert({
       user_id: r.user_id,
       kind: r.kind,

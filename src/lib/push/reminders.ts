@@ -62,6 +62,8 @@ export async function getDueReminders(admin: SupabaseClient, now: Date): Promise
   const windowStart = now.getTime() - 90_000;
   const inWindow = (t: number) => t > windowStart && t <= now.getTime();
   const today = spDateParts(now.toISOString()).date;
+  // Janela de datas candidatas: ±1 dia cobre o lembrete máximo (1440 min = 1 dia,
+  // limitado no schema de evento). Se algum dia surgir lembrete > 1 dia, alargue aqui.
   const dates = [shiftDay(today, -1), today, shiftDay(today, 1)];
   const out: DueReminder[] = [];
 

@@ -29,7 +29,7 @@ export function NotificationBanner() {
       </p>
       <div className="flex items-center gap-2">
         <NotificationsSetup onChange={dismiss} />
-        <button onClick={dismiss} className="rounded-lg p-2 text-muted-foreground hover:bg-accent" title="Dispensar">
+        <button onClick={dismiss} aria-label="Dispensar" className="rounded-lg p-2 text-muted-foreground hover:bg-accent" title="Dispensar">
           <X className="h-4 w-4" />
         </button>
       </div>

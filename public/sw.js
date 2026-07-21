@@ -25,7 +25,7 @@ self.addEventListener("notificationclick", (event) => {
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((wins) => {
-        const hit = wins.find((w) => w.url.includes(url));
+        const hit = wins.find((w) => w.url.endsWith(url));
         if (hit) return hit.focus();
         return self.clients.openWindow(url);
       })

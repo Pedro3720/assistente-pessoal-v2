@@ -11,6 +11,6 @@ export const eventInput = z.object({
   color: z.string().default("#3b82f6"),
   category: z.string().nullable().default(null),
   repeat: repeatSchema.default("none"),
-  reminder_minutes: z.number().int().nullable().default(null),
+  reminder_minutes: z.number().int().min(0).max(1440).nullable().default(null),
 });
 export type EventInput = z.infer<typeof eventInput>;
