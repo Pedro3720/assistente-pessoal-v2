@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { composeSP, spDateParts, todayISO } from "@/lib/dates";
+import { composeSP, spDateParts } from "@/lib/dates";
 import type { EventRepeat } from "@/types/calendar";
 
 export interface DueReminder {
@@ -61,7 +61,7 @@ type TaskRow = { id: number; user_id: string; title: string; due_on: string | nu
 export async function getDueReminders(admin: SupabaseClient, now: Date): Promise<DueReminder[]> {
   const windowStart = now.getTime() - 90_000;
   const inWindow = (t: number) => t > windowStart && t <= now.getTime();
-  const today = todayISO();
+  const today = spDateParts(now.toISOString()).date;
   const dates = [shiftDay(today, -1), today, shiftDay(today, 1)];
   const out: DueReminder[] = [];
 
