@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/data/profile";
 import { Sidebar } from "@/components/layout/sidebar";
+import { NotificationBanner } from "@/components/notifications/notification-banner";
 import { isAdminEmail } from "@/lib/auth/admin";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isAdmin={isAdmin}
       />
       <main className="flex-1">
-        <div className="px-6 py-8 pt-20 md:px-10 md:py-10 md:pt-10">{children}</div>
+        <div className="px-6 py-8 pt-20 md:px-10 md:py-10 md:pt-10">
+          <NotificationBanner />
+          {children}
+        </div>
       </main>
     </div>
   );
