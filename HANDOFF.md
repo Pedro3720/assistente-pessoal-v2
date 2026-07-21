@@ -26,12 +26,13 @@
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
 ## 2. Estado atual (2026-07-10)
-- **`main` = `origin/main` = commit `c53fa4c`** (publicado na Vercel).
+- **`main` = `origin/main` = commit `ccbef74`** (publicado na Vercel).
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
-- **Migrações aplicadas no Supabase:** `0000`–`0011` rodadas. ⚠️ **FALTA rodar a `0012_suggestion_images.sql`**
-  (várias imagens por sugestão) + a config do #14 (Redirect URLs) — ver seção 4.
+- **Migrações aplicadas no Supabase:** `0000`–`0011` rodadas. ⚠️ **FALTAM: `0012_suggestion_images.sql`**
+  (imagens da sugestão) e **`0013_push.sql`** (push), + config do #14 (Redirect URLs) e o operacional do #10
+  (VAPID/env + pg_cron) — ver seção 4.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -92,20 +93,33 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
   hoje em diante (grid mantém todos). **#17** sugestões com **várias imagens** + prévia antes de enviar
   (migr. 0012 add `image_urls text[]`). *Obs: mudanças visuais não puderam ser conferidas por screenshot
   (ferramenta travando) — o usuário valida no ar; a fonte do #3 é troca de 1 linha se não agradar.*
+- **Onda 7 (FEITA, no ar — falta operacional):** **notificações push de lembretes** (#10), Web Push (**sem
+  e-mail**), funciona com o app fechado. Fontes: eventos (`starts_at − reminder_minutes`, recorrentes) e
+  tarefas pendentes com `due_on` (08:00 SP). Peças: `public/sw.js`; `NotificationsSetup` + banner automático
+  + seção em /perfil; tabelas `push_subscriptions`/`notified_reminders` (migr. **0013**); `getDueReminders`
+  (`src/lib/push/reminders.ts`); endpoint `/api/cron/reminders` (service role, `CRON_SECRET`, envia via
+  `web-push`, dedup em `notified_reminders`, limpa inscrições 404/410); `supabase/pgcron_reminders.sql`
+  (agendador pg_cron/pg_net). Specs/planos `2026-07-10-notificacoes-push*`.
 
-### 3.4 SUGESTÕES QUE FALTAM (próximas ondas)
-- **#10** **Notificações de lembretes** — decidido: **notificação no navegador** (Web Notifications/Push),
-  **sem e-mail**; futuro: push no app mobile. É a maior; brainstorming → spec → plano → SDD.
-Cada uma: brainstorming → spec → plano → SDD → merge → push.
+### 3.4 SUGESTÕES — todas implementadas 🎉
+As sugestões abertas da aba foram entregues (ondas 1–7). Não há mais nada na fila. Novas ideias entram pela
+aba **/sugestoes** e seguem o mesmo fluxo: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
-1. **Sugestões (#17) — rodar `supabase/migrations/20260701000012_suggestion_images.sql`** no Supabase → SQL
+1. **Notificações push (#10) — operacional (senão não funciona):**
+   a) `npx web-push generate-vapid-keys` → setar no Vercel **e** `.env.local`: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+      `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:...`), e um `CRON_SECRET` qualquer.
+   b) Rodar `supabase/migrations/20260701000013_push.sql`.
+   c) Habilitar `pg_cron` e `pg_net` (Supabase → Database → Extensions) e rodar `supabase/pgcron_reminders.sql`
+      (com `<APP_URL>` e `<CRON_SECRET>` preenchidos). *Validar: /perfil → "Ativar notificações"; criar evento
+      em ~2 min com "avisar 1 min antes"; o push deve chegar.*
+2. **Sugestões (#17) — rodar `supabase/migrations/20260701000012_suggestion_images.sql`** no Supabase → SQL
    Editor. Sem ela, anexar imagem na sugestão dá erro (coluna `image_urls` não existe).
-2. **Verificar no ar a Onda 6** (fonte #3, sidebar #20, alinhamento #23, agenda #18) — não deu pra conferir
+3. **Verificar no ar a Onda 6** (fonte #3, sidebar #20, alinhamento #23, agenda #18) — não deu pra conferir
    por screenshot aqui. Se o zero da fonte não agradar, é troca de 1 linha em `layout.tsx`.
-3. **Sugestões — no `/admin/sugestoes`:** excluir a **#19** e a **#22**; marcar como "feito" as entregues
-   (#3, #16, #17, #18, #20, #23 e as anteriores #7/#8/#11/#14).
-4. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
+4. **Sugestões — no `/admin/sugestoes`:** excluir a **#19** e a **#22**; marcar como "feito" as entregues
+   (todas as sugestões abertas foram implementadas — ondas 1–7).
+5. **Recuperação de senha (#14) — configurar no Supabase → Authentication → URL Configuration:** conferir a
    **Site URL** (domínio Vercel) e adicionar aos **Redirect URLs** o `…/api/auth/callback` (produção) **e**
    `http://localhost:3000/api/auth/callback` (local). Sem isso o link do e-mail cai no Site URL e o fluxo
    quebra. Os e-mails saem pelo SMTP padrão do Supabase (limite baixo no free — ok p/ uso pessoal).
