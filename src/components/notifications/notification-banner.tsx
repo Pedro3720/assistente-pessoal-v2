@@ -25,7 +25,7 @@ export function NotificationBanner() {
   return (
     <div className="glass mb-4 flex flex-col gap-3 rounded-2xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
-        Ative as notificações para receber lembretes dos seus eventos e tarefas — mesmo com o app fechado.
+        Ative as notificações para receber lembretes dos seus eventos e tarefas, mesmo com o app fechado.
       </p>
       <div className="flex items-center gap-2">
         <NotificationsSetup onChange={dismiss} />

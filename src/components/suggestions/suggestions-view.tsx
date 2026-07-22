@@ -136,7 +136,7 @@ export function SuggestionsView({ suggestions }: { suggestions: Suggestion[] }) 
           )}
           {previews.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              {previews.length} imagem(ns) anexada(s) — serão enviadas ao registrar.
+              {previews.length} imagem(ns) anexada(s), serão enviadas ao registrar.
             </p>
           )}
         </div>
