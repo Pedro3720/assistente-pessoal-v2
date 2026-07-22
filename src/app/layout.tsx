@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Overpass_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
@@ -15,11 +15,11 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-// Números/valores — Overpass Mono (tabular; zero liso, sem ponto/corte no meio)
-const overpassMono = Overpass_Mono({
+// Números/valores — Plus Jakarta Sans (sans proporcional, bold; visual fintech)
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-num",
   display: "swap",
 });
 
@@ -35,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${overpassMono.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${plusJakarta.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
