@@ -4,11 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 const AUTH_PAGES = ["/login", "/cadastro", "/recuperar-senha"];
-const PUBLIC_PREFIXES = [...AUTH_PAGES, "/api/auth"];
+// /api/cron: chamado pelo pg_cron (sem cookie de sessão); protege-se com CRON_SECRET,
+// então NÃO pode cair no redirect de /login do middleware.
+const PUBLIC_PREFIXES = [...AUTH_PAGES, "/api/auth", "/api/cron"];
 
 /**
  * Renova a sessão a cada request e protege as rotas.
- * Sem sessão numa rota não-pública → /login (públicas: páginas de auth + /api/auth).
+ * Sem sessão numa rota não-pública → /login (públicas: páginas de auth + /api/auth + /api/cron).
  * Com sessão numa página de auth (/login, /cadastro, /recuperar-senha) → vai para o painel.
  * /redefinir-senha é protegido (exige sessão — a de recuperação serve).
  */
