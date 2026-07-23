@@ -6,15 +6,24 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, updateTask } from "@/lib/actions/task";
 import { STATUS_META, PRIORITY_META, STATUS_ORDER, PRIORITY_ORDER } from "@/lib/tasks/constants";
-import type { Task, TaskStatus, TaskPriority } from "@/types/task";
+import type { Task, TaskCategory, TaskStatus, TaskPriority } from "@/types/task";
 
-export function TaskModal({ editing, onClose }: { editing: Task | null; onClose: () => void }) {
+export function TaskModal({
+  editing,
+  categories,
+  onClose,
+}: {
+  editing: Task | null;
+  categories: TaskCategory[];
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(editing?.title ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(editing?.status ?? "pending");
   const [priority, setPriority] = useState<TaskPriority>(editing?.priority ?? "medium");
   const [dueOn, setDueOn] = useState(editing?.due_on ?? "");
+  const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -29,6 +38,7 @@ export function TaskModal({ editing, onClose }: { editing: Task | null; onClose:
       status,
       priority,
       due_on: dueOn || null,
+      category_id: categoryId,
     };
     try {
       if (editing) await updateTask(editing.id, payload);
@@ -114,6 +124,22 @@ export function TaskModal({ editing, onClose }: { editing: Task | null; onClose:
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Categoria</label>
+            <select
+              value={categoryId ?? ""}
+              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+            >
+              <option value="">Sem categoria</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

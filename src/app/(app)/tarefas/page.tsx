@@ -1,16 +1,17 @@
-import { getTasks } from "@/lib/data/task";
+import { getTasks, getTaskCategories } from "@/lib/data/task";
 import { TasksView } from "@/components/tasks/tasks-view";
-import type { Task } from "@/types/task";
+import type { Task, TaskCategory } from "@/types/task";
 
 export default async function TarefasPage() {
   let tasks: Task[];
+  let categories: TaskCategory[];
   try {
-    tasks = await getTasks();
+    [tasks, categories] = await Promise.all([getTasks(), getTaskCategories()]);
   } catch (e) {
     return <TasksLoadError message={e instanceof Error ? e.message : "Erro desconhecido"} />;
   }
 
-  return <TasksView tasks={tasks} />;
+  return <TasksView tasks={tasks} categories={categories} />;
 }
 
 function TasksLoadError({ message }: { message: string }) {

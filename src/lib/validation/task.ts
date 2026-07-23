@@ -13,7 +13,14 @@ export const taskInput = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
     .nullable()
     .default(null),
+  category_id: z.number().int().positive().nullable().default(null),
 });
 export type TaskInput = z.infer<typeof taskInput>;
+
+export const taskCategoryInput = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  color: z.string().trim().min(1).default("#3b82f6"),
+});
+export type TaskCategoryInput = z.infer<typeof taskCategoryInput>;
 
 export const reorderInput = z.array(z.number().int()).min(1);

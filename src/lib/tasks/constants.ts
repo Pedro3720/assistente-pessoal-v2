@@ -14,3 +14,9 @@ export const PRIORITY_META: Record<TaskPriority, { label: string; dot: string; t
 
 export const STATUS_ORDER: TaskStatus[] = ["pending", "in_progress", "completed"];
 export const PRIORITY_ORDER: TaskPriority[] = ["high", "medium", "low"];
+
+/** Cores disponíveis para as categorias de tarefas (#29). */
+export const TASK_CATEGORY_COLORS = [
+  "#3b82f6", "#8b5cf6", "#ec4899", "#10b981",
+  "#f59e0b", "#ef4444", "#14b8a6", "#f97316",
+];

@@ -1,8 +1,8 @@
 import { getFinanceData } from "@/lib/data/finance";
 import { getEventsForMonth, type EventOccurrence } from "@/lib/data/calendar";
-import { getTasks } from "@/lib/data/task";
+import { getTasks, getTaskCategories } from "@/lib/data/task";
 import { currentYearMonth, shiftMonth, todayISO } from "@/lib/dates";
-import type { Task, TaskPriority } from "@/types/task";
+import type { TaskPriority, TaskWithCategory } from "@/types/task";
 
 function currentWeekDays(today: string) {
   const [y, m, d] = today.split("-").map(Number);
@@ -24,11 +24,12 @@ export async function getDashboardData() {
   const { year, month } = currentYearMonth();
   const next = shiftMonth(year, month, 1);
 
-  const [finance, occThis, occNext, tasks] = await Promise.all([
+  const [finance, occThis, occNext, tasks, taskCategories] = await Promise.all([
     getFinanceData(year, month),
     getEventsForMonth(year, month),
     getEventsForMonth(next.year, next.month),
     getTasks(),
+    getTaskCategories(),
   ]);
 
   const today = todayISO();
@@ -49,15 +50,17 @@ export async function getDashboardData() {
     hasEvents: eventDates.has(date),
   }));
 
+  const catById = new Map(taskCategories.map((c) => [c.id, c]));
   const pending = tasks.filter((t) => t.status !== "completed");
-  const topTasks: Task[] = [...pending]
+  const topTasks: TaskWithCategory[] = [...pending]
     .sort((a, b) => {
       if (a.due_on && b.due_on) return a.due_on.localeCompare(b.due_on);
       if (a.due_on) return -1;
       if (b.due_on) return 1;
       return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
     })
-    .slice(0, 5);
+    .slice(0, 5)
+    .map((t) => ({ ...t, category: t.category_id ? catById.get(t.category_id) ?? null : null }));
 
   return {
     today,

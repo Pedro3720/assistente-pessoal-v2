@@ -214,6 +214,15 @@ export default async function Dashboard() {
                   <div key={t.id} className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-accent/50">
                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_META[t.priority].dot }} />
                     <p className="min-w-0 flex-1 truncate text-sm font-medium">{t.title}</p>
+                    {t.category && (
+                      <span
+                        className="hidden shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:flex"
+                        style={{ backgroundColor: `${t.category.color}22`, color: t.category.color }}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.category.color }} />
+                        {t.category.name}
+                      </span>
+                    )}
                     {t.due_on && (
                       <span className={`shrink-0 text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
                         {formatDateBR(t.due_on)}

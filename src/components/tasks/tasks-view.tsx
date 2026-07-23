@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical } from "lucide-react";
+import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical, Tags } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -23,8 +23,9 @@ import { deleteTask, setTaskStatus, reorderTasks } from "@/lib/actions/task";
 import { STATUS_META, PRIORITY_META } from "@/lib/tasks/constants";
 import { todayISO, formatDateBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
+import { TaskCategoryManager } from "./task-category-manager";
 import { Reveal } from "@/components/effects/reveal";
-import type { Task, TaskStatus } from "@/types/task";
+import type { Task, TaskCategory, TaskStatus } from "@/types/task";
 
 type Filter = "all" | TaskStatus;
 
@@ -35,18 +36,22 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "completed", label: "Concluídas" },
 ];
 
-export function TasksView({ tasks }: { tasks: Task[] }) {
+export function TasksView({ tasks, categories }: { tasks: Task[]; categories: TaskCategory[] }) {
   const router = useRouter();
   const today = todayISO();
   const [filter, setFilter] = useState<Filter>("all");
+  const [catFilter, setCatFilter] = useState<number | "all">("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [order, setOrder] = useState<Task[]>(tasks);
   // ressincroniza a ordem local quando o servidor devolve outra lista (após refresh)
   const orderKey = tasks.map((t) => t.id).join(",");
   useEffect(() => setOrder(tasks), [orderKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const canReorder = filter === "all";
+  // reordenar só quando nenhum filtro está ativo (ordem = lista completa)
+  const canReorder = filter === "all" && catFilter === "all";
+  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const counts = useMemo(
     () => ({
@@ -58,10 +63,11 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
     [tasks]
   );
 
-  const shown = useMemo(
-    () => (filter === "all" ? order : order.filter((t) => t.status === filter)),
-    [order, filter]
-  );
+  const shown = useMemo(() => {
+    let list = filter === "all" ? order : order.filter((t) => t.status === filter);
+    if (catFilter !== "all") list = list.filter((t) => t.category_id === catFilter);
+    return list;
+  }, [order, filter, catFilter]);
 
   async function toggle(t: Task) {
     const next: TaskStatus = t.status === "completed" ? "pending" : "completed";
@@ -113,15 +119,23 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">Organize o que precisa ser feito</p>
         </div>
-        <button
-          onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> Nova Tarefa
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setManageOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+          >
+            <Tags className="h-4 w-4" /> Categorias
+          </button>
+          <button
+            onClick={() => { setEditing(null); setModalOpen(true); }}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" /> Nova Tarefa
+          </button>
+        </div>
       </div>
 
-      {/* filtros */}
+      {/* filtros de status */}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button
@@ -135,6 +149,35 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
           </button>
         ))}
       </div>
+
+      {/* filtros de categoria (2ª fileira) */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setCatFilter("all")}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              catFilter === "all" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:bg-accent/80"
+            }`}
+          >
+            Todas
+          </button>
+          {categories.map((c) => {
+            const active = catFilter === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCatFilter(c.id)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  active ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:bg-accent/80"
+                }`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.color }} />
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* lista */}
       {shown.length === 0 ? (
@@ -157,6 +200,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
                   <SortableTask
                     key={t.id}
                     t={t}
+                    category={t.category_id ? catById.get(t.category_id) ?? null : null}
                     done={done}
                     overdue={overdue}
                     canReorder={canReorder}
@@ -171,13 +215,15 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
         </DndContext>
       )}
 
-      {modalOpen && <TaskModal editing={editing} onClose={() => setModalOpen(false)} />}
+      {modalOpen && <TaskModal editing={editing} categories={categories} onClose={() => setModalOpen(false)} />}
+      {manageOpen && <TaskCategoryManager categories={categories} onClose={() => setManageOpen(false)} />}
     </div>
   );
 }
 
 function SortableTask({
   t,
+  category,
   done,
   overdue,
   canReorder,
@@ -186,6 +232,7 @@ function SortableTask({
   onRemove,
 }: {
   t: Task;
+  category: TaskCategory | null;
   done: boolean;
   overdue: boolean;
   canReorder: boolean;
@@ -241,6 +288,15 @@ function SortableTask({
           <span className={`text-[11px] font-medium ${PRIORITY_META[t.priority].text}`}>
             {PRIORITY_META[t.priority].label}
           </span>
+          {category && (
+            <span
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+              style={{ backgroundColor: `${category.color}22`, color: category.color }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: category.color }} />
+              {category.name}
+            </span>
+          )}
           {t.due_on && (
             <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
               <CalendarClock className="h-3 w-3" />

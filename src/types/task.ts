@@ -9,4 +9,16 @@ export interface Task {
   priority: TaskPriority;
   due_on: string | null; // YYYY-MM-DD
   position: number;
+  category_id: number | null;
+}
+
+export interface TaskCategory {
+  id: number;
+  name: string;
+  color: string;
+}
+
+/** Tarefa com a categoria já resolvida (para exibir o chip). */
+export interface TaskWithCategory extends Task {
+  category: TaskCategory | null;
 }
