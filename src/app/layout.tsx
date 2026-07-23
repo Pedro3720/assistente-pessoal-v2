@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
 import { AnimatedBackground } from "@/components/effects/animated-background";
 import { RegisterSW } from "@/components/pwa/register-sw";
+import { AppleSplash } from "@/components/pwa/apple-splash";
 
 // Corpo/UI — Inter (legível, precisão)
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -57,6 +58,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${plusJakarta.variable}`}>
+        <AppleSplash />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
