@@ -26,7 +26,8 @@
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
 ## 2. Estado atual (2026-07-23)
-- **`main` = `origin/main` = commit `7d062c5`** (publicado na Vercel; Onda 8 no ar). Antes: `ccbef74`.
+- **`main` = `origin/main`** (publicado na Vercel; Ondas 8 e 9 no ar, incluindo o fix #31 do modal de
+  importar). Base anterior: `ccbef74`.
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
@@ -121,8 +122,16 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
     O erro `deleted_client` é porque o `GOOGLE_CLIENT_ID` do app (`...8kil59il...`, apagado) difere do cliente
     válido no Google Cloud (`...n254m80n...`). Pendência do dono (ver seção 4).
 
+- **Onda 9 (FEITA, no ar em 2026-07-23):** **bug #31** do modal de importar extrato em Finanças. O
+  `ImportModal` renderizava um `fixed inset-0` inline dentro do `<Reveal>` do cabeçalho; como o Reveal deixa
+  um `transform` no ancestral (mesmo após a animação, um `matrix(1,0,0,1,0,0)`), o `position: fixed` se
+  ancorava nele e o modal ficava preso atrás dos cards, sem backdrop. Correção: renderizar via `createPortal`
+  no `document.body` (mesmo padrão do `components/ui/modal.tsx`) + `z-[100]`. Verificado por medição no
+  navegador (overlay passou a cobrir a viewport, como filho do body). Branch `fix/import-modal-portal`.
+  Obs: qualquer modal novo deve usar portal (ver seção 5).
+
 ### 3.5 SUGESTÕES — fila zerada
-As sugestões abertas da aba foram entregues (ondas 1 a 8). Novas ideias entram pela aba **/sugestoes** e
+As sugestões abertas da aba foram entregues (ondas 1 a 9). Novas ideias entram pela aba **/sugestoes** e
 seguem o mesmo fluxo: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
