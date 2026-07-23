@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { X, Upload, ChevronRight, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { parseFile, type ParsedTx } from "@/lib/parsers/ofx";
@@ -108,6 +109,9 @@ export function ImportModal({
   const [importedCount, setImportedCount] = useState(0);
   const [bankId, setBankId] = useState<number | null>(banks.length === 1 ? banks[0].id : null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // portal só depois de montar no cliente (evita mismatch de SSR)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const resolveCat = useCallback(
     (name: string | null, type: TxType) =>
@@ -182,8 +186,10 @@ export function ImportModal({
   const LABELS: Record<Step, string> = { upload: "Arquivo", categorize: "Revisar", done: "Concluído" };
   const stepIdx = STEPS.indexOf(step);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="flex w-full max-w-5xl flex-col rounded-2xl border border-border bg-popover shadow-2xl"
         style={{ maxHeight: "92vh" }}
@@ -412,6 +418,7 @@ export function ImportModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
