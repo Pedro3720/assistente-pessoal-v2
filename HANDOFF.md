@@ -144,8 +144,14 @@ então App Store/nativo fica pro futuro; PWA reusa tudo e pode virar Capacitor d
 `public/icons/*` (192, 512, 512-maskable, apple-touch 180) a partir do `public/logo.png`; e
 `components/pwa/ios-install-hint.tsx` (dica "Adicionar à Tela de Início", só em iOS Safari fora do
 standalone, dispensável em localStorage). Verificado no navegador (manifest + head corretos);
-**validação real é no iPhone do dono** (instalar e abrir em tela cheia). Próximas fases: 2) offline +
-unificar o SW de push (`public/sw.js`) com cache (Serwist); 3) splash screens, safe-areas, Face ID no cofre.
+**validação real é no iPhone do dono** (instalar e abrir em tela cheia).
+**Fase 2 FEITA (branch `feat/pwa-fase2`):** offline + service worker unificado, feito **na mão** (não
+Serwist, para não arriscar o push que já funciona). `public/sw.js` reescrito: mantém os handlers de push
+e ganha cache de estáticos (stale-while-revalidate em `/_next/static`, `/icons`, `logo`, manifest) e
+fallback de navegação para `public/offline.html` sem conexão. `components/pwa/register-sw.tsx` registra o
+SW em toda carga (antes só quem ativava push), renderizado no `layout.tsx` raiz. Não cacheia cross-origin
+(Supabase/Google) nem `/api/*`. Verificado no navegador (SW ativo, cache `zenite-v1`, offline precached).
+Falta: **Fase 3** (splash screens, safe-areas/notch, Face ID no cofre via WebAuthn).
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
