@@ -67,13 +67,13 @@ export default async function Dashboard() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <div className="max-w-5xl space-y-5 md:space-y-8">
       {/* header */}
       <Reveal>
         <p className="mb-1 text-sm text-muted-foreground">
           {greeting}, {displayName}
         </p>
-        <h1 className="text-gradient text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-gradient text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Seu Painel
         </h1>
       </Reveal>
@@ -110,7 +110,7 @@ export default async function Dashboard() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.label} href={s.href} className="group glass card-glow flex flex-col justify-between gap-6 rounded-2xl border border-border p-5">
+            <Link key={s.label} href={s.href} className="group glass card-glow flex flex-col justify-between gap-4 rounded-2xl border border-border p-4 md:gap-6 md:p-5">
               <div className="flex items-center justify-between">
                 <Icon className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                 <ArrowRight className="h-3.5 w-3.5 -translate-x-1 text-muted-foreground/0 transition-all group-hover:translate-x-0 group-hover:text-primary" />
@@ -119,7 +119,7 @@ export default async function Dashboard() {
                 <CountUp
                   value={s.value}
                   currency={s.currency}
-                  className={`block text-2xl font-semibold leading-none tracking-tight ${s.tone}`}
+                  className={`block text-xl font-semibold leading-none tracking-tight md:text-2xl ${s.tone}`}
                 />
                 <p className="mt-2 flex min-h-8 items-start text-xs leading-tight text-muted-foreground">{s.label}</p>
               </div>
@@ -242,7 +242,7 @@ export default async function Dashboard() {
 function DashboardError({ message }: { message: string }) {
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+      <h1 className="text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
         Seu Painel
       </h1>
       <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-900 dark:border-amber-300/40 dark:bg-amber-500/10 dark:text-amber-300">

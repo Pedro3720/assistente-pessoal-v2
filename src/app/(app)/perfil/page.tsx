@@ -10,7 +10,7 @@ export default async function PerfilPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <Reveal>
-        <h1 className="text-gradient text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Perfil
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">Como o assistente se refere a você.</p>

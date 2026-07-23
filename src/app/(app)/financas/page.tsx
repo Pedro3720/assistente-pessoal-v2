@@ -81,7 +81,7 @@ export default async function FinancasPage({
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1
-            className="text-gradient text-4xl font-bold leading-none tracking-tighter"
+            className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Finanças
@@ -97,13 +97,13 @@ export default async function FinancasPage({
       {/* stat cards */}
       <Reveal stagger className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="glass card-glow rounded-2xl border border-border p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                <CountUp value={value} currency className={`mt-1 block text-2xl font-semibold ${tone}`} />
+          <div key={label} className="glass card-glow rounded-2xl border border-border p-4 md:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-muted-foreground">{label}</p>
+                <CountUp value={value} currency className={`mt-1 block text-xl font-semibold md:text-2xl ${tone}`} />
               </div>
-              <div className="rounded-full bg-muted p-3">
+              <div className="shrink-0 rounded-full bg-muted p-2.5 md:p-3">
                 <Icon className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
@@ -211,7 +211,7 @@ function FinanceLoadError({ message }: { message: string }) {
   return (
     <div className="mx-auto max-w-3xl">
       <h1
-        className="text-4xl font-bold leading-none tracking-tighter"
+        className="text-3xl md:text-4xl font-bold leading-none tracking-tighter"
         style={{ fontFamily: "var(--font-display)" }}
       >
         Finanças

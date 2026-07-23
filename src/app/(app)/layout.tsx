@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isAdmin={isAdmin}
       />
       <main className="flex-1">
-        <div className="px-6 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] md:px-10 md:pt-10 md:pb-10">
+        <div className="px-4 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] md:px-10 md:pt-10 md:pb-10">
           <IosInstallHint />
           <NotificationBanner />
           {children}

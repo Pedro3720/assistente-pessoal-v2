@@ -16,7 +16,7 @@ export default async function SenhasPage() {
 function PasswordsLoadError({ message }: { message: string }) {
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+      <h1 className="text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
         Senhas
       </h1>
       <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-900">
