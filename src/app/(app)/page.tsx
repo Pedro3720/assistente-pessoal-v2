@@ -104,7 +104,9 @@ export default async function Dashboard() {
       </Reveal>
 
       {/* stat cards */}
-      <Reveal stagger className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* stagger sem deslocamento vertical (y=0): fade-in em cascata sem tirar os cards
+          do lugar, evitando o desalinhamento visual no mobile durante a entrada (#26) */}
+      <Reveal stagger y={0} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
