@@ -167,6 +167,20 @@ SW em toda carga (antes só quem ativava push), renderizado no `layout.tsx` raiz
 
 Validação real de todo o PWA (instalar, tela cheia, splash, notch, offline, Face ID) é **no iPhone do dono**.
 
+### 3.7 Layout de celular reproporcionado (2026-07-23, branch `fix/mobile-layout`)
+Dono relatou telas "cortadas" no iPhone. **Diagnóstico medido (320px e 390px): o layout NÃO estoura na
+horizontal** (`scrollWidth` = viewport, zero offenders), então o corte relatado é compatível com a página
+estar **com zoom (pinch)** no PWA, não com bug de CSS. Confirmar com o dono (pinch para fora).
+Ainda assim as proporções estavam grandes demais para celular (referência: app Pierre). Ajustes, todos
+atrás de `md:` (desktop inalterado):
+- padding lateral do app `px-6` → `px-4` no mobile (largura útil 342 → 358px);
+- títulos de página `text-4xl` → `text-3xl md:text-4xl` (36 → 30px) em **11 telas**;
+- ritmo vertical do dashboard `space-y-8` → `space-y-5 md:space-y-8`;
+- cards de resumo (dashboard e finanças) compactados (`p-4`, gap menor, valor `text-xl md:text-2xl`);
+  altura do card caiu de ~146 para 126px, mantendo o alinhamento da correção #26.
+Ideias maiores não feitas (precisariam de brainstorm próprio): barra de navegação inferior estilo Pierre,
+cantos mais arredondados, redesenho visual dos cards.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
