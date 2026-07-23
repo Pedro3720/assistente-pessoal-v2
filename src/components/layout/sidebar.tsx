@@ -69,7 +69,7 @@ export function Sidebar({
   return (
     <>
       <button
-        className="fixed left-5 top-5 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background md:hidden"
+        className="fixed left-5 top-[calc(env(safe-area-inset-top)+1.25rem)] z-50 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background md:hidden"
         onClick={() => setOpen(!open)}
         aria-label="Menu"
       >
@@ -85,8 +85,8 @@ export function Sidebar({
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-full w-56 transform flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-xl transition-all duration-300 ease-in-out",
-          "md:sticky md:top-0 md:h-screen md:z-auto md:translate-x-0",
+          "fixed left-0 top-0 z-40 flex h-full w-56 transform flex-col border-r border-sidebar-border bg-sidebar/70 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl transition-all duration-300 ease-in-out",
+          "md:sticky md:top-0 md:h-screen md:z-auto md:translate-x-0 md:pt-0 md:pb-0",
           open ? "translate-x-0" : "-translate-x-full",
           collapsed && "md:w-16"
         )}

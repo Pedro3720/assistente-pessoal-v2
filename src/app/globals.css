@@ -126,6 +126,9 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans), system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* PWA standalone: sem bounce/rubber-band e sem flash de toque (cara de app) */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
   }
   button,
   input,
