@@ -15,6 +15,16 @@
 - Antes de finalizar qualquer mudança que toque em texto visível, faça uma varredura:
   `rg "—|–" src` e garanta que nenhum caractere desses aparece em string de UI.
 
+## Manter o HANDOFF atualizado (obrigatório)
+
+- **Sempre que finalizar uma alteração no site** (feature, correção, mudança de UI),
+  **registre os pontos principais no `HANDOFF.md` antes de encerrar**, para o arquivo
+  refletir sempre o estado real do projeto.
+- O que registrar: o que mudou e por quê, arquivos/áreas afetadas, migrações novas (e se
+  já foram rodadas), pendências que dependem do dono, e o commit/branch.
+- Mantenha atualizada a data do topo do `HANDOFF.md` e a seção de "Estado atual".
+- Use texto enxuto (bullet points). Novas entregas de sugestões entram como uma nova "Onda".
+
 ## Convenções técnicas
 
 Ver `HANDOFF.md` seção 5 ("Regras de ouro") para arquitetura (Server Components leem /

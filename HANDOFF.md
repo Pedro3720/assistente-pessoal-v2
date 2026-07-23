@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-10.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-23.**
 
 ---
 
@@ -25,8 +25,8 @@
 - Stack: Next 16.2.9 (App Router) · React 19 · TS strict · Tailwind v4 · @supabase/ssr + supabase-js · Zod ·
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
-## 2. Estado atual (2026-07-10)
-- **`main` = `origin/main` = commit `ccbef74`** (publicado na Vercel).
+## 2. Estado atual (2026-07-23)
+- **`main` = `origin/main` = commit `7d062c5`** (publicado na Vercel; Onda 8 no ar). Antes: `ccbef74`.
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
 - **Config de produção OK (feito pelo usuário):** #9 Google (env `GOOGLE_REDIRECT_URI` na Vercel + redirect no
   Google Cloud) e as env do Admin (`ADMIN_EMAIL`, `SUPABASE_SECRET_KEY`) — **tudo configurado**. Secret rotacionada.
@@ -100,12 +100,42 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
   (`src/lib/push/reminders.ts`); endpoint `/api/cron/reminders` (service role, `CRON_SECRET`, envia via
   `web-push`, dedup em `notified_reminders`, limpa inscrições 404/410); `supabase/pgcron_reminders.sql`
   (agendador pg_cron/pg_net). Specs/planos `2026-07-10-notificacoes-push*`.
+- **Onda 8 (FEITA, no ar em 2026-07-23):** segunda leva de sugestões da aba (#25 a #30). Branch
+  `feat/sugestoes-fonte-travessoes`, mergeada na `main` (commits `98ce31f`..`7d062c5`). Spec do #29 em
+  `docs/superpowers/specs/2026-07-23-categorias-tarefas-design.md`.
+  - **#28** removidos os travessões dos textos visíveis (banner de push, legenda de imagens em /sugestoes) e
+    criada a regra no `CLAUDE.md` (nunca usar travessão em texto de UI).
+  - **#30** fonte dos números: Overpass Mono trocada por **Plus Jakarta Sans** (sans proporcional, referência
+    do app Pierre). `.num` mantém `tabular-nums`; a variável `--font-mono` virou `--font-num`.
+  - **#26** cards do Dashboard desalinhados no mobile. Não era CSS (medição confirmou grid alinhado): era a
+    animação de entrada `Reveal stagger` transladando cada card na vertical em cascata. Correção: `y={0}` no
+    stagger (fade em cascata sem deslocar).
+  - **#27** limite do cartão redesenhado no estilo da referência: Utilizado/Limite total + barra + "Mais
+    detalhes" expansível (Próxima fatura, Lançamentos futuros, Disponível). Só UI: a fórmula
+    `utilizado_total = fatura atual + parcelas futuras` já existia em `data/finance.ts`.
+  - **#29** categorias de tarefas: tabela `task_categories` (migr. **0014**, JÁ RODADA) + coluna
+    `tasks.category_id` (FK on delete set null). CRUD via modal (nome + cor), select no modal de tarefa, 2ª
+    fileira de chips para filtrar (combina com status), chip colorido na tarefa e no Dashboard. `create/
+    updateTask` são resilientes se a coluna não existir (não quebram antes da migração).
+  - **#25** login Google: **não era código** (o `prompt=select_account` já existe em `api/google/connect`).
+    O erro `deleted_client` é porque o `GOOGLE_CLIENT_ID` do app (`...8kil59il...`, apagado) difere do cliente
+    válido no Google Cloud (`...n254m80n...`). Pendência do dono (ver seção 4).
 
-### 3.4 SUGESTÕES — todas implementadas 🎉
-As sugestões abertas da aba foram entregues (ondas 1–7). Não há mais nada na fila. Novas ideias entram pela
-aba **/sugestoes** e seguem o mesmo fluxo: brainstorming → spec → plano → SDD → merge → push.
+### 3.5 SUGESTÕES — fila zerada
+As sugestões abertas da aba foram entregues (ondas 1 a 8). Novas ideias entram pela aba **/sugestoes** e
+seguem o mesmo fluxo: brainstorming → spec → plano → SDD → merge → push.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
+
+> **Atualização 2026-07-23 (Onda 8):**
+> - **#25 login Google (pendente):** o `deleted_client` é mismatch de Client ID. Trocar, na **Vercel** e no
+>   **`.env.local`**, o `GOOGLE_CLIENT_ID` para `619072094504-n254m80n7tm4rmgm5ir3mb5lmpue12to.apps.googleusercontent.com`
+>   e o `GOOGLE_CLIENT_SECRET` para o segredo desse cliente (se não tiver o valor, gerar novo em "+ Add secret"
+>   no Google Cloud). Depois redeploy + reiniciar o dev. Testar em aba anônima.
+> - **Migração `0014_task_categories` (#29): JÁ RODADA** pelo dono.
+> - As migrações `0012_suggestion_images` e `0013_push` e o operacional do push podem já ter sido resolvidos
+>   pelo dono (as chaves VAPID/CRON estão no `.env.local`); confirmar se necessário.
+
 1. **Notificações push (#10) — operacional (senão não funciona):**
    a) `npx web-push generate-vapid-keys` → setar no Vercel **e** `.env.local`: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
       `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:...`), e um `CRON_SECRET` qualquer.
