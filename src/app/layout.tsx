@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
 import { AnimatedBackground } from "@/components/effects/animated-background";
+import { RegisterSW } from "@/components/pwa/register-sw";
 
 // Corpo/UI — Inter (legível, precisão)
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -66,6 +67,7 @@ export default function RootLayout({
           <div className="relative z-10">{children}</div>
           <div className="grain-overlay" aria-hidden />
           <ThemedToaster />
+          <RegisterSW />
         </ThemeProvider>
       </body>
     </html>
