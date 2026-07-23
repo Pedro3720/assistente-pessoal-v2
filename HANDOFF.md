@@ -151,7 +151,21 @@ e ganha cache de estáticos (stale-while-revalidate em `/_next/static`, `/icons`
 fallback de navegação para `public/offline.html` sem conexão. `components/pwa/register-sw.tsx` registra o
 SW em toda carga (antes só quem ativava push), renderizado no `layout.tsx` raiz. Não cacheia cross-origin
 (Supabase/Google) nem `/api/*`. Verificado no navegador (SW ativo, cache `zenite-v1`, offline precached).
-Falta: **Fase 3** (splash screens, safe-areas/notch, Face ID no cofre via WebAuthn).
+**Fase 3 FEITA (branch `feat/pwa-fase3`):**
+- **3a safe areas:** `env(safe-area-inset-*)` no hambúrguer, no drawer da sidebar e no padding do
+  conteúdo (`(app)/layout.tsx`), para o topo não ficar sob a status bar/notch no standalone. Mais
+  `overscroll-behavior-y: none` e tap-highlight transparente no `body`. Auto-neutro no desktop (inset 0).
+- **3b splash:** `scripts/gen-pwa-splash.mjs` gera 9 telas de abertura (por resolução de iPhone) em
+  `public/splash/`; `components/pwa/apple-splash.tsx` rende os `<link rel="apple-touch-startup-image">`
+  (o React 19 iça pro `<head>`). iPhones não casados caem no `background_color` escuro do manifest.
+- **3c Face ID no cofre:** `lib/passwords/biometric.ts` (WebAuthn com autenticador de plataforma) +
+  `components/passwords/vault-lock.tsx`. Ao abrir /senhas com a proteção ativa, o cofre fica bloqueado
+  até o Face ID; sair e voltar tranca de novo. O botão "Proteger" só aparece se o dispositivo tiver
+  biometria; a credencial fica só no dispositivo (localStorage). Há um escape discreto para desativar
+  (evita lockout). **É trava de INTERFACE**, escolha consciente do dono: não blinda o `revealPassword`
+  no servidor (a alternativa robusta seria WebAuthn verificado server-side, com tabela e desafios).
+
+Validação real de todo o PWA (instalar, tela cheia, splash, notch, offline, Face ID) é **no iPhone do dono**.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
