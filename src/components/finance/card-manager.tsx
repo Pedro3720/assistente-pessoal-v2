@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X, CreditCard, Pencil } from "lucide-react";
+import { Plus, Trash2, X, CreditCard, Pencil, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { createCard, updateCard, deleteCard } from "@/lib/actions/finance";
@@ -28,6 +28,7 @@ export function CardManager({
   const [due, setDue] = useState("");
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [openDetails, setOpenDetails] = useState<Record<number, boolean>>({});
 
   function reset() {
     setName(""); setBankId(""); setLimit(""); setOpening("");
@@ -187,8 +188,10 @@ export function CardManager({
             const usePct = card.credit_limit
               ? Math.min((card.utilizado_total / card.credit_limit) * 100, 100)
               : 0;
+            const detailsOpen = !!openDetails[card.id];
             return (
-              <div key={card.id} className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
+              <div key={card.id} className="space-y-3 border-b border-border pb-4 last:border-0 last:pb-0">
+                {/* cabeçalho: cor, nome, fecha/vence + ações */}
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <div className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: card.color }} />
@@ -216,28 +219,75 @@ export function CardManager({
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Fatura a pagar (este mês)</span>
-                  <span className={`num text-lg font-bold ${card.fatura_mes > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
-                    {formatBRL(card.fatura_mes)}
-                  </span>
+
+                {/* utilizado x limite total + barra */}
+                <div>
+                  <div className="flex items-end justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Utilizado</p>
+                      <p className="num text-xl font-bold text-foreground">{formatBRL(card.utilizado_total)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xs text-muted-foreground">Limite total</p>
+                      <p className="num text-sm font-semibold text-muted-foreground">{formatBRL(card.credit_limit)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-accent">
+                    <div className="bar-grow h-2 rounded-full bg-primary" style={{ width: `${usePct}%` }} />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Em aberto (próximas) <span className="num text-foreground">{formatBRL(card.em_aberto)}</span></span>
-                  <span>Utilizado <span className="num text-foreground">{formatBRL(card.utilizado_total)}</span></span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                  <div className="bar-grow h-1.5 rounded-full bg-primary" style={{ width: `${usePct}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Disponível <span className={`num ${card.disponivel < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>{formatBRL(card.disponivel)}</span></span>
-                  <span>Limite total <span className="num text-foreground">{formatBRL(card.credit_limit)}</span></span>
+
+                {/* mais detalhes (expansível) */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDetails((s) => ({ ...s, [card.id]: !s[card.id] }))}
+                    className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    aria-expanded={detailsOpen}
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailsOpen ? "rotate-180" : ""}`} />
+                    Mais detalhes
+                  </button>
+                  {detailsOpen && (
+                    <div className="mt-2 space-y-1.5 border-t border-border pt-2.5">
+                      <DetailRow label="Próxima fatura" value={formatBRL(card.fatura_mes)} dotClass="bg-amber-500" />
+                      <DetailRow label="Lançamentos futuros" value={formatBRL(card.em_aberto)} dotClass="bg-primary" />
+                      <DetailRow
+                        label="Disponível para uso"
+                        value={formatBRL(card.disponivel)}
+                        dotClass={card.disponivel < 0 ? "bg-red-500" : "bg-green-500"}
+                        valueClass={card.disponivel < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })
         )}
       </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  dotClass,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  dotClass: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="flex items-center gap-2 text-muted-foreground">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
+        {label}
+      </span>
+      <span className={`num font-semibold ${valueClass ?? "text-foreground"}`}>{value}</span>
     </div>
   );
 }
