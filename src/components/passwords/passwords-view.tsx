@@ -1,13 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Search, Eye, EyeOff, Copy, Edit3, Trash2, ExternalLink, KeyRound, User,
+  Fingerprint, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { deletePassword, revealPassword } from "@/lib/actions/password";
+import {
+  biometricAvailable,
+  vaultProtected,
+  enableVaultProtection,
+  disableVaultProtection,
+} from "@/lib/passwords/biometric";
 import { PasswordModal } from "./password-modal";
+import { VaultLock } from "./vault-lock";
 import { Reveal } from "@/components/effects/reveal";
 import type { PasswordItem } from "@/types/password";
 
@@ -18,6 +26,37 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
   const [editing, setEditing] = useState<PasswordItem | null>(null);
   const [revealed, setRevealed] = useState<Record<number, string>>({});
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  // Trava biométrica do cofre (Fase 3c): trava de conveniência, por dispositivo.
+  const [ready, setReady] = useState(false);
+  const [isProtected, setIsProtected] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
+
+  useEffect(() => {
+    setIsProtected(vaultProtected());
+    setReady(true);
+    biometricAvailable().then(setBioAvailable);
+  }, []);
+
+  async function toggleProtection() {
+    if (isProtected) {
+      if (!confirm("Desativar a proteção com Face ID do cofre?")) return;
+      disableVaultProtection();
+      setIsProtected(false);
+      toast.success("Proteção desativada");
+      return;
+    }
+    try {
+      await enableVaultProtection();
+      setIsProtected(true);
+      setUnlocked(true);
+      toast.success("Cofre protegido com Face ID");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível ativar a proteção");
+    }
+  }
+
+  const locked = ready && isProtected && !unlocked;
 
   const shown = useMemo(() => {
     if (!search.trim()) return passwords;
@@ -87,14 +126,45 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">Cofre criptografado das suas credenciais</p>
         </div>
-        <button
-          onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> Nova Senha
-        </button>
+        {!locked && (
+          <div className="flex items-center gap-2">
+            {bioAvailable && (
+              <button
+                onClick={toggleProtection}
+                title={isProtected ? "Proteção com Face ID ativa" : "Proteger o cofre com Face ID"}
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  isProtected
+                    ? "border-primary/40 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {isProtected ? <ShieldCheck className="h-4 w-4" /> : <Fingerprint className="h-4 w-4" />}
+                <span className="hidden sm:inline">{isProtected ? "Protegido" : "Proteger"}</span>
+              </button>
+            )}
+            <button
+              onClick={() => { setEditing(null); setModalOpen(true); }}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" /> Nova Senha
+            </button>
+          </div>
+        )}
       </div>
 
+      {!ready ? (
+        // evita piscar a lista antes de saber se o cofre está protegido
+        <div className="h-40" />
+      ) : locked ? (
+        <VaultLock
+          onUnlock={() => setUnlocked(true)}
+          onDisable={() => {
+            setIsProtected(false);
+            setUnlocked(true);
+          }}
+        />
+      ) : (
+        <>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -184,6 +254,8 @@ export function PasswordsView({ passwords }: { passwords: PasswordItem[] }) {
           })
         )}
       </Reveal>
+        </>
+      )}
 
       {modalOpen && <PasswordModal editing={editing} onClose={() => setModalOpen(false)} />}
     </div>
