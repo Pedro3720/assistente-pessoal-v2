@@ -134,6 +134,19 @@ A aba /sugestoes tinha 10 sugestões; estão sendo implementadas em ondas (specs
 As sugestões abertas da aba foram entregues (ondas 1 a 9). Novas ideias entram pela aba **/sugestoes** e
 seguem o mesmo fluxo: brainstorming → spec → plano → SDD → merge → push.
 
+### 3.6 PWA (virar app de iPhone) — Fase 1 FEITA (branch `feat/pwa-iphone`, ainda NÃO na main)
+Decisão: transformar o site em app de iPhone via **PWA** (o dono não tem Mac nem conta Apple Developer,
+então App Store/nativo fica pro futuro; PWA reusa tudo e pode virar Capacitor depois). Spec e plano em
+`docs/superpowers/specs/2026-07-23-pwa-iphone-design.md` e `docs/superpowers/plans/2026-07-23-pwa-fase1.md`.
+**Fase 1 (instalável na tela inicial):** `src/app/manifest.ts` (display standalone); meta/ícones Apple no
+`layout.tsx` (`apple-mobile-web-app-capable` legado via `other` para o iOS abrir em tela cheia,
+`apple-touch-icon`, `theme-color`, `viewport-fit=cover`); `scripts/gen-pwa-icons.mjs` gera
+`public/icons/*` (192, 512, 512-maskable, apple-touch 180) a partir do `public/logo.png`; e
+`components/pwa/ios-install-hint.tsx` (dica "Adicionar à Tela de Início", só em iOS Safari fora do
+standalone, dispensável em localStorage). Verificado no navegador (manifest + head corretos);
+**validação real é no iPhone do dono** (instalar e abrir em tela cheia). Próximas fases: 2) offline +
+unificar o SW de push (`public/sw.js`) com cache (Serwist); 3) splash screens, safe-areas, Face ID no cofre.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
