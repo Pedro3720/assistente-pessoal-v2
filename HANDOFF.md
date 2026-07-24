@@ -178,8 +178,23 @@ atrás de `md:` (desktop inalterado):
 - ritmo vertical do dashboard `space-y-8` → `space-y-5 md:space-y-8`;
 - cards de resumo (dashboard e finanças) compactados (`p-4`, gap menor, valor `text-xl md:text-2xl`);
   altura do card caiu de ~146 para 126px, mantendo o alinhamento da correção #26.
-Ideias maiores não feitas (precisariam de brainstorm próprio): barra de navegação inferior estilo Pierre,
-cantos mais arredondados, redesenho visual dos cards.
+Ideias maiores não feitas (precisariam de brainstorm próprio): cantos mais arredondados, redesenho visual
+dos cards. (A barra de navegação inferior foi feita, ver 3.8.)
+
+### 3.8 Navegação iPhone estilo Pierre (branch `feat/nav-iphone`) — executada por SDD
+Spec/plano em `docs/superpowers/plans/2026-07-23-navegacao-iphone.md`. Executada pelo fluxo
+subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledger em
+`.superpowers/sdd/progress.md`.
+- **Barra inferior** (`src/components/layout/bottom-nav.tsx`, `md:hidden`): abas Início, Finanças, [+],
+  Tarefas, Agenda. Fixa no rodapé, vidro, respeita `env(safe-area-inset-bottom)`, `aria-current` na aba
+  ativa. Desktop mantém a sidebar (nada muda em `md+`).
+- **Folha de ações rápidas** (`src/components/layout/quick-actions.tsx`, via `createPortal`): o "+" abre
+  uma folha inferior com Nova transação / Nova tarefa / Novo evento, que navegam com `?new=1`.
+- **`?new=1`**: `tasks-view`, `calendar-view` e `transactions-section` detectam o parâmetro no mount,
+  abrem o modal de criação e limpam a URL (`router.replace`).
+- Integração no `(app)/layout.tsx`: `<BottomNav />` fora do `<main>`, e o `pb` do conteúdo subiu para
+  `+6rem` (reserva espaço da barra). Verificado no navegador (390px: barra fixa + folha; 1100px: `display:none`).
+- Revisão final (opus): READY TO MERGE, 0 Critical/Important. Minors adiados: folha não trava scroll do body.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
