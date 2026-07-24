@@ -122,6 +122,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* trava horizontal: nada pode deixar a página mais larga que a viewport
+       (rede de segurança contra overflow no iOS). clip não quebra position: sticky. */
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans), system-ui, sans-serif;

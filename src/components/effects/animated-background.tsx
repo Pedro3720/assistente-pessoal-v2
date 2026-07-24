@@ -128,8 +128,12 @@ export function AnimatedBackground() {
     }
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Largura/altura da VIEWPORT DE LAYOUT (confiável no iOS; window.innerWidth pode
+    // reportar mais que a viewport no PWA standalone e deixar o canvas maior que a tela).
+    const vpW = () => document.documentElement.clientWidth;
+    const vpH = () => document.documentElement.clientHeight;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(vpW(), vpH());
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -137,7 +141,7 @@ export function AnimatedBackground() {
     const p = PALETTES.dark; // paleta inicial; o efeito de tema ajusta em seguida
     const uniforms: Uniforms = {
       u_time: { value: 0 },
-      u_res: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      u_res: { value: new THREE.Vector2(vpW(), vpH()) },
       u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
       u_base: { value: new THREE.Vector3(...p.base) },
       u_c1: { value: new THREE.Vector3(...p.c1) },
@@ -171,8 +175,8 @@ export function AnimatedBackground() {
     };
 
     const onResize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      uniforms.u_res.value.set(window.innerWidth, window.innerHeight);
+      renderer.setSize(vpW(), vpH());
+      uniforms.u_res.value.set(vpW(), vpH());
       if (reduce) renderOnceRef.current();
     };
     const onVisibility = () => {
@@ -221,5 +225,5 @@ export function AnimatedBackground() {
     renderOnceRef.current(); // garante o frame certo mesmo com reduced-motion
   }, [resolvedTheme]);
 
-  return <div ref={ref} aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-90" />;
+  return <div ref={ref} aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden opacity-90" />;
 }
