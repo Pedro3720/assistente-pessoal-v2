@@ -3,7 +3,6 @@ import { Space_Grotesk, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
-import { AnimatedBackground } from "@/components/effects/animated-background";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { AppleSplash } from "@/components/pwa/apple-splash";
 import { LockZoom } from "@/components/pwa/lock-zoom";
@@ -72,7 +71,6 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <AnimatedBackground />
           <div className="relative z-10">{children}</div>
           <div className="grain-overlay" aria-hidden />
           <ThemedToaster />
