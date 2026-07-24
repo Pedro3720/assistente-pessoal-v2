@@ -48,6 +48,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#080b12",
   viewportFit: "cover",
+  // Trava a escala em 1 para o PWA instalado sempre abrir na proporção correta,
+  // sem ficar preso em zoom (o iOS memoriza o pinch entre aberturas). Cara de app nativo.
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
