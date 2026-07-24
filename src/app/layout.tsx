@@ -6,6 +6,7 @@ import { ThemedToaster } from "@/components/providers/themed-toaster";
 import { AnimatedBackground } from "@/components/effects/animated-background";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { AppleSplash } from "@/components/pwa/apple-splash";
+import { LockZoom } from "@/components/pwa/lock-zoom";
 
 // Corpo/UI — Inter (legível, precisão)
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -76,6 +77,7 @@ export default function RootLayout({
           <div className="grain-overlay" aria-hidden />
           <ThemedToaster />
           <RegisterSW />
+          <LockZoom />
         </ThemeProvider>
       </body>
     </html>

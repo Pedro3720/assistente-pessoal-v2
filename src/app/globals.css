@@ -129,6 +129,8 @@
     /* PWA standalone: sem bounce/rubber-band e sem flash de toque (cara de app) */
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    /* mata o double-tap-to-zoom (sem afetar scroll/toque); pinch é bloqueado em JS (LockZoom) */
+    touch-action: manipulation;
   }
   button,
   input,
