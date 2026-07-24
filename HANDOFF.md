@@ -199,6 +199,11 @@ subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledg
 **Atualização 2026-07-24 (branch `feat/iphone-nav-v2`, no ar):**
 - **Viewport travado** (`layout.tsx` raiz): `maximum-scale=1, user-scalable=no`. O PWA instalado memorizava o
   pinch-zoom e reabria cortado/zoomado; travar a escala faz sempre abrir na proporção correta (cara de app nativo).
+  Reforço (commit `bb320f6`): `LockZoom` (`components/pwa/lock-zoom.tsx`) bloqueia os eventos `gesture*` do
+  Safari (pinch) e `touch-action: manipulation` no body mata o double-tap. **IMPORTANTE:** o iOS guarda o
+  estado de zoom do PWA instalado separado do conteúdo; para resetar um zoom já preso, o dono precisa
+  **remover e readicionar** o app na tela inicial (uma vez). Depois disso o bloqueio impede recorrência.
+  Confirmado no código; não há overflow de CSS (medido a 320/390px: `scrollWidth == viewport`).
 - **Navegação toda no menu inferior (mobile)** + **sidebar virou desktop-only.** Barra:
   Início · Finanças · [+] · Agenda · **Mais**. A aba "Mais" (`components/layout/more-sheet.tsx`, folha via portal)
   leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
