@@ -219,6 +219,23 @@ subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledg
   única fonte de overflow horizontal no iPhone. `overflow-x: clip` na raiz permanece como rede de segurança.
   Repro fiel do dashboard completo medido a 375 e 390px: `overflowPx 0`. Se quiser o efeito de volta um dia,
   está no histórico do git.
+
+### 3.9 App Android nativo via Capacitor (branch `feat/android-capacitor`, no ar)
+O dono desistiu do PWA no iOS (o corte persistia só lá) e pediu **app nativo de Android, sem Play Store**.
+Solução: **Capacitor** com WebView que **carrega o site da Vercel** (`assistente-pessoal-v2.vercel.app`),
+reusando 100% do app (o app é SSR, então não dá pra empacotar offline; precisa de internet, igual PWA).
+Como é WebView do Android (não PWA do iOS), **não tem o bug de proporção**.
+- `capacitor.config.ts`: `appId com.zenite.assistente`, `appName Zênite`, `server.url` = produção,
+  `webDir capacitor/www` (fallback offline). Deps `@capacitor/core|android|cli` (v8).
+- **APK gerado na nuvem** (`.github/workflows/android-apk.yml`, disparo manual `workflow_dispatch`):
+  não precisa de Android Studio local. Actions -> "Build Android APK" -> Run -> baixa o artifact
+  `zenite-android-apk` -> instala no celular (sideload, "fontes desconhecidas").
+- Pasta `android/` é **gerada no CI** a cada build (gitignored); `npx cap add android` local só foi usado
+  para validar a config.
+- Pendências/limitações: APK é **debug** (não assinado pra release; ok pra uso pessoal via sideload).
+  Ícone/splash nativos ainda são os default do Capacitor (customizar depois com `@capacitor/assets`).
+  Login Google via OAuth pode ser bloqueado em WebView ("disallowed_useragent"); login por e-mail/senha
+  funciona. Se o domínio da Vercel mudar, atualizar `server.url` no `capacitor.config.ts`.
 - **Navegação toda no menu inferior (mobile)** + **sidebar virou desktop-only.** Barra:
   Início · Finanças · [+] · Agenda · **Mais**. A aba "Mais" (`components/layout/more-sheet.tsx`, folha via portal)
   leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
