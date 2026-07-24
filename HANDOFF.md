@@ -213,6 +213,12 @@ subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledg
   raiz (globals.css, não quebra sticky). Verificado a 390px: canvas 390, `overflowPx 0`. **Não precisou
   redesenhar o dashboard.** Lição: no iOS, dimensionar canvas/elementos fixos por `clientWidth`, nunca
   `innerWidth`, e clipar overlays fixos.
+- **Fundo animado REMOVIDO (commit `210dd10`):** o dono pediu para tirar o canvas e deixar cor sólida escura.
+  `AnimatedBackground` saiu do `layout.tsx` e o arquivo `components/effects/animated-background.tsx` foi
+  apagado. O fundo agora é a cor sólida do tema (`bg-background`, `#080b12` no dark). Isso elimina de vez a
+  única fonte de overflow horizontal no iPhone. `overflow-x: clip` na raiz permanece como rede de segurança.
+  Repro fiel do dashboard completo medido a 375 e 390px: `overflowPx 0`. Se quiser o efeito de volta um dia,
+  está no histórico do git.
 - **Navegação toda no menu inferior (mobile)** + **sidebar virou desktop-only.** Barra:
   Início · Finanças · [+] · Agenda · **Mais**. A aba "Mais" (`components/layout/more-sheet.tsx`, folha via portal)
   leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
