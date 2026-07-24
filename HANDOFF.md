@@ -196,6 +196,15 @@ subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledg
   `+6rem` (reserva espaço da barra). Verificado no navegador (390px: barra fixa + folha; 1100px: `display:none`).
 - Revisão final (opus): READY TO MERGE, 0 Critical/Important. Minors adiados: folha não trava scroll do body.
 
+**Atualização 2026-07-24 (branch `feat/iphone-nav-v2`, no ar):**
+- **Viewport travado** (`layout.tsx` raiz): `maximum-scale=1, user-scalable=no`. O PWA instalado memorizava o
+  pinch-zoom e reabria cortado/zoomado; travar a escala faz sempre abrir na proporção correta (cara de app nativo).
+- **Navegação toda no menu inferior (mobile)** + **sidebar virou desktop-only.** Barra:
+  Início · Finanças · [+] · Agenda · **Mais**. A aba "Mais" (`components/layout/more-sheet.tsx`, folha via portal)
+  leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
+  (sem hambúrguer/drawer no celular); no desktop continua igual. `BottomNav` recebe `isAdmin`. Verificado no
+  navegador (390px: barra + folha, sem sidebar; 1100px: sidebar, sem barra).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
