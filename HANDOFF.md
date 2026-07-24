@@ -204,6 +204,15 @@ subagent-driven (implementador + revisor por tarefa + revisão final opus). Ledg
   estado de zoom do PWA instalado separado do conteúdo; para resetar um zoom já preso, o dono precisa
   **remover e readicionar** o app na tela inicial (uma vez). Depois disso o bloqueio impede recorrência.
   Confirmado no código; não há overflow de CSS (medido a 320/390px: `scrollWidth == viewport`).
+- **CAUSA RAIZ do "app cortado" no iPhone (commit `5b9addd`):** NÃO era zoom. Era o **fundo animado**
+  (`components/effects/animated-background.tsx`): o canvas Three.js era dimensionado por `window.innerWidth`
+  (que no PWA standalone do iOS reporta mais que a viewport de layout) e ficava num `fixed inset-0` **sem
+  clip**, tornando a página **arrastável na horizontal** e empurrando o conteúdo pra fora da tela (o Chrome
+  não reproduz, reporta innerWidth consistente). Correção: dimensionar pela `documentElement.clientWidth`
+  (viewport de layout, confiável no iOS) + `overflow-hidden` no container do canvas + `overflow-x: clip` na
+  raiz (globals.css, não quebra sticky). Verificado a 390px: canvas 390, `overflowPx 0`. **Não precisou
+  redesenhar o dashboard.** Lição: no iOS, dimensionar canvas/elementos fixos por `clientWidth`, nunca
+  `innerWidth`, e clipar overlays fixos.
 - **Navegação toda no menu inferior (mobile)** + **sidebar virou desktop-only.** Barra:
   Início · Finanças · [+] · Agenda · **Mais**. A aba "Mais" (`components/layout/more-sheet.tsx`, folha via portal)
   leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
