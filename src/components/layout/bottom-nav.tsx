@@ -27,6 +27,7 @@ function Tab({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors ${
         active ? "text-primary" : "text-muted-foreground"
       }`}
