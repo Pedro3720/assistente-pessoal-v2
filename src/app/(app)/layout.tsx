@@ -4,6 +4,7 @@ import { getProfile } from "@/lib/data/profile";
 import { Sidebar } from "@/components/layout/sidebar";
 import { NotificationBanner } from "@/components/notifications/notification-banner";
 import { IosInstallHint } from "@/components/pwa/ios-install-hint";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { isAdminEmail } from "@/lib/auth/admin";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,12 +28,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isAdmin={isAdmin}
       />
       <main className="flex-1">
-        <div className="px-4 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] md:px-10 md:pt-10 md:pb-10">
+        <div className="px-4 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+6rem)] md:px-10 md:pt-10 md:pb-10">
           <IosInstallHint />
           <NotificationBanner />
           {children}
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 }
