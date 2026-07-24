@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Wallet, ListChecks, Calendar, X } from "lucide-react";
 
 const ACTIONS = [
-  { label: "Nova transacao", href: "/financas?new=1", icon: Wallet },
+  { label: "Nova transação", href: "/financas?new=1", icon: Wallet },
   { label: "Nova tarefa", href: "/tarefas?new=1", icon: ListChecks },
   { label: "Novo evento", href: "/calendario?new=1", icon: Calendar },
 ];
