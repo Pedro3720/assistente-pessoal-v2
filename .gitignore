@@ -33,3 +33,6 @@ next-env.d.ts
 
 # never commit build artifacts / archives (lição do projeto anterior: app.zip)
 *.zip
+
+# capacitor: a pasta android/ é gerada no build (GitHub Actions), não versionar
+/android/
