@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, Plus, Search, Clock, Repeat,
   Edit3, Trash2, X, CalendarDays,
@@ -45,6 +45,15 @@ export function CalendarView({
   const [presetDate, setPresetDate] = useState<string | null>(null);
   const [dayPopup, setDayPopup] = useState<{ date: string; items: EventOccurrence[] } | null>(null);
   const [viewing, setViewing] = useState<EventOccurrence | null>(null);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setEditing(null);
+      setPresetDate(null);
+      setModalOpen(true);
+      router.replace("/calendario");
+    }
+  }, [searchParams, router]);
 
   const goMonth = (o: number) => router.push(`/calendario?m=${o}`);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus, ArrowUpRight, ArrowDownRight, Edit3, Trash2,
 } from "lucide-react";
@@ -74,6 +74,14 @@ export function TransactionsSection({
   const [parcelas, setParcelas] = useState("1");
   const [saving, setSaving] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setEditingId(null);
+      setOpen(true);
+      router.replace("/financas");
+    }
+  }, [searchParams, router]);
 
   const kindCategories = categories.filter((c) => c.kind === type);
   const isPurchase = type === "expense" && !!cardId && !isCardPayment;

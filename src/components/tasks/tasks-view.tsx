@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical, Tags } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -52,6 +52,14 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
   // reordenar só quando nenhum filtro está ativo (ordem = lista completa)
   const canReorder = filter === "all" && catFilter === "all";
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setEditing(null);
+      setModalOpen(true);
+      router.replace("/tarefas");
+    }
+  }, [searchParams, router]);
 
   const counts = useMemo(
     () => ({
