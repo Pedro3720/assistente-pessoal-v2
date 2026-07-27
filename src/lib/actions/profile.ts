@@ -1,16 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth/session";
 import { profileInput } from "@/lib/validation/profile";
 import { uploadAvatarFile } from "@/lib/storage/avatar";
 
 export async function updateProfile(formData: FormData): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
+  const { supabase, user } = await requireUser();
 
   let avatar_url = (formData.get("avatar_url") as string) || null;
   const file = formData.get("avatar_file");

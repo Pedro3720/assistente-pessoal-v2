@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth/session";
+import { idParam, uuidParam } from "@/lib/validation/common";
 import { shiftMonth } from "@/lib/dates";
 import {
   transactionInput,
@@ -17,15 +18,6 @@ import {
 } from "@/lib/validation/finance";
 import type { PlannedItem } from "@/types/finance";
 import { DEFAULT_CATEGORIES } from "@/lib/finance/defaults";
-
-async function ctx() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-  return { supabase, userId: user.id };
-}
 
 function revalidate() {
   revalidatePath("/financas");
@@ -42,7 +34,7 @@ function normalizeTx(input: TransactionInput): TransactionInput {
 
 // ─── Categorias ───────────────────────────────────────────
 export async function ensureDefaultCategories() {
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { count, error } = await supabase
     .from("categories")
     .select("id", { count: "exact", head: true });
@@ -57,7 +49,7 @@ export async function ensureDefaultCategories() {
 
 export async function createCategory(raw: unknown) {
   const input = categoryInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("categories")
     .insert({ ...input, user_id: userId })
@@ -69,17 +61,19 @@ export async function createCategory(raw: unknown) {
 }
 
 export async function updateCategory(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = categoryInput.partial().parse(raw);
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("categories").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("categories").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deleteCategory(id: number) {
-  const { supabase } = await ctx();
-  await supabase.from("transactions").update({ category_id: null }).eq("category_id", id);
-  const { error } = await supabase.from("categories").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  await supabase.from("transactions").update({ category_id: null }).eq("category_id", rowId);
+  const { error } = await supabase.from("categories").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -87,7 +81,7 @@ export async function deleteCategory(id: number) {
 // ─── Contas (banks) ───────────────────────────────────────
 export async function createBank(raw: unknown) {
   const input = bankInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("banks")
     .insert({ ...input, user_id: userId })
@@ -99,16 +93,18 @@ export async function createBank(raw: unknown) {
 }
 
 export async function updateBank(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = bankInput.partial().parse(raw);
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("banks").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("banks").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deleteBank(id: number) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("banks").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("banks").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -116,7 +112,7 @@ export async function deleteBank(id: number) {
 // ─── Cartões ──────────────────────────────────────────────
 export async function createCard(raw: unknown) {
   const input = cardInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("credit_cards")
     .insert({ ...input, user_id: userId })
@@ -128,16 +124,18 @@ export async function createCard(raw: unknown) {
 }
 
 export async function updateCard(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = cardInput.partial().parse(raw);
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("credit_cards").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("credit_cards").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deleteCard(id: number) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("credit_cards").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("credit_cards").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -145,7 +143,7 @@ export async function deleteCard(id: number) {
 // ─── Transações ───────────────────────────────────────────
 export async function createTransaction(raw: unknown) {
   const input = normalizeTx(transactionInput.parse(raw));
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { error } = await supabase
     .from("transactions")
     .insert({ ...input, user_id: userId });
@@ -154,16 +152,18 @@ export async function createTransaction(raw: unknown) {
 }
 
 export async function updateTransaction(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = normalizeTx(transactionInput.parse(raw));
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("transactions").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("transactions").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deleteTransaction(id: number) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("transactions").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -175,14 +175,14 @@ export async function createInstallmentPurchase(raw: unknown) {
 
   if (installments <= 1 || !base.card_id || base.type !== "expense" || base.is_card_payment) {
     // sem parcelamento: comporta como transação normal
-    const { supabase, userId } = await ctx();
+    const { supabase, userId } = await requireUser();
     const { error } = await supabase.from("transactions").insert({ ...base, user_id: userId });
     if (error) throw new Error(error.message);
     revalidate();
     return;
   }
 
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data: card } = await supabase
     .from("credit_cards")
     .select("closing_day")
@@ -219,15 +219,16 @@ export async function createInstallmentPurchase(raw: unknown) {
 }
 
 export async function deleteTransactionGroup(group: string) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("transactions").delete().eq("purchase_group", group);
+  const g = uuidParam.parse(group);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("transactions").delete().eq("purchase_group", g);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function createTransfer(raw: unknown) {
   const input = transferInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const group = randomUUID();
   const base = {
     description: input.description,
@@ -250,8 +251,9 @@ export async function createTransfer(raw: unknown) {
 }
 
 export async function deleteTransferGroup(group: string) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("transactions").delete().eq("transfer_group", group);
+  const g = uuidParam.parse(group);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("transactions").delete().eq("transfer_group", g);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -259,7 +261,7 @@ export async function deleteTransferGroup(group: string) {
 /** Importação em lote (OFX/CSV). */
 export async function bulkCreateTransactions(raw: unknown) {
   const arr = transactionInput.array().parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const rows = arr.map((t) => ({ ...normalizeTx(t), user_id: userId }));
   const { error } = await supabase.from("transactions").insert(rows);
   if (error) throw new Error(error.message);
@@ -269,7 +271,7 @@ export async function bulkCreateTransactions(raw: unknown) {
 // ─── Assinaturas ──────────────────────────────────────────
 export async function createSubscription(raw: unknown) {
   const input = subscriptionInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { error } = await supabase
     .from("subscriptions")
     .insert({ ...input, user_id: userId });
@@ -278,16 +280,18 @@ export async function createSubscription(raw: unknown) {
 }
 
 export async function updateSubscription(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = subscriptionInput.partial().parse(raw);
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("subscriptions").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("subscriptions").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deleteSubscription(id: number) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("subscriptions").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("subscriptions").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
@@ -295,7 +299,7 @@ export async function deleteSubscription(id: number) {
 // ─── Planejamento mensal ──────────────────────────────────
 export async function createPlannedItem(raw: unknown) {
   const input = plannedItemInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { error } = await supabase
     .from("planned_items")
     .insert({ ...input, user_id: userId });
@@ -304,27 +308,30 @@ export async function createPlannedItem(raw: unknown) {
 }
 
 export async function updatePlannedItem(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = plannedItemInput.partial().parse(raw);
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("planned_items").update(input).eq("id", id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("planned_items").update(input).eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 export async function deletePlannedItem(id: number) {
-  const { supabase } = await ctx();
-  const { error } = await supabase.from("planned_items").delete().eq("id", id);
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("planned_items").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
 
 /** Lança a transação real a partir do item e vincula (transaction_id). */
 export async function realizePlannedItem(id: number) {
-  const { supabase, userId } = await ctx();
+  const rowId = idParam.parse(id);
+  const { supabase, userId } = await requireUser();
   const { data, error: readErr } = await supabase
     .from("planned_items")
     .select("*")
-    .eq("id", id)
+    .eq("id", rowId)
     .single();
   if (readErr) throw new Error(readErr.message);
   const item = data as PlannedItem;
@@ -354,7 +361,7 @@ export async function realizePlannedItem(id: number) {
   const { data: linked, error: linkErr } = await supabase
     .from("planned_items")
     .update({ transaction_id: (tx as { id: number }).id })
-    .eq("id", id)
+    .eq("id", rowId)
     .is("transaction_id", null)
     .select("id");
   if (linkErr || !linked || linked.length === 0) {
@@ -367,11 +374,12 @@ export async function realizePlannedItem(id: number) {
 
 /** Desfaz: remove a transação vinculada (a FK on delete set null volta o item a pendente). */
 export async function unrealizePlannedItem(id: number) {
-  const { supabase } = await ctx();
+  const rowId = idParam.parse(id);
+  const { supabase } = await requireUser();
   const { data, error: readErr } = await supabase
     .from("planned_items")
     .select("transaction_id")
-    .eq("id", id)
+    .eq("id", rowId)
     .single();
   if (readErr) throw new Error(readErr.message);
   const txId = (data as { transaction_id: number | null }).transaction_id;

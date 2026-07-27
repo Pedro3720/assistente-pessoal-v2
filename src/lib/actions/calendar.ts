@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth/session";
+import { idParam, yearParam, monthParam } from "@/lib/validation/common";
 import { eventInput } from "@/lib/validation/calendar";
 import {
   pushEvent,
@@ -11,15 +12,6 @@ import {
 } from "@/lib/google/calendar";
 import type { CalendarEvent } from "@/types/calendar";
 
-async function ctx() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-  return { supabase, userId: user.id };
-}
-
 function revalidate() {
   revalidatePath("/calendario");
   revalidatePath("/");
@@ -27,7 +19,7 @@ function revalidate() {
 
 export async function createEvent(raw: unknown) {
   const input = eventInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("events")
     .insert({ ...input, user_id: userId })
@@ -46,12 +38,13 @@ export async function createEvent(raw: unknown) {
 }
 
 export async function updateEvent(id: number, raw: unknown) {
+  const rowId = idParam.parse(id);
   const input = eventInput.parse(raw);
-  const { supabase, userId } = await ctx();
+  const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("events")
     .update(input)
-    .eq("id", id)
+    .eq("id", rowId)
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -59,7 +52,7 @@ export async function updateEvent(id: number, raw: unknown) {
   try {
     const gid = await pushEvent(userId, data as CalendarEvent);
     if (gid && gid !== data.google_event_id) {
-      await supabase.from("events").update({ google_event_id: gid }).eq("id", id);
+      await supabase.from("events").update({ google_event_id: gid }).eq("id", rowId);
     }
   } catch {
     // ignora falhas de sync
@@ -68,10 +61,11 @@ export async function updateEvent(id: number, raw: unknown) {
 }
 
 export async function deleteEvent(id: number) {
-  const { supabase, userId } = await ctx();
-  const { data } = await supabase.from("events").select("google_event_id").eq("id", id).single();
+  const rowId = idParam.parse(id);
+  const { supabase, userId } = await requireUser();
+  const { data } = await supabase.from("events").select("google_event_id").eq("id", rowId).single();
 
-  const { error } = await supabase.from("events").delete().eq("id", id);
+  const { error } = await supabase.from("events").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
 
   try {
@@ -84,8 +78,10 @@ export async function deleteEvent(id: number) {
 
 /** Pull: importa eventos do Google do mês para o app (só os que ainda não existem). */
 export async function importFromGoogle(year: number, month: number): Promise<number> {
-  const { supabase, userId } = await ctx();
-  const items = await fetchGoogleEvents(userId, year, month);
+  const y = yearParam.parse(year);
+  const m = monthParam.parse(month);
+  const { supabase, userId } = await requireUser();
+  const items = await fetchGoogleEvents(userId, y, m);
 
   // Ids do Google que já temos (para não duplicar, incluindo instâncias de recorrentes).
   const { data: existingRows } = await supabase

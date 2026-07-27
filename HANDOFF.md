@@ -289,6 +289,35 @@ CSP não quebra nada, headers presentes, `next/image` OK).
 6. Opcional (bônus): habilitar **MFA (TOTP)** em Authentication para a conta do dono.
 7. Depois de revisar o Nível 1, **`git push`** (a Vercel builda e publica com o Next 16.2.12).
 
+### 3.11 Segurança — Onda 11 (Nível 2: consistência de acesso e validação) — 2026-07-27
+Segundo nível do endurecimento. Auditoria + padronização, sem mudança de comportamento. Build OK.
+- **Guard de sessão único** (`src/lib/auth/session.ts`, `requireUser()`): substitui os 6 `ctx()` copiados
+  em cada action + os guards inline de profile/google. Uma fonte só de verdade para "exige login". Todas
+  as actions de mutação passam por ele (50 usos). `auth.ts` fica de fora de propósito (login/cadastro/
+  reset são fluxos pré-login; já usam Zod safeParse e o `updateUser` é preso à sessão).
+- **Validação Zod completa:** todo payload de dados já era validado; preenchi os buracos de entrada
+  ESCALAR (novos schemas em `src/lib/validation/common.ts`): `idParam` (id de linha) nas funções de
+  update/delete/status/reveal/realize, `uuidParam` nos grupos (transfer/parcelamento), `pushEndpointParam`
+  no unsubscribe, `yearParam`/`monthParam` no import do Google. Coerção tolerante (não quebra chamada
+  legítima) que rejeita tipo errado antes de tocar o banco.
+- **RLS auditada:** as 15 tabelas já têm RLS + policy `own_rows` (conferido migração por migração;
+  `profiles` usa `id`, o resto `user_id`). Entregue `supabase/audit_rls.sql`: Parte 1 = relatório
+  (lista toda tabela do `public`, RLS e nº de policies; buraco = rls_ativa false ou 0 policies);
+  Parte 2 = reafirmação idempotente com a MESMA definição das migrações (não enfraquece nada).
+- **service_role isolado (conferido):** `src/lib/supabase/admin.ts` tem `import "server-only"` e usa
+  `SUPABASE_SECRET_KEY`; só é importado por código de servidor (Route Handler do cron atrás de
+  `CRON_SECRET`, actions/reader admin atrás de `assertAdmin()`), nunca por client component; nenhuma
+  secret em `NEXT_PUBLIC_`. Sem mudança, só verificação.
+- **Arquivos:** novos `src/lib/auth/session.ts`, `src/lib/validation/common.ts`, `supabase/audit_rls.sql`;
+  refatorados `src/lib/actions/{finance,task,calendar,notifications,password,suggestion,profile,google}.ts`.
+
+**Ação do dono (Nível 2):**
+1. **Recomendado (verificação):** rodar a **Parte 1** de `supabase/audit_rls.sql` no SQL Editor e conferir
+   que as 15 tabelas têm `rls_ativa = true` e `qtd_policies >= 1`. Se algo faltar, rodar a **Parte 2**
+   (idempotente e segura). Como o RLS já vem das migrações, isso é só confirmação/rede de segurança.
+2. Depois do push, um teste manual rápido no app logado: criar/editar/excluir uma transação, tarefa e
+   evento (confirma que o guard novo não atrapalha o uso legítimo).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
