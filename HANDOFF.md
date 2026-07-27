@@ -318,6 +318,37 @@ Segundo nível do endurecimento. Auditoria + padronização, sem mudança de com
 2. Depois do push, um teste manual rápido no app logado: criar/editar/excluir uma transação, tarefa e
    evento (confirma que o guard novo não atrapalha o uso legítimo).
 
+### 3.12 Segurança — Onda 12 (Nível 3: custo e abuso) — 2026-07-27
+Terceiro nível. Rate limiting + endurecimento do Storage. Build OK.
+- **Rate limiting** (`src/lib/ratelimit.ts`, `@upstash/ratelimit` + `@upstash/redis`): wrapper genérico
+  sliding-window, **fail-open** (se o Upstash não estiver configurado ou o Redis cair, libera; nunca
+  bloqueia o uso legítimo por infra). `rateLimitOk`/`enforceRate` + `clientIp()`. Aplicado:
+  login/cadastro e reset por **IP** (`auth.ts`), troca de senha por IP (`auth.ts` `updatePassword`),
+  envio de imagem por **usuário** (`storage/upload.ts`) e escritas de finanças por usuário
+  (`finance.ts`: createTransaction/InstallmentPurchase/Transfer/bulk). Limites atuais: auth 10/min,
+  reset 5/h, troca 10/h, finanças 60/min, upload 20/5min (fáceis de ajustar no `CONFIG`).
+- **Upload endurecido** (`src/lib/storage/upload.ts`): agora `server-only`, valida **tipo** (JPG/PNG/
+  WEBP/GIF) e **tamanho** (5 MB; o teto real do request é o `bodySizeLimit` 4 MB do next.config) no
+  servidor, antes de subir.
+- **Storage por bucket** (`supabase/harden_storage.sql`, bloco pra colar): limita tipo+tamanho no
+  próprio Storage (`file_size_limit`/`allowed_mime_types`) e reafirma policies `own_*` (escrita/update/
+  delete só na pasta `{user_id}/`). Buckets seguem **públicos p/ leitura** (a app serve por URL pública).
+- **Signed URLs (decisão do dono):** avatars/suggestions são públicos hoje. Trocar por privado+signed URL
+  é **invasivo** (migrar URLs salvas no banco, refatorar ~15 telas que exibem imagem, mexer no next.config
+  e na CSP, lidar com expiração) e de **baixo valor** p/ app pessoal (foto de perfil + prints). Recomendação:
+  **manter público + hardened**. O caminho pra privado está comentado no fim do `harden_storage.sql`.
+- **Arquivos:** novo `src/lib/ratelimit.ts`, `supabase/harden_storage.sql`; alterados `auth.ts`,
+  `finance.ts`, `storage/upload.ts`, `package.json` (deps Upstash). Sem mudança na CSP (Upstash é
+  server-side, não do browser).
+
+**Ação do dono (Nível 3):**
+1. **Upstash (pra ligar o rate limiting):** criar conta em upstash.com, criar um banco **Redis**, e setar
+   na **Vercel** e no **`.env.local`**: `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`. Enquanto
+   não setar, o rate limiting fica **desligado (fail-open)** e o app funciona normal. O free tier do Upstash
+   cobre uso pessoal de sobra.
+2. **Rodar `supabase/harden_storage.sql`** no SQL Editor (limita tipo/tamanho no Storage + policies own_*).
+3. **Signed URLs:** decisão sua (ver acima). Se quiser o modo privado, me avisa que faço o refactor à parte.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**

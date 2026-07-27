@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/auth/session";
+import { enforceRate } from "@/lib/ratelimit";
 import { idParam, uuidParam } from "@/lib/validation/common";
 import { shiftMonth } from "@/lib/dates";
 import {
@@ -144,6 +145,7 @@ export async function deleteCard(id: number) {
 export async function createTransaction(raw: unknown) {
   const input = normalizeTx(transactionInput.parse(raw));
   const { supabase, userId } = await requireUser();
+  await enforceRate("financeWrite", userId, "Muitas operações em finanças. Aguarde um instante.");
   const { error } = await supabase
     .from("transactions")
     .insert({ ...input, user_id: userId });
@@ -172,17 +174,17 @@ export async function createInstallmentPurchase(raw: unknown) {
   const parsed = installmentInput.parse(raw);
   const { installments, ...core } = parsed;
   const base = normalizeTx(core);
+  const { supabase, userId } = await requireUser();
+  await enforceRate("financeWrite", userId, "Muitas operações em finanças. Aguarde um instante.");
 
   if (installments <= 1 || !base.card_id || base.type !== "expense" || base.is_card_payment) {
     // sem parcelamento: comporta como transação normal
-    const { supabase, userId } = await requireUser();
     const { error } = await supabase.from("transactions").insert({ ...base, user_id: userId });
     if (error) throw new Error(error.message);
     revalidate();
     return;
   }
 
-  const { supabase, userId } = await requireUser();
   const { data: card } = await supabase
     .from("credit_cards")
     .select("closing_day")
@@ -229,6 +231,7 @@ export async function deleteTransactionGroup(group: string) {
 export async function createTransfer(raw: unknown) {
   const input = transferInput.parse(raw);
   const { supabase, userId } = await requireUser();
+  await enforceRate("financeWrite", userId, "Muitas operações em finanças. Aguarde um instante.");
   const group = randomUUID();
   const base = {
     description: input.description,
@@ -262,6 +265,7 @@ export async function deleteTransferGroup(group: string) {
 export async function bulkCreateTransactions(raw: unknown) {
   const arr = transactionInput.array().parse(raw);
   const { supabase, userId } = await requireUser();
+  await enforceRate("financeWrite", userId, "Muitas operações em finanças. Aguarde um instante.");
   const rows = arr.map((t) => ({ ...normalizeTx(t), user_id: userId }));
   const { error } = await supabase.from("transactions").insert(rows);
   if (error) throw new Error(error.message);

@@ -7,8 +7,16 @@ import { signupInput } from "@/lib/validation/profile";
 import { uploadAvatarFile } from "@/lib/storage/avatar";
 import { headers } from "next/headers";
 import { resetRequestInput, passwordInput } from "@/lib/validation/auth";
+import { clientIp, rateLimitOk } from "@/lib/ratelimit";
 
 export async function login(formData: FormData) {
+  const ip = await clientIp();
+  if (!(await rateLimitOk("auth", ip))) {
+    redirect(
+      `/login?error=${encodeURIComponent("Muitas tentativas. Aguarde um instante e tente de novo.")}`
+    );
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -25,6 +33,13 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
+  const ip = await clientIp();
+  if (!(await rateLimitOk("auth", ip))) {
+    redirect(
+      `/login?error=${encodeURIComponent("Muitas tentativas. Aguarde um instante e tente de novo.")}`
+    );
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
@@ -44,6 +59,13 @@ export async function signup(formData: FormData) {
 }
 
 export async function signupWithProfile(formData: FormData): Promise<void> {
+  const ip = await clientIp();
+  if (!(await rateLimitOk("auth", ip))) {
+    redirect(
+      `/cadastro?error=${encodeURIComponent("Muitas tentativas. Aguarde um instante e tente de novo.")}`
+    );
+  }
+
   const supabase = await createClient();
 
   const parsed = signupInput.safeParse({
@@ -109,6 +131,15 @@ export async function logout() {
 }
 
 export async function requestPasswordReset(formData: FormData): Promise<void> {
+  const ip = await clientIp();
+  if (!(await rateLimitOk("passwordReset", ip))) {
+    redirect(
+      `/recuperar-senha?message=${encodeURIComponent(
+        "Muitas solicitações. Aguarde um pouco antes de tentar de novo."
+      )}`
+    );
+  }
+
   const parsed = resetRequestInput.safeParse({ email: String(formData.get("email") ?? "") });
   if (!parsed.success) {
     redirect(`/recuperar-senha?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
@@ -131,6 +162,11 @@ export async function requestPasswordReset(formData: FormData): Promise<void> {
 }
 
 export async function updatePassword(newPassword: string): Promise<{ error?: string }> {
+  const ip = await clientIp();
+  if (!(await rateLimitOk("passwordChange", ip))) {
+    return { error: "Muitas tentativas. Aguarde um instante e tente de novo." };
+  }
+
   const parsed = passwordInput.safeParse({ password: newPassword });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await createClient();
