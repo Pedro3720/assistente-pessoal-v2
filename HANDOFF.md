@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-23.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-27.**
 
 ---
 
@@ -241,6 +241,53 @@ Como é WebView do Android (não PWA do iOS), **não tem o bug de proporção**.
   leva Tarefas, Senhas, Sugestões, Admin (se admin), Perfil, Tema e Sair. O `Sidebar` agora é `hidden md:flex`
   (sem hambúrguer/drawer no celular); no desktop continua igual. `BottomNav` recebe `isAdmin`. Verificado no
   navegador (390px: barra + folha, sem sidebar; 1100px: sidebar, sem barra).
+
+### 3.10 Segurança — Onda 10 (Nível 1: config e higiene) — 2026-07-27
+Primeiro nível de um endurecimento de segurança em 5 níveis (crescente). **Só o Nível 1 foi feito;**
+os próximos param para revisão. Build validado (`npm run build` OK) e app conferido no ar (prod local:
+CSP não quebra nada, headers presentes, `next/image` OK).
+- **Security headers + CSP** (`next.config.ts` via `headers()`): CSP travando `default/object/base/
+  frame-ancestors/form-action`; `connect-src`/`img-src` só self + Supabase (as chamadas ao Google são
+  server-side). Mais HSTS (2 anos), `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`,
+  `Permissions-Policy` (desliga câmera/mic/geo/etc., mantém WebAuthn do cofre) e `X-DNS-Prefetch-Control`.
+  A CSP afrouxa só no dev (HMR usa eval/websocket). Nota: `script-src` usa `'unsafe-inline'` porque a CSP
+  aqui é estática (sem nonce por request); ainda barra scripts externos. Robustez extra futura: CSP com
+  nonce no middleware.
+- **WebView do Android (Capacitor):** revisado, sem mudança de código. O app carrega o site remoto da
+  Vercel (`server.url` + `cleartext: false`), então a CSP do servidor (acima) vale dentro do WebView.
+- **HTTPS:** a Vercel já redireciona http->https; o HSTS memoriza isso no navegador. `upgrade-insecure-
+  requests` na CSP em produção.
+- **Dependabot** (`.github/dependabot.yml`): PRs semanais de atualização (npm + github-actions), patch/
+  minor agrupados. **Ação do dono:** ativar Dependabot alerts em GitHub -> Settings -> Security.
+- **npm audit no CI** (`.github/workflows/security-audit.yml`): roda em push/PR/semanal; gate falha só em
+  **crítico** (highs são reportados no log, não travam o pipeline, porque há highs transitivos sem correção
+  segura hoje).
+- **Correção de dependências (higiene):** `next` 16.2.9 -> **16.2.12** (fecha CVEs de alto risco do próprio
+  Next: bypass de middleware/proxy, SSRF em Server Actions, exposição de endpoints de Server Functions, DoS,
+  cache confusion, DoS de SVG no image optimizer). `sharp` 0.34.5 -> **0.35.3** via `overrides` (CVEs do
+  libvips). **Residual conhecido e aceito:** `postcss` embutido no Next (build-time, não vai pro runtime;
+  o único "fix" do npm é derrubar o Next pra v9) e `brace-expansion` (só no eslint/dev). Ficam pro
+  Dependabot quando houver correção limpa. **Ação do dono:** revisar antes do `git push` (o deploy da
+  Vercel rebuilda com o Next novo).
+- **Arquivos:** `next.config.ts`, `.github/dependabot.yml`, `.github/workflows/security-audit.yml`,
+  `package.json`/`package-lock.json` (bump + override), `.claude/launch.json` (config `prod` para conferir
+  a CSP de produção). Sem migração SQL neste nível.
+
+**Ação do dono (Nível 1) — painel do Supabase Auth e GitHub:**
+1. **GitHub -> Settings -> Code security:** ativar **Dependabot alerts** e **Dependabot security updates**.
+2. **Supabase -> Authentication -> proteção de senha:** ativar **"Leaked password protection"** (checa
+   HaveIBeenPwned) e definir **política de senha forte** (mínimo 8+, ideal 10-12, exigir letras+números).
+3. **Supabase -> Authentication -> Providers -> Email:** exigir **confirmação de e-mail** antes do primeiro
+   login (obs: muda o fluxo de /cadastro, o usuário confirma o e-mail antes de entrar).
+4. **Supabase -> Authentication -> URL Configuration:** revisar **Site URL** e a lista de **Redirect URLs**,
+   deixando só as URLs exatas de callback (produção `…/api/auth/callback` e `…/api/google/callback`, mais o
+   `http://localhost:3000/...` para dev). Sem curingas amplos. (Casa com a pendência de recuperação de senha.)
+5. **Supabase -> Billing / spend cap:** no **plano Free o spend cap já vem LIGADO e travado** (só dá pra
+   desligar no Pro), então NÃO há susto de custo: ao estourar a cota grátis o projeto fica só-leitura em vez
+   de cobrar. **Nada a fazer no Free** (é só dar Cancel na tela do spend cap). Acompanhar uso em
+   **(organização) -> Usage/Reports**. Rever só se migrar pro Pro. Opcional: **Auth -> Rate Limits**.
+6. Opcional (bônus): habilitar **MFA (TOTP)** em Authentication para a conta do dono.
+7. Depois de revisar o Nível 1, **`git push`** (a Vercel builda e publica com o Next 16.2.12).
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 

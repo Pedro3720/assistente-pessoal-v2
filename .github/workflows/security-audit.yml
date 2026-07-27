@@ -1,0 +1,35 @@
+name: Security audit
+
+# Roda "npm audit" nas dependencias. O gate do CI falha em vulnerabilidade CRITICA
+# (quase sempre acionavel). As de nivel "high" sao apenas reportadas no log (nao travam
+# o pipeline), porque hoje ha vulnerabilidades transitivas de "high" sem correcao segura
+# (ex.: postcss embutido no proprio Next). O Dependabot abre PRs quando surgir correcao.
+# Dispara em push/PR na main e uma vez por semana.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # toda segunda, 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Relatorio completo (produção), so informativo: nao trava o pipeline.
+      - name: npm audit (produção, relatorio high+)
+        run: npm audit --omit=dev --audit-level=high || true
+
+      # Gate de fato: falha se houver vulnerabilidade critica em produção.
+      - name: npm audit gate (produção, critical)
+        run: npm audit --omit=dev --audit-level=critical

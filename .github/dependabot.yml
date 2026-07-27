@@ -1,0 +1,29 @@
+# Dependabot: abre PRs de atualização de dependências com alerta de segurança.
+# Painel dos alertas: GitHub -> Security -> Dependabot. Os PRs aparecem em "Pull requests".
+version: 2
+updates:
+  # Dependências do app (npm)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    # Agrupa atualizações menores/patch num PR só, para reduzir ruído.
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Actions usadas nos workflows do CI
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
