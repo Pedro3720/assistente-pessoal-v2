@@ -3,6 +3,36 @@
 > Leia o `HANDOFF.md` inteiro antes de agir (estado do projeto, o que falta, como continuar).
 > Contexto histórico detalhado em `CONTEXT.md`.
 
+## Navegar e buscar no projeto: use o /graphify (economiza tokens)
+
+- Para **encontrar arquivos, entender a arquitetura, achar "o que chama o quê", ou responder
+  "onde está X / como funciona Y"**, use o grafo do skill **`/graphify`** em vez de sair lendo ou
+  grepando vários arquivos. O grafo já está construído (`graphify-out/graph.json`).
+  - Consulta: `/graphify query "sua pergunta"` (ou `graphify query "..."`).
+  - Caminho entre dois conceitos: `/graphify path "A" "B"`. Explicar um nó: `/graphify explain "X"`.
+- **O grafo é um retrato do CÓDIGO** (extração AST), tirado num momento. Depois de mudanças
+  ele pode ficar defasado: rode `/graphify . --update` antes de navegar se mexeu bastante. Ainda
+  **não cobre os docs** (só código).
+- **Antes de EDITAR** um arquivo, **leia o arquivo real**. O grafo serve para descobrir e navegar,
+  não substitui ler o código exato que você vai alterar.
+
+## Antes de modificar o projeto: use /superpowers:using-superpowers
+
+- **Sempre que o dono der um comando que vai alterar o projeto** (nova feature, correção,
+  refatoração, mudança de UI ou de config), **invoque o skill `superpowers:using-superpowers`
+  antes de agir**. Ele roteia para o skill certo (brainstorming para construir algo novo,
+  systematic-debugging para bug, etc.); só depois comece a mexer.
+- Vale mesmo para pedidos que parecem simples. Perguntas puras, sem modificação, não precisam.
+
+## Mudanças de design (UI/visual): use /ui-ux-pro-max:ui-ux-pro-max
+
+- **Sempre que for fazer alterações de design** (visual, layout, cores, tipografia, espaçamento,
+  novos componentes de UI, responsividade, dark mode), **use o skill `ui-ux-pro-max:ui-ux-pro-max`**
+  para guiar as escolhas.
+- Ordem dos skills: o `using-superpowers` (regra acima) roteia o fluxo primeiro (processo); para o
+  trabalho de design em si, aplique o `ui-ux-pro-max` (implementação). Process skills antes,
+  implementation skills depois.
+
 ## Regras de escrita (texto visível ao usuário)
 
 - **NUNCA use travessão `—` (em dash) nem `–` (en dash) em texto visível ao usuário**

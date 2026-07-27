@@ -36,3 +36,6 @@ next-env.d.ts
 
 # capacitor: a pasta android/ é gerada no build (GitHub Actions), não versionar
 /android/
+
+# graphify: grafo de conhecimento gerado localmente (regenerável com /graphify), não versionar
+/graphify-out/
