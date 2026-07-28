@@ -493,6 +493,36 @@ tem o detalhamento). Decisão de libs: GSAP (existente) para timeline/scroll/her
     **donut de categorias e o tooltip dele**); (b) assets Lottie da Fase 3 em `public/lottie/`.
 - Assets que faltarão do dono: arquivos Lottie escolhidos (onboarding/estados vazios), Fase 3.
 
+### 3.14 Sugestão #32 — CAUSA RAIZ do "app mais largo que a tela" no celular — 2026-07-28
+Depuração sistemática (não foi chute; medido no navegador com a estrutura real e o texto real
+das sugestões do banco). Build OK.
+- **Sintoma:** no celular a página fica mais larga que a tela e precisa arrastar para o lado
+  quando há texto longo (relato do dono citando Dashboard e Sugestões).
+- **CAUSA RAIZ:** `<main className="flex-1">` no `(app)/layout.tsx` **sem `min-w-0`**. Item flex
+  nasce com `min-width: auto`, ou seja, NÃO encolhe abaixo do conteúdo mínimo. Bastava um texto
+  longo em QUALQUER lugar para esticar o main inteiro e, com ele, a página toda.
+  Medido a 375px: documento com **909px** de largura (534px de overflow) e **71 elementos**
+  ultrapassando a tela, incluindo o `<p>Boa tarde, Pedro</p>` com 877px (prova de que não era o
+  texto que estourava, era o container esticado).
+- **Por que as correções anteriores não pegaram isso:** os filhos já tinham `truncate`/`min-w-0`
+  (dashboard, tarefas, calendário, senhas). O elo quebrado estava um nível ACIMA de tudo, no
+  `main`. Também explica o histórico de "app cortado": com o `overflow-x: clip` da raiz, o mesmo
+  defeito aparece como conteúdo cortado em vez de arrastável.
+- **Correção (2 camadas):**
+  1. `(app)/layout.tsx`: `<main className="min-w-0 flex-1">` (a raiz do problema).
+  2. `suggestions-view.tsx` e `admin-suggestions-view.tsx`: `break-words` na descrição. Sem isso,
+     texto sem espaços (link colado) ficava **cortado** (`scrollWidth > clientWidth`), medido.
+- **Verificação:** overflow 534px -> **0**, elementos estourando 71 -> **0**, largura do main
+  909px -> **375px** (exata), link não mais cortado. Repetido a **320px**: overflow 0.
+- **Conferido e NÃO alterado:** os demais `flex-1` do app são botões/inputs ou já têm `min-w-0`;
+  a célula do calendário é protegida pelo `truncate` (overflow hidden zera o min-content). Não
+  apliquei a "rede de segurança global" de quebra de texto que eu havia proposto antes de
+  investigar: com a causa raiz corrigida ela seria mudança ampla de comportamento sem
+  necessidade.
+- **Sugestão #31** (bug do modal de importar): **já estava corrigida** no commit `4d4682f`
+  (Onda 9, modal via portal). Nada a fazer no código; falta só marcar como "feito" em
+  `/admin/sugestoes`.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**

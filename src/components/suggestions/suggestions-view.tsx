@@ -166,7 +166,7 @@ export function SuggestionsView({ suggestions }: { suggestions: Suggestion[] }) 
                       </span>
                       <h3 className={`truncate font-medium ${s.status === "feito" ? "line-through text-muted-foreground" : ""}`}>{s.title}</h3>
                     </div>
-                    {s.description && <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{s.description}</p>}
+                    {s.description && <p className="mt-1 break-words whitespace-pre-wrap text-sm text-muted-foreground">{s.description}</p>}
                     <p className="mt-1 text-xs text-muted-foreground">{formatDateBR(s.created_at.slice(0, 10))}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">

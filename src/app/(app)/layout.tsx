@@ -27,7 +27,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         avatarUrl={profile?.avatar_url ?? null}
         isAdmin={isAdmin}
       />
-      <main className="flex-1">
+      {/* min-w-0: item flex nasce com min-width:auto e NAO encolhe abaixo do
+          conteudo. Sem isso, um texto longo (titulo de tarefa, descricao de
+          sugestao) estica o main inteiro e a pagina fica mais larga que a tela
+          no celular, obrigando a arrastar para o lado (sugestao #32). */}
+      <main className="min-w-0 flex-1">
         <div className="px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+6rem)] md:px-10 md:pt-10 md:pb-10">
           <IosInstallHint />
           <NotificationBanner />

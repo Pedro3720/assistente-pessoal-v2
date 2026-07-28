@@ -69,7 +69,7 @@ export function AdminSuggestionsView({ suggestions }: { suggestions: SuggestionW
                   </span>
                   <h3 className={`truncate font-medium ${s.status === "feito" ? "text-muted-foreground line-through" : ""}`}>{s.title}</h3>
                 </div>
-                {s.description && <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{s.description}</p>}
+                {s.description && <p className="mt-1 break-words whitespace-pre-wrap text-sm text-muted-foreground">{s.description}</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{s.author_email}</span>
                   {s.author_name && <span>· {s.author_name}</span>}
