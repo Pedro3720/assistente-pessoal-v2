@@ -1,9 +1,8 @@
-import { Wallet, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
-import { BankManager } from "@/components/finance/bank-manager";
+import { AccountsSummary } from "@/components/finance/accounts-summary";
 import { CardManager } from "@/components/finance/card-manager";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
@@ -14,7 +13,6 @@ import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
 import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
-import { AnimatedNumber } from "@/components/effects/animated-number";
 
 export default async function FinancasPage({
   searchParams,
@@ -72,13 +70,6 @@ export default async function FinancasPage({
   const expenseByCat = [...byCat.entries()].sort((a, b) => b[1].total - a[1].total);
   const donut = buildCategorySlices(expenseByCat, totals.expense);
 
-  const stats = [
-    { label: "Saldo do mês", value: totals.balance, icon: Wallet, tone: totals.balance >= 0 ? "text-positive" : "text-negative" },
-    { label: "Entradas", value: totals.income, icon: TrendingUp, tone: "text-positive" },
-    { label: "Despesas", value: totals.expense, icon: TrendingDown, tone: "text-negative" },
-    { label: "Faturas abertas", value: invoicesTotal, icon: CreditCard, tone: "text-amber-600 dark:text-amber-400" },
-  ];
-
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -97,26 +88,18 @@ export default async function FinancasPage({
         <ImportButton banks={banks} cards={cards} categories={categories} />
       </Reveal>
 
-      {/* stat cards */}
-      <Reveal stagger className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="glass card-glow rounded-2xl border border-border p-4 md:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-muted-foreground">{label}</p>
-                <AnimatedNumber value={value} currency className={`mt-1 block text-xl font-semibold md:text-2xl ${tone}`} />
-              </div>
-              <div className="shrink-0 rounded-full bg-muted p-2.5 md:p-3">
-                <Icon className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-        ))}
+      {/* resumo das contas (substitui os 4 cartões de indicador) */}
+      <Reveal>
+        <AccountsSummary
+          banks={banks}
+          income={totals.income}
+          expense={totals.expense}
+          invoicesTotal={invoicesTotal}
+        />
       </Reveal>
 
-      {/* contas + cartões */}
-      <Reveal stagger className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <BankManager banks={banks} />
+      {/* cartões */}
+      <Reveal>
         <CardManager cards={cards} banks={banks} />
       </Reveal>
 
