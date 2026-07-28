@@ -7,6 +7,8 @@ import { X, Upload, ChevronRight, Check, AlertCircle, RefreshCw } from "lucide-r
 import { parseFile, type ParsedTx } from "@/lib/parsers/ofx";
 import { bulkCreateTransactions } from "@/lib/actions/finance";
 import { formatBRL } from "@/lib/money";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { CategorySelect } from "./category-select";
 import type { BankWithBalance, CardWithInvoice, Category, TxType } from "@/types/finance";
 
 // ── Auto-categorização por palavra-chave ──────────────────────────────────
@@ -275,17 +277,17 @@ export function ImportModal({
             <>
               <div className="flex flex-wrap items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
                 <span className="text-xs font-medium text-muted-foreground">Conta deste extrato:</span>
-                <select
-                  value={bankId ?? ""}
-                  onChange={(e) => setBankId(e.target.value ? Number(e.target.value) : null)}
-                  className="rounded-lg border border-border bg-popover px-2 py-1.5 text-xs"
-                >
-                  <option value="">Sem conta</option>
-                  {banks.map((b) => (
-                    <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
-                  ))}
-                </select>
-                <span className="ml-auto text-xs text-muted-foreground">{toImport.length}/{rows.length} selecionadas</span>
+                <SelectMenu
+                  value={bankId === null ? "" : String(bankId)}
+                  onChange={(v) => setBankId(v === "" ? null : Number(v))}
+                  placeholder="Sem conta"
+                  className="w-44"
+                  options={[
+                    { value: "", label: "Sem conta" },
+                    ...banks.map((b) => ({ value: String(b.id), label: b.name, icon: b.icon })),
+                  ]}
+                />
+                <span className="num ml-auto text-xs text-muted-foreground">{toImport.length}/{rows.length} selecionadas</span>
               </div>
 
               <table className="w-full text-sm">
@@ -323,48 +325,45 @@ export function ImportModal({
                       <td className="max-w-[220px] px-4 py-2.5">
                         <span className="block truncate text-xs" title={row.description}>{row.description}</span>
                       </td>
-                      <td className={`whitespace-nowrap px-4 py-2.5 text-right text-xs font-semibold tabular-nums ${row.type === "income" ? "text-emerald-600" : "text-red-500"}`}>
+                      <td className={`num whitespace-nowrap px-4 py-3 text-right text-xs font-semibold ${row.type === "income" ? "text-positive" : "text-negative"}`}>
                         {row.type === "income" ? "+" : "-"}{formatBRL(Math.abs(row.amount))}
                       </td>
-                      <td className="px-4 py-2.5">
-                        <select
-                          value={row.type}
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
                           disabled={row.skip}
-                          onChange={(e) => {
-                            const type = e.target.value as TxType;
+                          onClick={() => {
+                            const type: TxType = row.type === "expense" ? "income" : "expense";
                             update(row.id, { type, categoryId: null, isCardPayment: false });
                           }}
-                          className="w-24 rounded-md border border-border bg-muted px-1.5 py-1 text-xs"
+                          title="Alternar entre despesa e receita"
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                            row.type === "income"
+                              ? "bg-positive/15 text-positive hover:bg-positive/25"
+                              : "bg-negative/15 text-negative hover:bg-negative/25"
+                          }`}
                         >
-                          <option value="expense">Despesa</option>
-                          <option value="income">Receita</option>
-                        </select>
+                          {row.type === "income" ? "Receita" : "Despesa"}
+                        </button>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-3">
                         {row.isCardPayment ? (
-                          <select
-                            value={row.cardId ?? ""}
+                          <SelectMenu
+                            value={row.cardId === null ? "" : String(row.cardId)}
                             disabled={row.skip}
-                            onChange={(e) => update(row.id, { cardId: e.target.value ? Number(e.target.value) : null })}
-                            className="w-40 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-1 text-xs text-amber-800"
-                          >
-                            <option value="">💳 Fatura de qual cartão?</option>
-                            {cards.map((c) => (
-                              <option key={c.id} value={c.id}>💳 {c.name}</option>
-                            ))}
-                          </select>
+                            placeholder="Fatura de qual cartão?"
+                            className="w-44 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-300"
+                            onChange={(v) => update(row.id, { cardId: v === "" ? null : Number(v) })}
+                            options={cards.map((c) => ({ value: String(c.id), label: c.name, icon: "💳" }))}
+                          />
                         ) : (
-                          <select
-                            value={row.categoryId ?? ""}
+                          <CategorySelect
+                            value={row.categoryId}
+                            categories={categories.filter((c) => c.kind === row.type)}
+                            kind={row.type}
                             disabled={row.skip}
-                            onChange={(e) => update(row.id, { categoryId: e.target.value ? Number(e.target.value) : null })}
-                            className="w-40 rounded-md border border-border bg-muted px-1.5 py-1 text-xs"
-                          >
-                            <option value="">Sem categoria</option>
-                            {categories.filter((c) => c.kind === row.type).map((c) => (
-                              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                            ))}
-                          </select>
+                            onChange={(id) => update(row.id, { categoryId: id })}
+                          />
                         )}
                       </td>
                     </tr>
