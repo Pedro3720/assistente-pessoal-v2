@@ -34,9 +34,10 @@
 - **Migrações aplicadas no Supabase:** `0000`–`0011` rodadas. ⚠️ **FALTAM: `0012_suggestion_images.sql`**
   (imagens da sugestão) e **`0013_push.sql`** (push), + config do #14 (Redirect URLs) e o operacional do #10
   (VAPID/env + pg_cron) — ver seção 4.
-- **Em andamento (2026-07-27): Onda 13** — modernização visual/interatividade em 5 fases; Fase 0
-  (direção de design + fundação de animação) feita, aguardando decisão do dono sobre a cor de
-  destaque antes das fases 1-4 — ver 3.13.
+- **Onda 13 (2026-07-27): COMPLETA e no ar** — modernização visual e interatividade em 5 fases
+  (ver 3.13), commit `fb652bd`.
+- **Onda 14 (2026-07-28): COMPLETA** — calendário, card de contas e revisão do extrato (ver
+  3.15). Correção da sugestão #32 (overflow no celular) no commit `7592c66`, ver 3.14.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -522,6 +523,42 @@ das sugestões do banco). Build OK.
 - **Sugestão #31** (bug do modal de importar): **já estava corrigida** no commit `4d4682f`
   (Onda 9, modal via portal). Nada a fazer no código; falta só marcar como "feito" em
   `/admin/sugestoes`.
+
+### 3.15 Onda 14: calendário, card de contas e revisão do extrato — 2026-07-28
+Três pedidos do dono com referências visuais (calendário nativo do Android e app Pierre).
+Fluxo completo: brainstorming -> spec -> plano -> execução em 5 tarefas, cada uma com
+`npm run build` e medição no navegador. Spec em
+`docs/superpowers/specs/2026-07-28-calendario-contas-import-design.md`, plano em
+`docs/superpowers/plans/2026-07-28-onda14-calendario-contas-import.md`. **Sem migração.**
+
+- **Calendário** (`calendar-view.tsx`): cabeçalho com o ano pequeno e o mês em tipo grande;
+  grade sem vão entre células, com divisórias, células de 76px (celular) e 116px (desktop),
+  número do dia maior, fim de semana apagado e hoje em círculo sólido. **Decisão do dono:**
+  eventos continuam nas células; como em 375px sete colunas com texto são ilegíveis, no celular
+  viram pontinhos coloridos (igual à referência) e no desktop seguem escritos.
+  *Cuidado registrado:* o bloco de eventos do desktop é `block`, não `flex`. Como flex, cada
+  evento com `truncate` não encolhia e colapsava a grade para 17px por célula com 42px de
+  overflow (mesmo mecanismo do bug #32). Em block: 79px por célula e overflow 0.
+- **Finanças** (`accounts-summary.tsx` novo; `bank-manager.tsx` REMOVIDO): saíram os 4 cartões
+  de indicador. No topo entra o card de contas: ícone do banco de maior saldo, soma de todas as
+  contas e "N contas conectadas"; ao abrir, lista as contas (com criar e excluir, que vieram do
+  card "Contas") e mostra Entradas, Despesas e Faturas do mês, destino combinado dos números
+  removidos. O `CardManager` passou a ocupar a linha inteira. A 320px os indicadores viram
+  coluna única, porque em 3 colunas o valor era cortado.
+- **Revisão do extrato** (`select-menu.tsx` e `category-select.tsx` novos; `import-modal.tsx`):
+  seletor próprio no lugar do `<select>` nativo, com painel via portal (z-110, acima do modal),
+  busca acima de 8 opções, Esc/clique fora e abertura para cima quando não cabe embaixo.
+  Categoria pode ser criada (já aplicada na linha) e renomeada ali mesmo. Tipo virou chip
+  Despesa/Receita. **Categoria não tem cor no banco** (`categoryInput = { name, icon, kind }`):
+  o self-review do plano pegou isso antes de codar, porque o Zod descartaria o campo em
+  silêncio; um seletor de cor exigiria migração e ficou fora.
+- **Nota de ambiente:** o navegador headless desta sessão não calcula layout de nós criados por
+  portal em telas estreitas (mesmo ambiente onde screenshot e hover falham). O posicionamento do
+  painel foi validado por clone do nó, que renderiza em 220px, abaixo do botão e dentro da tela;
+  no desktop a medição direta funcionou normalmente.
+- **Pendente de validação do dono:** conferir no app logado o calendário (celular e desktop), o
+  card de contas e o fluxo completo de importar extrato (subir arquivo -> revisar -> criar e
+  renomear categoria).
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
