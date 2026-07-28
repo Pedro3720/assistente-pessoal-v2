@@ -122,17 +122,26 @@ export function CalendarView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
-            Calendário
+          <p className="num text-sm font-medium text-muted-foreground">{year}</p>
+          <h1
+            className="text-gradient-animated text-3xl font-bold leading-none tracking-tighter md:text-4xl"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {MONTH_NAMES[month - 1]}
           </h1>
           <div className="mt-3 flex items-center gap-2">
-            <button onClick={() => goMonth(offset - 1)} className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent">
+            <button
+              onClick={() => goMonth(offset - 1)}
+              aria-label="Mês anterior"
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="min-w-[10rem] text-center text-sm font-medium">
-              {MONTH_NAMES[month - 1]} / {year}
-            </span>
-            <button onClick={() => goMonth(offset + 1)} className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent">
+            <button
+              onClick={() => goMonth(offset + 1)}
+              aria-label="Próximo mês"
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
             {offset !== 0 && (
@@ -166,50 +175,89 @@ export function CalendarView({
 
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Grade */}
-        <div className="glass card-glow flex-1 rounded-2xl border border-border p-6">
-          <div className="mb-2 grid grid-cols-7 gap-1">
-            {WEEKDAY_SHORT.map((d) => (
-              <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
+        <div className="glass card-glow min-w-0 flex-1 overflow-hidden rounded-2xl border border-border p-3 md:p-4">
+          <div className="grid grid-cols-7">
+            {WEEKDAY_SHORT.map((d, i) => (
+              <div
+                key={d}
+                className={`py-2 text-center text-[11px] font-medium uppercase tracking-wide ${
+                  i === 0 || i === 6 ? "text-muted-foreground/50" : "text-muted-foreground"
+                }`}
+              >
+                {d}
+              </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 border-t border-border">
             {Array.from({ length: firstWeekday }).map((_, i) => (
-              <div key={`e-${i}`} className="min-h-[90px]" />
+              <div key={`e-${i}`} className="min-h-[76px] border-b border-r border-border/50 md:min-h-[116px]" />
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const dateStr = `${year}-${pad(month)}-${pad(day)}`;
               const dayEvents = byDate.get(dateStr) ?? [];
               const isToday = dateStr === today;
+              const col = (firstWeekday + i) % 7;
+              const weekend = col === 0 || col === 6;
               return (
                 <button
                   key={day}
                   onClick={() => clickDay(dateStr)}
-                  className={`min-h-[90px] cursor-pointer rounded-lg border p-1.5 text-left transition-all hover:border-primary/50 ${
-                    isToday ? "border-primary/50 bg-primary/5" : "border-border"
+                  className={`min-w-0 min-h-[76px] border-b border-r border-border/50 p-1.5 text-left align-top transition-colors hover:bg-accent/40 md:min-h-[116px] md:p-2 ${
+                    weekend ? "bg-muted/20" : ""
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${isToday ? "text-primary" : "text-foreground"}`}>{day}</span>
-                    {dayEvents.length > 0 && (
-                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{dayEvents.length}</span>
-                    )}
-                  </div>
-                  <div className="mt-1 space-y-0.5">
-                    {dayEvents.slice(0, 2).map((o) => (
-                      <div
+                  <span
+                    className={`num flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold md:h-8 md:w-8 md:text-base ${
+                      isToday
+                        ? "bg-primary text-primary-foreground shadow-[0_0_18px_-4px_var(--primary)]"
+                        : weekend
+                          ? "text-muted-foreground"
+                          : "text-foreground"
+                    }`}
+                  >
+                    {day}
+                  </span>
+
+                  {/* celular: pontinhos coloridos (a grade precisa do espaço para o dia) */}
+                  <span className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
+                    {dayEvents.slice(0, 3).map((o) => (
+                      <span
                         key={o.key}
-                        onClick={(e) => { e.stopPropagation(); setViewing(o); }}
-                        className="truncate rounded px-1 py-0.5 text-[10px] text-white"
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: o.event.color }}
+                      />
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <span className="num text-[9px] leading-none text-muted-foreground">
+                        +{dayEvents.length - 3}
+                      </span>
+                    )}
+                  </span>
+
+                  {/* desktop: evento escrito, que aqui cabe.
+                      Layout em bloco (não flex) de propósito: item flex com
+                      `truncate` não encolhe sem min-w-0 e estoura a grade. */}
+                  <span className="mt-1 hidden md:block">
+                    {dayEvents.slice(0, 2).map((o) => (
+                      <span
+                        key={o.key}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewing(o);
+                        }}
+                        className="mt-0.5 block truncate rounded px-1 py-0.5 text-[10px] text-white"
                         style={{ backgroundColor: o.event.color }}
                       >
                         {o.time} {o.event.title}
-                      </div>
+                      </span>
                     ))}
                     {dayEvents.length > 2 && (
-                      <span className="text-[10px] font-medium text-primary">+{dayEvents.length - 2}</span>
+                      <span className="num mt-0.5 block text-[10px] font-medium text-primary">
+                        +{dayEvents.length - 2}
+                      </span>
                     )}
-                  </div>
+                  </span>
                 </button>
               );
             })}
