@@ -560,6 +560,37 @@ Fluxo completo: brainstorming -> spec -> plano -> execução em 5 tarefas, cada 
   card de contas e o fluxo completo de importar extrato (subir arquivo -> revisar -> criar e
   renomear categoria).
 
+### 3.16 Onda 15: ícones no lugar dos emojis e logos de banco — 2026-07-28
+Pedido do dono: tirar a "cara de IA" trocando emoji por um sistema de ícones, e as contas
+mostrarem a logo do banco. Spec em `docs/superpowers/specs/2026-07-28-icones-e-logos-design.md`.
+**Sem migração.**
+- **Pesquisa:** `lucide-react` (já instalado) segue como biblioteca; é a escolha padrão em 2026.
+  Para as logos, escolhido **@edusites/bancos-brasil (MIT)**; descartados `react-br-bank-icons` e
+  `@arcanishq/react-bank-icons` (GPL-3.0, contaminaria o app) e `Tgentil/Bancos-em-SVG` (sem
+  licença aberta).
+- **Logos:** `scripts/gen-banks.mjs` gera `public/banks/<slug>.svg` (símbolo sobre a cor da
+  marca) e `src/lib/finance/banks.ts` (slug, nome, cor). 28 instituições. Ficam em `public/` de
+  propósito: 96 KB em arquivos estáticos que o navegador baixa sob demanda, contra 95 KB que os
+  vetores pesariam no bundle. O pacote é só devDependency, para regerar.
+- **Arquitetura sem migração:** a coluna `icon` aceita três formatos e o `EntityIcon`
+  (`components/ui/entity-icon.tsx`, sem "use client" para servir Server e Client Components)
+  decide: `bank:nubank` -> logo, `home` -> ícone do catálogo, `🏠` -> emoji legado. O que já
+  estava salvo continua aparecendo; nada foi convertido no banco.
+- **Seletor:** `components/ui/icon-picker.tsx` com aba **Bancos** (grade de logos, só no
+  cadastro de conta) e aba **Ícones** (catálogo por tema, com busca). Catálogo em
+  `src/lib/icons/catalog.ts`, com ~50 ícones importados um a um para não trazer os 1.500 do
+  lucide no bundle.
+- **Cuidado registrado:** em vários pontos o ícone era concatenado em string
+  (`${cat.icon} ${cat.name}`, `<option>` nativos), o que exibiria "landmark Inter" depois da
+  troca. Nesses lugares ficou só o nome; onde havia espaço o ícone virou componente ao lado.
+- **Defaults atualizados:** as 12 categorias padrão (`lib/finance/defaults.ts`) e os defaults do
+  Zod (`lib/validation/finance.ts`) agora nascem com nome de ícone, não emoji.
+- **README:** seção creditando a origem das logos e registrando que **as marcas pertencem aos
+  respectivos bancos** (uso nominativo, sem vínculo).
+- **Pendente de validação do dono:** conferir no app o cadastro de conta com a galeria de
+  bancos, o seletor de categorias e assinaturas, e as telas onde o ícone aparece (extrato,
+  transações, donut, planejamento).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
