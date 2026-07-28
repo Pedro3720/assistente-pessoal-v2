@@ -13,6 +13,13 @@ export interface Bank {
   name: string;
   icon: string;
   opening_balance: number;
+  /** conexão da Pluggy que alimenta esta conta (null quando é manual) */
+  pluggy_item_id: string | null;
+  /** conta da Pluggy vinculada; é o que evita duplicar a conta no re-sync */
+  pluggy_account_id: string | null;
+  /** true quando as transações chegam sozinhas pelo Open Finance */
+  is_auto: boolean;
+  last_synced_at: string | null;
 }
 
 export interface CreditCard {
@@ -41,6 +48,24 @@ export interface Transaction {
   installment_no: number;
   is_transfer: boolean;
   transfer_group: string | null;
+  /** id da transação na origem externa; chave do dedupe junto com user_id */
+  external_id: string | null;
+  /** de onde veio o lançamento */
+  source: TxSource;
+}
+
+export type TxSource = "manual" | "ofx" | "pluggy";
+
+/** Conexão com uma instituição via Open Finance (Pluggy). */
+export interface PluggyItem {
+  id: number;
+  item_id: string;
+  connector_id: number | null;
+  connector_name: string | null;
+  connector_image: string | null;
+  status: string | null;
+  last_synced_at: string | null;
+  created_at: string;
 }
 
 /** Banco com saldo atual calculado a partir do histórico. */
