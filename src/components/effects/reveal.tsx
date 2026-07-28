@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { prefersReducedMotion } from "@/hooks/use-reduced-motion";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -26,7 +27,7 @@ export function Reveal({
     () => {
       const node = ref.current;
       if (!node) return;
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduce = prefersReducedMotion();
       const targets: gsap.TweenTarget = stagger ? Array.from(node.children) : node;
       if (reduce) {
         gsap.set(targets, { opacity: 1, y: 0 });

@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useState, type ElementType } from "react";
 import { LayoutDashboard, Wallet, Calendar, Plus, Menu } from "lucide-react";
 import { QuickActions } from "./quick-actions";
 import { MoreSheet } from "./more-sheet";
+import { Pressable } from "@/components/effects/pressable";
 
 const LEFT_TABS = [
   { href: "/", label: "Início", icon: LayoutDashboard },
@@ -59,13 +60,15 @@ export function BottomNav({ isAdmin }: { isAdmin: boolean }) {
           {LEFT_TABS.map((t) => (
             <Tab key={t.href} href={t.href} label={t.label} icon={t.icon} active={isActive(t.href)} />
           ))}
-          <button
-            onClick={() => setQuickOpen(true)}
-            aria-label="Ações rápidas"
-            className="-mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
+          <Pressable hoverScale={1} tapScale={0.92} className="-mt-6 shrink-0">
+            <button
+              onClick={() => setQuickOpen(true)}
+              aria-label="Ações rápidas"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </Pressable>
           <Tab href={AGENDA.href} label={AGENDA.label} icon={AGENDA.icon} active={isActive(AGENDA.href)} />
           <button
             onClick={() => setMoreOpen(true)}

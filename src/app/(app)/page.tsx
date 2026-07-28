@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import {
   Wallet, Calendar, ListChecks, CreditCard, Clock, ArrowRight,
   TrendingUp, TrendingDown,
@@ -9,7 +9,9 @@ import { getProfile } from "@/lib/data/profile";
 import { formatDateBR } from "@/lib/dates";
 import { PRIORITY_META } from "@/lib/tasks/constants";
 import { Reveal } from "@/components/effects/reveal";
-import { CountUp } from "@/components/effects/count-up";
+import { AnimatedNumber } from "@/components/effects/animated-number";
+import { Pressable } from "@/components/effects/pressable";
+import { EmptyState } from "@/components/effects/empty-state";
 
 const WD = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -60,7 +62,7 @@ export default async function Dashboard() {
   const expPct = totalMov > 0 ? (data.finance.expense / totalMov) * 100 : 0;
 
   const stats = [
-    { label: "Saldo do mês", value: data.finance.balance, currency: true, href: "/financas", icon: Wallet, tone: data.finance.balance < 0 ? "text-red-600 dark:text-red-400" : "text-foreground" },
+    { label: "Saldo do mês", value: data.finance.balance, currency: true, href: "/financas", icon: Wallet, tone: data.finance.balance < 0 ? "text-negative" : "text-foreground" },
     { label: "Eventos hoje", value: data.eventsTodayCount, currency: false, href: "/calendario", icon: Calendar, tone: "text-foreground" },
     { label: "Tarefas pendentes", value: data.pendingCount, currency: false, href: "/tarefas", icon: ListChecks, tone: "text-foreground" },
     { label: "Faturas abertas", value: data.finance.invoices, currency: true, href: "/financas", icon: CreditCard, tone: "text-amber-600 dark:text-amber-400" },
@@ -73,7 +75,7 @@ export default async function Dashboard() {
         <p className="mb-1 text-sm text-muted-foreground">
           {greeting}, {displayName}
         </p>
-        <h1 className="text-gradient text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-gradient-animated text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Seu Painel
         </h1>
       </Reveal>
@@ -110,13 +112,14 @@ export default async function Dashboard() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.label} href={s.href} className="group glass card-glow flex flex-col justify-between gap-4 rounded-2xl border border-border p-4 md:gap-6 md:p-5">
+            <Pressable key={s.label} hoverScale={1}>
+            <Link href={s.href} className="group glass card-glow flex h-full flex-col justify-between gap-4 rounded-2xl border border-border p-4 md:gap-6 md:p-5">
               <div className="flex items-center justify-between">
                 <Icon className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                 <ArrowRight className="h-3.5 w-3.5 -translate-x-1 text-muted-foreground/0 transition-all group-hover:translate-x-0 group-hover:text-primary" />
               </div>
               <div>
-                <CountUp
+                <AnimatedNumber
                   value={s.value}
                   currency={s.currency}
                   className={`block text-xl font-semibold leading-none tracking-tight md:text-2xl ${s.tone}`}
@@ -124,6 +127,7 @@ export default async function Dashboard() {
                 <p className="mt-2 flex min-h-8 items-start text-xs leading-tight text-muted-foreground">{s.label}</p>
               </div>
             </Link>
+            </Pressable>
           );
         })}
       </Reveal>
@@ -141,7 +145,9 @@ export default async function Dashboard() {
           </div>
           <div className="divide-y divide-border">
             {data.upcoming.length === 0 ? (
-              <p className="px-6 py-12 text-center text-sm text-muted-foreground">Nenhum evento próximo.</p>
+              <EmptyState lottie="/lottie/empty-events.lottie" className="px-6 py-12">
+                <p className="text-center text-sm text-muted-foreground">Nenhum evento próximo.</p>
+              </EmptyState>
             ) : (
               data.upcoming.map((o) => (
                 <div key={o.key} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-accent/50">
@@ -169,25 +175,25 @@ export default async function Dashboard() {
           <div className="flex flex-1 flex-col justify-center gap-4 p-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> Receitas</span>
-                <CountUp value={data.finance.income} currency className="font-medium" />
+                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingUp className="h-3.5 w-3.5 text-positive" /> Receitas</span>
+                <AnimatedNumber value={data.finance.income} currency className="font-medium" />
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                <div className="bar-grow h-1.5 rounded-full bg-green-500" style={{ width: `${incPct}%` }} />
+                <div className="bar-grow h-1.5 rounded-full bg-positive" style={{ width: `${incPct}%` }} />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-400" /> Despesas</span>
-                <CountUp value={data.finance.expense} currency className="font-medium" />
+                <span className="flex items-center gap-1.5 text-muted-foreground"><TrendingDown className="h-3.5 w-3.5 text-negative" /> Despesas</span>
+                <AnimatedNumber value={data.finance.expense} currency className="font-medium" />
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                <div className="bar-grow h-1.5 rounded-full bg-red-500" style={{ width: `${expPct}%` }} />
+                <div className="bar-grow h-1.5 rounded-full bg-negative" style={{ width: `${expPct}%` }} />
               </div>
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-border pt-3">
               <span className="text-xs text-muted-foreground">Saldo do mês</span>
-              <CountUp value={data.finance.balance} currency className={`text-sm font-bold ${data.finance.balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`} />
+              <AnimatedNumber value={data.finance.balance} currency className={`text-sm font-bold ${data.finance.balance < 0 ? "text-negative" : "text-positive"}`} />
             </div>
           </div>
         </div>
@@ -206,7 +212,9 @@ export default async function Dashboard() {
           </div>
           <div className="divide-y divide-border">
             {data.topTasks.length === 0 ? (
-              <p className="px-6 py-12 text-center text-sm text-muted-foreground">Nada pendente. 🎉</p>
+              <EmptyState lottie="/lottie/empty-tasks.lottie" className="px-6 py-12">
+                <p className="text-center text-sm text-muted-foreground">Nada pendente. 🎉</p>
+              </EmptyState>
             ) : (
               data.topTasks.map((t) => {
                 const overdue = t.due_on && t.due_on < data.today;
@@ -224,7 +232,7 @@ export default async function Dashboard() {
                       </span>
                     )}
                     {t.due_on && (
-                      <span className={`shrink-0 text-xs ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                      <span className={`shrink-0 text-xs ${overdue ? "font-medium text-negative" : "text-muted-foreground"}`}>
                         {formatDateBR(t.due_on)}
                       </span>
                     )}

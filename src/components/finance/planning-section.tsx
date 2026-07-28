@@ -15,6 +15,7 @@ import {
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
+import { useAnimatedList } from "@/hooks/use-animated-list";
 import type {
   BankWithBalance,
   CardWithInvoice,
@@ -58,6 +59,7 @@ export function PlanningSection({
   defaultDate: string;
 }) {
   const router = useRouter();
+  const listRef = useAnimatedList();
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -202,19 +204,19 @@ export function PlanningSection({
           <h3 className="font-semibold">Planejamento do mês</h3>
           <p className="text-sm text-muted-foreground">
             A receber{" "}
-            <span className="num font-semibold text-green-600 dark:text-green-400">
+            <span className="num font-semibold text-positive">
               {formatBRL(previstoReceber)}
             </span>
             {" · "}A pagar{" "}
-            <span className="num font-semibold text-red-600 dark:text-red-400">
+            <span className="num font-semibold text-negative">
               {formatBRL(previstoPagar)}
             </span>
             {" · "}Saldo{" "}
             <span
               className={`num font-semibold ${
                 saldoPrevisto >= 0
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+                  ? "text-positive"
+                  : "text-negative"
               }`}
             >
               {formatBRL(saldoPrevisto)}
@@ -251,7 +253,7 @@ export function PlanningSection({
         </div>
       )}
 
-      <div className="mt-4 space-y-2">
+      <div ref={listRef} className="mt-4 space-y-2">
         {empty ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Nada previsto para este mês.
@@ -436,8 +438,8 @@ function PlanRow({
   const sign = i.type === "income" ? "+" : "−";
   const tone =
     i.type === "income"
-      ? "text-green-600 dark:text-green-400"
-      : "text-red-600 dark:text-red-400";
+      ? "text-positive"
+      : "text-negative";
 
   return (
     <div

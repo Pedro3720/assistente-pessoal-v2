@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
+import { useAnimatedList } from "@/hooks/use-animated-list";
 import type {
   BankWithBalance,
   CardWithInvoice,
@@ -61,6 +62,7 @@ export function SubscriptionsSection({
   cards: CardWithInvoice[];
 }) {
   const router = useRouter();
+  const listRef = useAnimatedList();
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -222,7 +224,7 @@ export function SubscriptionsSection({
         </div>
       )}
 
-      <div className="mt-4 space-y-2">
+      <div ref={listRef} className="mt-4 space-y-2">
         {empty ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Nenhuma assinatura cadastrada.

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import Image from "next/image";
 import { login } from "@/lib/actions/auth";
 import { Input } from "@/components/ui/input";

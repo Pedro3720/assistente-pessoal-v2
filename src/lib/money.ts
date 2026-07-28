@@ -19,10 +19,17 @@ export function parseBRL(input: string): number {
   return Number(s);
 }
 
+/** Locale e opções do formato BRL. Fonte única: formatBRL e os números
+ *  animados (AnimatedNumber/NumberFlow) usam exatamente este formato. */
+export const BRL_LOCALE = "pt-BR";
+export const BRL_FORMAT: Intl.NumberFormatOptions = {
+  style: "currency",
+  currency: "BRL",
+};
+
 /** Formata número como moeda brasileira: 1234.5 → "R$ 1.234,50". */
 export function formatBRL(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Number.isFinite(value) ? value : 0);
+  return new Intl.NumberFormat(BRL_LOCALE, BRL_FORMAT).format(
+    Number.isFinite(value) ? value : 0
+  );
 }

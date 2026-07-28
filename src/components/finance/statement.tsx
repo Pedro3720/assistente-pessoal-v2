@@ -43,7 +43,7 @@ export function Statement({
       {/* saldo anterior */}
       <div className="flex items-center justify-between bg-muted/40 px-5 py-2.5 text-sm">
         <span className="text-muted-foreground">Saldo anterior</span>
-        <span className={`num font-medium ${statement.opening >= 0 ? "text-foreground" : "text-red-600 dark:text-red-400"}`}>
+        <span className={`num font-medium ${statement.opening >= 0 ? "text-foreground" : "text-negative"}`}>
           {formatBRL(statement.opening)}
         </span>
       </div>
@@ -75,7 +75,7 @@ export function Statement({
                     <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-6 text-right">
-                    <span className={`num text-sm font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    <span className={`num text-sm font-semibold ${t.type === "income" ? "text-positive" : "text-negative"}`}>
                       {t.type === "income" ? "+" : "-"}
                       {formatBRL(Number(t.amount))}
                     </span>
@@ -93,7 +93,7 @@ export function Statement({
       {/* saldo final */}
       <div className="flex items-center justify-between border-t-2 border-border bg-muted/40 px-5 py-3 text-sm">
         <span className="font-semibold">Saldo final</span>
-        <span className={`num text-base font-bold ${statement.closing >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <span className={`num text-base font-bold ${statement.closing >= 0 ? "text-positive" : "text-negative"}`}>
           {formatBRL(statement.closing)}
         </span>
       </div>

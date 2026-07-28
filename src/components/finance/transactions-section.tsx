@@ -15,6 +15,8 @@ import {
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
 import { MoneyInput } from "./money-input";
+import { useAnimatedList } from "@/hooks/use-animated-list";
+import { EmptyState } from "@/components/effects/empty-state";
 import type {
   BankWithBalance, CardWithInvoice, Category, Transaction, TxType,
 } from "@/types/finance";
@@ -38,6 +40,8 @@ export function TransactionsSection({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const listRef = useAnimatedList();
+  const fullListRef = useAnimatedList();
 
   // Semeia as categorias padrão no primeiro acesso do usuário.
   useEffect(() => {
@@ -228,11 +232,13 @@ export function TransactionsSection({
         </div>
       </div>
 
-      <div className="mt-4 space-y-2">
+      <div ref={listRef} className="mt-4 space-y-2">
         {shown.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Nenhuma transação neste mês.
-          </p>
+          <EmptyState lottie="/lottie/empty-transactions.lottie" className="py-6">
+            <p className="text-center text-sm text-muted-foreground">
+              Nenhuma transação neste mês.
+            </p>
+          </EmptyState>
         ) : (
           shown.map((t) => (
             <TxRow
@@ -257,7 +263,7 @@ export function TransactionsSection({
               <Plus className="h-3.5 w-3.5" /> Nova
             </button>
           </div>
-          <div className="space-y-2">
+          <div ref={fullListRef} className="space-y-2">
             {shown.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
             ) : (
@@ -493,9 +499,9 @@ function TxRow({
       <div className="flex min-w-0 items-center gap-3">
         <div className={`shrink-0 rounded-full p-2 ${t.type === "income" ? "bg-green-100" : "bg-red-100"}`}>
           {t.type === "income" ? (
-            <ArrowUpRight className="h-4 w-4 text-green-600" />
+            <ArrowUpRight className="h-4 w-4 text-positive" />
           ) : (
-            <ArrowDownRight className="h-4 w-4 text-red-600" />
+            <ArrowDownRight className="h-4 w-4 text-negative" />
           )}
         </div>
         <div className="min-w-0">
@@ -507,7 +513,7 @@ function TxRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className={`num font-semibold ${t.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <span className={`num font-semibold ${t.type === "income" ? "text-positive" : "text-negative"}`}>
           {t.type === "income" ? "+" : "-"}
           {formatBRL(Number(t.amount))}
         </span>

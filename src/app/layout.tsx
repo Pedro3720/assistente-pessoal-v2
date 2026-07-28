@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { ViewTransitions } from "next-view-transitions";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemedToaster } from "@/components/providers/themed-toaster";
@@ -62,6 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    <ViewTransitions>
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${plusJakarta.variable}`}>
         <AppleSplash />
@@ -79,5 +81,6 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
+    </ViewTransitions>
   );
 }

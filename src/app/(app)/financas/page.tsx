@@ -11,8 +11,10 @@ import { Statement } from "@/components/finance/statement";
 import { SubscriptionsSection } from "@/components/finance/subscriptions-section";
 import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
+import { CategoryDonut } from "@/components/finance/category-donut";
+import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
-import { CountUp } from "@/components/effects/count-up";
+import { AnimatedNumber } from "@/components/effects/animated-number";
 
 export default async function FinancasPage({
   searchParams,
@@ -68,11 +70,12 @@ export default async function FinancasPage({
     byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount) });
   }
   const expenseByCat = [...byCat.entries()].sort((a, b) => b[1].total - a[1].total);
+  const donut = buildCategorySlices(expenseByCat, totals.expense);
 
   const stats = [
-    { label: "Saldo do mês", value: totals.balance, icon: Wallet, tone: totals.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400" },
-    { label: "Entradas", value: totals.income, icon: TrendingUp, tone: "text-green-600 dark:text-green-400" },
-    { label: "Despesas", value: totals.expense, icon: TrendingDown, tone: "text-red-600 dark:text-red-400" },
+    { label: "Saldo do mês", value: totals.balance, icon: Wallet, tone: totals.balance >= 0 ? "text-positive" : "text-negative" },
+    { label: "Entradas", value: totals.income, icon: TrendingUp, tone: "text-positive" },
+    { label: "Despesas", value: totals.expense, icon: TrendingDown, tone: "text-negative" },
     { label: "Faturas abertas", value: invoicesTotal, icon: CreditCard, tone: "text-amber-600 dark:text-amber-400" },
   ];
 
@@ -101,7 +104,7 @@ export default async function FinancasPage({
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-muted-foreground">{label}</p>
-                <CountUp value={value} currency className={`mt-1 block text-xl font-semibold md:text-2xl ${tone}`} />
+                <AnimatedNumber value={value} currency className={`mt-1 block text-xl font-semibold md:text-2xl ${tone}`} />
               </div>
               <div className="shrink-0 rounded-full bg-muted p-2.5 md:p-3">
                 <Icon className="h-5 w-5 text-muted-foreground" />
@@ -151,32 +154,50 @@ export default async function FinancasPage({
             <h3 className="font-semibold">Despesas por categoria</h3>
             <CategoryManagerButton categories={categories} />
           </div>
-          <div className="mt-4 space-y-4">
-            {expenseByCat.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
-            ) : (
-              expenseByCat.map(([name, { icon, total }]) => {
-                const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
-                return (
-                  <div key={name} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{icon}</span>
-                        <span className="font-medium">{name}</span>
+          {expenseByCat.length === 0 ? (
+            <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
+          ) : (
+            <>
+              <CategoryDonut slices={donut.slices} total={totals.expense} />
+              {donut.othersCount > 0 && (
+                <p className="mt-1 text-center text-[11px] text-muted-foreground">
+                  A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
+                </p>
+              )}
+              {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
+              <div className="mt-4 space-y-4">
+                {expenseByCat.map(([name, { icon, total }], i) => {
+                  const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
+                  const color = categoryColor(i);
+                  return (
+                    <div key={name} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: color }}
+                            aria-hidden
+                          />
+                          <span className="text-lg">{icon}</span>
+                          <span className="truncate font-medium">{name}</span>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="num font-semibold">{formatBRL(total)}</p>
+                          <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="num font-semibold">{formatBRL(total)}</p>
-                        <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                        <div
+                          className="bar-grow h-1.5 rounded-full"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
                       </div>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                      <div className="bar-grow h-1.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="lg:col-span-2">

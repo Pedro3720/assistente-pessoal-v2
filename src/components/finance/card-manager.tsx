@@ -255,8 +255,8 @@ export function CardManager({
                       <DetailRow
                         label="Disponível para uso"
                         value={formatBRL(card.disponivel)}
-                        dotClass={card.disponivel < 0 ? "bg-red-500" : "bg-green-500"}
-                        valueClass={card.disponivel < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
+                        dotClass={card.disponivel < 0 ? "bg-negative" : "bg-positive"}
+                        valueClass={card.disponivel < 0 ? "text-negative" : "text-positive"}
                       />
                     </div>
                   )}

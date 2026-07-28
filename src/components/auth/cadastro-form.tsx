@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { Input } from "@/components/ui/input";
 import { AvatarPicker } from "@/components/profile/avatar-picker";
 import { signupWithProfile } from "@/lib/actions/auth";

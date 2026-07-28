@@ -34,6 +34,9 @@
 - **Migrações aplicadas no Supabase:** `0000`–`0011` rodadas. ⚠️ **FALTAM: `0012_suggestion_images.sql`**
   (imagens da sugestão) e **`0013_push.sql`** (push), + config do #14 (Redirect URLs) e o operacional do #10
   (VAPID/env + pg_cron) — ver seção 4.
+- **Em andamento (2026-07-27): Onda 13** — modernização visual/interatividade em 5 fases; Fase 0
+  (direção de design + fundação de animação) feita, aguardando decisão do dono sobre a cor de
+  destaque antes das fases 1-4 — ver 3.13.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -348,6 +351,147 @@ Terceiro nível. Rate limiting + endurecimento do Storage. Build OK.
    cobre uso pessoal de sobra.
 2. **Rodar `supabase/harden_storage.sql`** no SQL Editor (limita tipo/tamanho no Storage + policies own_*).
 3. **Signed URLs:** decisão sua (ver acima). Se quiser o modo privado, me avisa que faço o refactor à parte.
+
+### 3.13 Modernização visual e interatividade — Onda 13 (EM ANDAMENTO) — 2026-07-27
+Modernizar UI/interatividade guiado por 4 imagens de inspiração (fintech dark premium; norte
+real = app Pierre). Implementação em 5 fases (0 a 4) com checkpoint entre fases (prompt do dono
+tem o detalhamento). Decisão de libs: GSAP (existente) para timeline/scroll/hero; **motion**
+(framer) entra na Fase 1 para AnimatePresence/layout/microgestos.
+- **Fase 0 (FEITA):** direção de design + fundação de animação. `npm run build` OK; app conferido
+  no dev (renderiza, 0 erros de console, regra global de reduced-motion presente no CSS compilado).
+  - **Direção de design** em `docs/superpowers/specs/2026-07-27-modernizacao-visual-direcao.md`.
+    Síntese: manter base dark (`#080b12`/`#0e131d`) e o trio de fontes; números protagonistas
+    (heróis maiores, `.num`); cor vibrante só nos dados; tokens novos `--positive`/`--negative`
+    (verde vivo/coral) para dinheiro nas fases 3-4; raio `--radius` 0.5→0.625rem proposto;
+    `.card-glow` mais contido; movimento "calmo, físico e discreto" (micro 150-200ms, entradas
+    250-350ms, saídas ~65%, stagger 30-60ms).
+  - `src/lib/motion.ts`: fonte única de DUR/EASE/SPRING + variantes (fade, fadeScale, slideUp,
+    listItem, staggerContainer, pressable) para GSAP e motion.
+  - `src/hooks/use-reduced-motion.ts`: `useReducedMotion()` reativo + `prefersReducedMotion()`
+    imperativo; `Reveal` e `CountUp` consolidados nele (antes matchMedia duplicado inline).
+  - `globals.css`: rede de segurança global `prefers-reduced-motion` (qualquer animação/transição
+    CSS vira ~instantânea para quem pediu menos movimento).
+  - **DECISÃO PENDENTE DO DONO — cor de destaque:** manter azul `#3b82f6` (recomendado),
+    migrar para lime neon estilo Pierre (rebrand de token global), ou híbrido. Sem resposta,
+    as fases 1-4 seguem com o azul.
+- **Decisão do dono (2026-07-27): manter o azul** `#3b82f6` como primária. O "sabor Pierre" vem
+  da linguagem (números grandes, coral/verde no dinheiro, bento, pills), não do lime.
+- **Fase 1 (FEITA):** base de animação. `npm run build` OK; dev server sem erros.
+  - Libs novas: **motion** (framer) e **@formkit/auto-animate** (`npm install`, 5 pacotes).
+  - `components/ui/modal.tsx`: abre/fecha com **AnimatePresence** (fade no backdrop + fade/scale
+    no painel), API intacta. Truque: estado interno `open` toca a saída e só chama `onClose` no
+    `onExitComplete`; se o pai desmontar direto (ex.: após salvar), fecha sem animar, sem quebrar.
+    Com reduced-motion, abre/fecha instantâneo.
+  - `src/hooks/use-animated-list.ts`: wrapper do AutoAnimate (duração/curva da direção, desliga
+    em reduced-motion). Aplicado nas listas SEM dnd-kit: transações (inline + modal "Ver todas"),
+    assinaturas e planejamento. `tasks-view` (dnd-kit) ficou de fora de propósito (brigam pelos
+    transforms).
+  - `components/effects/pressable.tsx`: microgestos hover/tap (spring `SPRING.press`, sem bounce)
+    num wrapper client reutilizável; filhos server continuam server. Aplicado: stat cards do
+    dashboard (só tap; hover continua no `.card-glow`), botões da folha de ações rápidas e o "+"
+    do bottom-nav (tap 0.92).
+  - Tokens da direção aplicados no `globals.css`: `--radius` 0.5→0.625rem (cards ~18-22px) e
+    `.card-glow` contido (lift -2px, sombra neutra, menos neon azul). `EASE_CSS` novo em
+    `lib/motion.ts`.
+  - Sonner conferido: feedback já é 100% sonner (20 componentes, zero `alert()`); nada a trocar.
+  - Nota de ambiente: o Turbopack dev no Windows chegou a ficar preso num erro de parse de um
+    estado intermediário do `page.tsx` durante a sequência de edits (watcher perdeu a última
+    mudança); resolvido reiniciando o dev server. O arquivo sempre esteve válido (build passou).
+- **Fase 2 (FEITA):** transições de página. `npm run build` OK; verificado no navegador
+  (login -> cadastro disparou 1 `startViewTransition` e navegou; console limpo).
+  - Lib nova: **next-view-transitions** (View Transitions API por baixo; navegador sem suporte
+    só navega normal). `<ViewTransitions>` envolvendo o `<html>` no `layout.tsx` raiz.
+  - `Link` trocado para o da lib nas superfícies de navegação: `bottom-nav`, `sidebar`,
+    dashboard (`(app)/page.tsx`), `login`, `recuperar-senha`, `cadastro-form`. `router.push`
+    das folhas virou `useTransitionRouter`. Links internos de conteúdo seguem `next/link`
+    (transicionam sem animação, sem quebrar).
+  - Timing no `globals.css`: crossfade 0.3s na curva padrão; desligado sob reduced-motion
+    (pseudo-elementos `::view-transition-*` não são cobertos pela regra global `*`).
+  - **AnimatePresence nas folhas** `quick-actions` e `more-sheet`: overlay em fade + painel em
+    slide-up, mesmo padrão do modal (estado interno + `onExitComplete`). Dispensa (X/backdrop/
+    Esc) anima; tocar numa ação fecha instantâneo e navega com transição de rota (evita
+    artefato de snapshot da folha no meio da saída).
+- **Fase 3 (FEITA):** dados e conteúdo. `npm run build` OK; conferido no navegador (tokens
+  `--positive`/`--negative` compilados no dark, console limpo).
+  - Libs novas: **@number-flow/react** e **@lottiefiles/dotlottie-react**.
+  - **Números animados:** `components/effects/animated-number.tsx` (NumberFlow: dígitos rolam
+    no mount 0->valor e a cada mudança de valor, ex.: trocar mês em /financas). Substituiu o
+    `CountUp` (GSAP) no dashboard e nos stats de /financas com a MESMA API; `count-up.tsx`
+    APAGADO (sem outros usos). Formato BRL vem de `lib/money.ts` (novos exports `BRL_LOCALE`/
+    `BRL_FORMAT`, fonte única com `formatBRL`; cast para o `Format` do NumberFlow, que é
+    subconjunto do Intl). Reduced-motion: renderiza valor final estático.
+  - **Tokens de dinheiro aplicados:** `--positive`/`--negative` no globals.css (dark verde vivo
+    `#4ade80` / coral `#fb7185`; light `#16a34a`/`#e11d48`), mapeados como `text-positive`/
+    `text-negative`/`bg-*` no @theme. Trocadas as classes ad hoc green/red em TODOS os contextos
+    de dinheiro: dashboard, stats de /financas, TxRow (setas e valor), extrato, planejamento,
+    contas e cartões. Ficaram de fora (de propósito): erros/destructive, toggle de tipo no form,
+    botão salvar de categoria.
+  - **recharts: descoberta importante, está instalado mas NÃO é usado em lugar nenhum** (os
+    "gráficos" reais são barras CSS). Nada a refinar; a lib fica dormente (candidata a remoção
+    ou a um gráfico novo de categoria, decisão do dono). O alinhamento de cor foi feito nas
+    barras de "Despesas por categoria": cada categoria usa `--chart-1..5` cíclico (antes tudo
+    `bg-primary`), estilo barra segmentada do Pierre.
+  - **Estados vazios com Lottie:** `components/effects/empty-state.tsx` (player dotLottie com
+    lazy-load via next/dynamic, ssr false; só entra no bundle se um vazio renderizar). O asset
+    só aparece quando carrega; sem arquivo ou com erro, fica o texto de hoje (zero regressão).
+    Reduced-motion: primeiro quadro parado. Aplicado: tarefas ("Nenhuma tarefa aqui."),
+    dashboard (eventos e tarefas) e transações do mês.
+  - **ASSETS PENDENTES DO DONO (Lottie):** colocar em `public/lottie/`:
+    `empty-tasks.lottie`, `empty-events.lottie`, `empty-transactions.lottie` (formato .lottie,
+    ideal <100KB cada; sugestão: lottiefiles.com, tema minimalista dark). Sem eles o app
+    continua como era. Não há fluxo de onboarding no app hoje, então o Lottie de onboarding
+    fica para quando existir onboarding.
+- **Fase 4 (FEITA) — Onda 13 COMPLETA:** mobile e destaque. `npm run build` OK; console limpo.
+  - Lib nova: **vaul** (bottom sheet com gesto, base Radix Dialog). As DUAS folhas da barra
+    inferior (`quick-actions` e `more-sheet`) viraram `Drawer` do vaul: sobem animadas,
+    **arrastam para baixo para fechar** (gesto nativo, melhor no app Capacitor), Esc/backdrop
+    fecham. API dos pais intacta (render condicional + `onClose` no fim da saída via
+    `onAnimationEnd`); nascem fechadas e abrem no mount para garantir a entrada animada.
+    Tocar numa ação segue fechando instantâneo + navegando com transição de rota. O
+    AnimatePresence que elas usavam na Fase 2 foi substituído pelo do vaul (motion segue no
+    modal e microgestos).
+  - **Destaque do hero (opcional):** `.text-gradient-animated` no título do dashboard,
+    gradiente que "respira" em 8s (estilo animated-gradient-text do Magic UI adaptado aos
+    tokens, CSS puro, zero dependência). Escolha deliberadamente contida: o dono já pediu
+    remoção de fundo animado (three.js) no passado, então NADA de hero 3D/aurora pesado.
+  - **Resumo da Onda 13 (libs adicionadas):** motion, @formkit/auto-animate,
+    next-view-transitions, @number-flow/react, @lottiefiles/dotlottie-react, vaul.
+    Divisão de runtimes: GSAP = Reveal/scroll/hero; motion = modal + microgestos (Pressable);
+    vaul = folhas; View Transitions API = rotas; AutoAnimate = listas não-dnd; NumberFlow =
+    números. Tudo respeita prefers-reduced-motion (CSS global + hook).
+  - **Fase 5 (FEITA, a pedido do dono): gráfico de categorias no recharts.** O recharts saiu
+    de dormente e virou o **donut de "Despesas por categoria"** em /financas, com o total do
+    mês no miolo (linguagem das imagens de inspiração).
+    - **Paleta categórica revalidada** (skill `dataviz`, validador rodado, não "no olho"):
+      os `--chart-1..5` viraram `#3b82f6, #d97706, #0891b2, #7c3aed, #059669` (azul da marca,
+      âmbar, ciano, violeta, esmeralda). Passa os 6 checks nos DOIS modos: banda de lightness,
+      chroma, contraste na superfície, e separação do pior par vizinho ΔE 15.0 em deuteranopia
+      e 24.5 em visão normal. A paleta antiga falhava a banda de lightness no escuro (verde/
+      ciano/âmbar claros demais) e no CLARO era um degradê de azuis, ou seja, identidade por
+      lightness (errado para categoria). Nota honesta: no teste mais duro (`--pairs all`, para
+      dispersão/mapa) 5 fatias não passam; para donut o teste correto é o de vizinhos, e a
+      identidade nunca fica só na cor (vão de 2px entre fatias + nome, valor e % na legenda).
+    - **Arquivos:** `src/lib/finance/category-chart.ts` (monta as fatias no servidor; as 5
+      maiores por cor fixa e o resto agregado em "Outras" na cor neutra, a paleta **nunca** é
+      ciclada), `components/finance/category-donut-chart.tsx` (recharts: donut, vão da cor do
+      card entre fatias, `minAngle` para a menor não desaparecer, tooltip com valor e %,
+      `role="img"` com resumo para leitor de tela, animação desligada em reduced-motion),
+      `components/finance/category-donut.tsx` (lazy-load com `next/dynamic ssr:false` e
+      esqueleto reservando a altura: o recharts só é baixado por quem abre /financas com
+      despesa no mês). A lista de barras que já existia virou a **legenda** do donut (mesmo
+      marcador de cor, nome, valor e %), e a cor dela agora vem do mesmo `categoryColor()`,
+      então da 6ª categoria em diante fica neutra em vez de reciclar azul.
+    - **Medido no navegador** (harness temporário, removido depois): 6 fatias renderizadas,
+      `fill` resolvendo as CSS vars exatamente na paleta validada, vão de 2px na cor do card,
+      altura reservada 192px, zero overflow horizontal a 375px. O miolo foi aberto
+      (`innerRadius` 72%, anel de 19px) porque a 375px o total encostava no anel; agora sobram
+      18px de cada lado até na casa das dezenas de milhar. **Não pôde ser exercitado aqui:** o
+      hover do tooltip (screenshot/hover real indisponíveis nesta sessão), então a função de
+      conteúdo ficou defensiva; conferir no app.
+  - **Pendências do dono:** (a) validar visualmente no app logado (modal, listas, folhas com
+    gesto, transições de rota, números rolando, cores coral/verde, título com gradiente vivo,
+    **donut de categorias e o tooltip dele**); (b) assets Lottie da Fase 3 em `public/lottie/`.
+- Assets que faltarão do dono: arquivos Lottie escolhidos (onboarding/estados vazios), Fase 3.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 

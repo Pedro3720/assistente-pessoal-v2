@@ -110,7 +110,7 @@ export function BankManager({ banks }: { banks: BankWithBalance[] }) {
                 <span className="text-base">{bank.icon}</span>
                 <span className="truncate text-sm font-medium">{bank.name}</span>
               </div>
-              <p className={`num text-lg font-semibold ${bank.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              <p className={`num text-lg font-semibold ${bank.balance >= 0 ? "text-positive" : "text-negative"}`}>
                 {formatBRL(bank.balance)}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">saldo atual</p>

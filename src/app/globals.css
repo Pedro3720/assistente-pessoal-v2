@@ -26,6 +26,8 @@
   --color-border: var(--border);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive: var(--destructive);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -63,15 +65,25 @@
   --accent-foreground: #1e3a8a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  /* dinheiro (direção Onda 13): positivo verde, negativo coral/rosa */
+  --positive: #16a34a;
+  --negative: #e11d48;
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #3b82f6;
+  /* Paleta CATEGÓRICA (identidade de série), ordem fixa, nunca ciclada.
+     Validada nos dois modos (banda de lightness, chroma, separação para
+     daltonismo e contraste na superfície): pior par vizinho ΔE 15.0 em
+     deuteranopia e 24.5 em visão normal. Mesmos valores no claro e no
+     escuro; antes o claro era um degradê de azuis (errado para categoria,
+     pois a identidade virava só lightness). */
   --chart-1: #3b82f6;
-  --chart-2: #2563eb;
-  --chart-3: #1d4ed8;
-  --chart-4: #1e40af;
-  --chart-5: #1e3a8a;
-  --radius: 0.5rem;
+  --chart-2: #d97706;
+  --chart-3: #0891b2;
+  --chart-4: #7c3aed;
+  --chart-5: #059669;
+  /* raio grande (direção de design Onda 13): 2xl ~18px, 3xl ~22px */
+  --radius: 0.625rem;
   --sidebar: #f9fafb;
   --sidebar-foreground: #333333;
   --sidebar-primary: #3b82f6;
@@ -100,14 +112,18 @@
   --accent-foreground: #cfe0ff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  /* dinheiro no dark: verde vivo e coral (referência Pierre) */
+  --positive: #4ade80;
+  --negative: #fb7185;
   --border: #1c2536;
   --input: #1c2536;
   --ring: #3b82f6;
+  /* mesma paleta categórica validada do tema claro (ver comentário acima) */
   --chart-1: #3b82f6;
-  --chart-2: #10b981;
-  --chart-3: #22d3ee;
-  --chart-4: #f59e0b;
-  --chart-5: #6366f1;
+  --chart-2: #d97706;
+  --chart-3: #0891b2;
+  --chart-4: #7c3aed;
+  --chart-5: #059669;
   --sidebar: #0a0e16;
   --sidebar-foreground: #e9edf5;
   --sidebar-primary: #3b82f6;
@@ -180,12 +196,13 @@
       border-color 0.35s ease;
     will-change: transform;
   }
+  /* contido (direção Onda 13): profundidade por elevação e borda, não por neon */
   .card-glow:hover {
-    transform: translateY(-4px);
-    border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
     box-shadow:
-      0 18px 50px -18px color-mix(in oklab, var(--primary) 55%, transparent),
-      0 0 0 1px color-mix(in oklab, var(--primary) 22%, transparent) inset;
+      0 12px 32px -16px rgb(0 0 0 / 0.55),
+      0 0 0 1px color-mix(in oklab, var(--primary) 14%, transparent) inset;
   }
 
   /* texto com gradiente */
@@ -194,6 +211,23 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /* destaque do hero (Onda 13, Fase 4): gradiente que "respira" devagar.
+     Estilo animated-gradient-text (Magic UI) adaptado aos tokens; a regra
+     global de reduced-motion congela a animação. */
+  .text-gradient-animated {
+    background: linear-gradient(
+      100deg,
+      var(--foreground),
+      color-mix(in oklab, var(--primary) 85%, white),
+      var(--foreground)
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-sweep 8s ease-in-out infinite;
   }
 
   /* barra de progresso que "cresce" ao aparecer */
@@ -217,6 +251,15 @@
   opacity: 0.04;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── Transição de rota (View Transitions API) ───────────────
+   Crossfade curto e calmo entre páginas (next-view-transitions).
+   Navegadores sem suporte só navegam normal, sem animação. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* ─── Scrollbar custom ───────────────────────────────────── */
@@ -256,7 +299,34 @@
   }
 }
 
+@keyframes gradient-sweep {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* ─── Menos movimento (global) ───────────────────────────────
+   Rede de segurança: QUALQUER animação/transição CSS vira praticamente
+   instantânea para quem pediu menos movimento no sistema. O lado JS
+   (GSAP/motion) usa src/hooks/use-reduced-motion.ts. */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
   .bar-grow,
   .pulse-glow {
     animation: none;

@@ -25,6 +25,7 @@ import { todayISO, formatDateBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
 import { TaskCategoryManager } from "./task-category-manager";
 import { Reveal } from "@/components/effects/reveal";
+import { EmptyState } from "@/components/effects/empty-state";
 import type { Task, TaskCategory, TaskStatus } from "@/types/task";
 
 type Filter = "all" | TaskStatus;
@@ -190,11 +191,13 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
       {/* lista */}
       {shown.length === 0 ? (
         <Reveal stagger className="space-y-2">
-          <div className="glass flex flex-col items-center justify-center rounded-2xl border border-border py-16 text-center">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Plus className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground">Nenhuma tarefa aqui.</p>
+          <div className="glass rounded-2xl border border-border py-16 text-center">
+            <EmptyState lottie="/lottie/empty-tasks.lottie">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                <Plus className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa aqui.</p>
+            </EmptyState>
           </div>
         </Reveal>
       ) : (
