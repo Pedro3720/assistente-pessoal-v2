@@ -62,10 +62,13 @@ Arquivos: `src/app/(app)/financas/page.tsx`, novo `accounts-summary.tsx`, remoç
   Tipo e Categoria na etapa de revisão.
 - **Seletor de categoria** (`src/components/finance/category-select.tsx`): usa o seletor acima e
   acrescenta:
-  - rodapé "Nova categoria" (nome, ícone e cor), que chama `createCategory` e já deixa a
-    categoria nova selecionada na linha;
-  - lápis em cada item para renomear ou trocar ícone e cor, via `updateCategory`.
+  - rodapé "Nova categoria" (nome e ícone), que chama `createCategory` e já deixa a categoria
+    nova selecionada na linha;
+  - lápis em cada item para renomear ou trocar o ícone, via `updateCategory`.
   As duas actions já existem em `src/lib/actions/finance.ts`; não é preciso criar nada no banco.
+  **Categoria não tem cor:** verificado no schema (`categoryInput = { name, icon, kind }`) e no
+  tipo `Category`. A identidade visual da categoria é o emoji. Incluir um seletor de cor exigiria
+  migração de banco, o que está fora do escopo desta onda.
 - **Tabela da revisão:** linhas mais altas, valores com a fonte numérica (`.num`), Tipo vira
   chip Despesa/Receita nas cores semânticas (`--positive`/`--negative`) no lugar de um select.
 
