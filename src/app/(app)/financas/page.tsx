@@ -11,6 +11,7 @@ import { SubscriptionsSection } from "@/components/finance/subscriptions-section
 import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
 
@@ -63,7 +64,7 @@ export default async function FinancasPage({
     if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
-    const icon = cat?.icon ?? "📌";
+    const icon = cat?.icon ?? "tag";
     const prev = byCat.get(key);
     byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount) });
   }
@@ -161,7 +162,7 @@ export default async function FinancasPage({
                             style={{ backgroundColor: color }}
                             aria-hidden
                           />
-                          <span className="text-lg">{icon}</span>
+                          <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
                           <span className="truncate font-medium">{name}</span>
                         </div>
                         <div className="shrink-0 text-right">

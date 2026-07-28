@@ -43,3 +43,16 @@ As chaves já estão em `.env.local`. No painel do Supabase:
 - [ ] **Fase 4 — Dashboard real**: agregações via Server Components.
 - [ ] **Fase 5 — Senhas**: cofre com criptografia da coluna de senha.
 - [ ] **Fase 6 — Integrações**: Google Calendar (OAuth) real.
+
+## Ícones e logos
+
+- **Ícones da interface:** [lucide](https://lucide.dev) (MIT). O catálogo oferecido ao usuário
+  em categorias, contas e assinaturas fica em `src/lib/icons/catalog.ts`; os ícones são
+  importados um a um para não trazer a biblioteca inteira no bundle.
+- **Logos de bancos:** os arquivos em `public/banks/` são gerados por
+  `node scripts/gen-banks.mjs` a partir do pacote
+  [@edusites/bancos-brasil](https://www.npmjs.com/package/@edusites/bancos-brasil) (MIT), que é
+  devDependency e só é necessário para regerar.
+  **As marcas e logos pertencem aos respectivos bancos e instituições.** Elas aparecem aqui
+  apenas para o usuário identificar as próprias contas dentro do app (uso nominativo), sem
+  qualquer vínculo, patrocínio ou afiliação.

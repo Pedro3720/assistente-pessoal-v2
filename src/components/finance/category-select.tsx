@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createCategory, updateCategory } from "@/lib/actions/finance";
 import { SelectMenu, type SelectOption } from "@/components/ui/select-menu";
+import { IconPicker } from "@/components/ui/icon-picker";
 import type { Category, TxType } from "@/types/finance";
 
 /**
@@ -44,12 +45,12 @@ export function CategorySelect({
     setSaving(true);
     try {
       if (form.id === null) {
-        const nova = await createCategory({ name: form.name.trim(), icon: form.icon || "🏷️", kind });
+        const nova = await createCategory({ name: form.name.trim(), icon: form.icon || "tag", kind });
         // já deixa a categoria nova aplicada na linha que a criou
         if (nova && typeof nova.id === "number") onChange(nova.id);
         toast.success("Categoria criada");
       } else {
-        await updateCategory(form.id, { name: form.name.trim(), icon: form.icon || "🏷️" });
+        await updateCategory(form.id, { name: form.name.trim(), icon: form.icon || "tag" });
         toast.success("Categoria atualizada");
       }
       setForm(null);
@@ -64,13 +65,7 @@ export function CategorySelect({
   const editor = form && (
     <div className="space-y-2 p-2">
       <div className="flex gap-1.5">
-        <input
-          value={form.icon}
-          onChange={(e) => setForm({ ...form, icon: e.target.value })}
-          maxLength={2}
-          placeholder="🏷️"
-          className="w-10 rounded-lg border border-border bg-muted px-1 py-1.5 text-center text-xs"
-        />
+        <IconPicker value={form.icon} onChange={(v) => setForm({ ...form, icon: v })} />
         <input
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -120,7 +115,7 @@ export function CategorySelect({
         ) : (
           <button
             type="button"
-            onClick={() => setForm({ id: null, name: "", icon: "🏷️" })}
+            onClick={() => setForm({ id: null, name: "", icon: "tag" })}
             className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium text-primary hover:bg-accent"
           >
             <Plus className="h-3.5 w-3.5" /> Nova categoria

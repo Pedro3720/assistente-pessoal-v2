@@ -186,11 +186,11 @@ export function PlanningSection({
   function payLabel(i: PlannedItem): string | null {
     if (i.bank_id) {
       const b = bankById.get(i.bank_id);
-      return b ? `${b.icon} ${b.name}` : null;
+      return b ? `${b.name}` : null;
     }
     if (i.card_id) {
       const c = cardById.get(i.card_id);
-      return c ? `💳 ${c.name}` : null;
+      return c ? c.name : null;
     }
     return null;
   }
@@ -360,7 +360,7 @@ export function PlanningSection({
                 <option value="">Sem categoria</option>
                 {typeCats.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -378,7 +378,7 @@ export function PlanningSection({
                   <optgroup label="Contas">
                     {banks.map((b) => (
                       <option key={`b${b.id}`} value={`bank:${b.id}`}>
-                        {b.icon} {b.name}
+                        {b.name}
                       </option>
                     ))}
                   </optgroup>
@@ -387,7 +387,7 @@ export function PlanningSection({
                   <optgroup label="Cartões">
                     {cards.map((c) => (
                       <option key={`c${c.id}`} value={`card:${c.id}`}>
-                        💳 {c.name}
+                        {c.name}
                       </option>
                     ))}
                   </optgroup>
@@ -431,7 +431,7 @@ function PlanRow({
   done?: boolean;
 }) {
   const sub: string[] = [];
-  if (cat) sub.push(`${cat.icon} ${cat.name}`);
+  if (cat) sub.push(`${cat.name}`);
   if (payLabel) sub.push(payLabel);
   sub.push(formatDateBR(i.due_date));
 

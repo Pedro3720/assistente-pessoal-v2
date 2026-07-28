@@ -213,7 +213,7 @@ export default async function Dashboard() {
           <div className="divide-y divide-border">
             {data.topTasks.length === 0 ? (
               <EmptyState lottie="/lottie/empty-tasks.lottie" className="px-6 py-12">
-                <p className="text-center text-sm text-muted-foreground">Nada pendente. 🎉</p>
+                <p className="text-center text-sm text-muted-foreground">Nada pendente por aqui.</p>
               </EmptyState>
             ) : (
               data.topTasks.map((t) => {

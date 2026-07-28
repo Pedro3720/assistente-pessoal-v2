@@ -1,5 +1,6 @@
 import { Wallet } from "lucide-react";
 import { formatBRL } from "@/lib/money";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import type { BankStatement } from "@/lib/data/finance";
 import type { BankWithBalance, Category } from "@/types/finance";
 import { StatementAccountSelect } from "./statement-account-select";
@@ -61,18 +62,25 @@ export function Statement({
             {day.entries.map((t) => {
               const cat = t.category_id ? catById.get(t.category_id) : null;
               const label = cat
-                ? `${cat.icon} ${cat.name}`
+                ? cat.name
                 : t.is_card_payment
-                  ? "💳 Pagamento de fatura"
+                  ? "Pagamento de fatura"
                   : "Sem categoria";
               return (
                 <div
                   key={t.id}
                   className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-2.5 last:border-0"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{t.description}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <EntityIcon
+                      value={cat?.icon ?? (t.is_card_payment ? "credit-card" : "")}
+                      size={16}
+                      className="h-8 w-8 rounded-full bg-muted text-muted-foreground"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{t.description}</p>
+                      <p className="truncate text-xs text-muted-foreground">{label}</p>
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-6 text-right">
                     <span className={`num text-sm font-semibold ${t.type === "income" ? "text-positive" : "text-negative"}`}>

@@ -2,6 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatBRL } from "@/lib/money";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import type { CategorySlice } from "@/lib/finance/category-chart";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
@@ -69,7 +70,8 @@ export function CategoryDonutChart({
                       style={{ backgroundColor: s.color }}
                       aria-hidden
                     />
-                    {s.icon} {s.name}
+                    <EntityIcon value={s.icon} size={13} className="h-3.5 w-3.5" />
+                    {s.name}
                   </p>
                   <p className="num mt-0.5 text-sm font-semibold">{formatBRL(s.total)}</p>
                   <p className="num text-[11px] text-muted-foreground">

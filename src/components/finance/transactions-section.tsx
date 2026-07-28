@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Plus, ArrowUpRight, ArrowDownRight, Edit3, Trash2,
+  Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, CreditCard, Edit3, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -14,6 +14,7 @@ import {
   createTransfer, deleteTransferGroup,
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import { MoneyInput } from "./money-input";
 import { useAnimatedList } from "@/hooks/use-animated-list";
 import { EmptyState } from "@/components/effects/empty-state";
@@ -394,7 +395,7 @@ export function TransactionsSection({
                   <option value="">Sem categoria</option>
                   {kindCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.icon} {c.name}
+                      {c.name}
                     </option>
                   ))}
                 </select>
@@ -433,7 +434,7 @@ export function TransactionsSection({
                 <option value="">{isPurchase ? "compra vai para a fatura" : "Sem conta"}</option>
                 {banks.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.icon} {b.name}
+                    {b.name}
                   </option>
                 ))}
               </select>
@@ -452,7 +453,7 @@ export function TransactionsSection({
                     .filter((b) => String(b.id) !== bankId)
                     .map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.icon} {b.name}
+                        {b.name}
                       </option>
                     ))}
                 </select>
@@ -506,9 +507,25 @@ function TxRow({
         </div>
         <div className="min-w-0">
           <p className="truncate font-medium">{t.description}</p>
-          <p className="text-xs text-muted-foreground">
-            {t.is_transfer ? "🔄 transferência" : cat ? `${cat.icon} ${cat.name}` : "Sem categoria"}
-            {t.is_card_payment ? " · 💳 pagamento" : ""} · {formatDateBR(t.occurred_on)}
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            {t.is_transfer ? (
+              <>
+                <ArrowLeftRight className="h-3 w-3 shrink-0" /> transferência
+              </>
+            ) : cat ? (
+              <>
+                <EntityIcon value={cat.icon} size={12} className="h-3 w-3" />
+                <span className="truncate">{cat.name}</span>
+              </>
+            ) : (
+              "Sem categoria"
+            )}
+            {t.is_card_payment && (
+              <>
+                · <CreditCard className="h-3 w-3 shrink-0" /> pagamento
+              </>
+            )}
+            <span className="shrink-0">· {formatDateBR(t.occurred_on)}</span>
           </p>
         </div>
       </div>

@@ -354,7 +354,7 @@ export function ImportModal({
                             placeholder="Fatura de qual cartão?"
                             className="w-44 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-300"
                             onChange={(v) => update(row.id, { cardId: v === "" ? null : Number(v) })}
-                            options={cards.map((c) => ({ value: String(c.id), label: c.name, icon: "💳" }))}
+                            options={cards.map((c) => ({ value: String(c.id), label: c.name, icon: "credit-card" }))}
                           />
                         ) : (
                           <CategorySelect

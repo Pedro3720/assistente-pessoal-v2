@@ -12,6 +12,8 @@ import {
   deleteSubscription,
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
+import { EntityIcon } from "@/components/ui/entity-icon";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { MoneyInput } from "./money-input";
 import { useAnimatedList } from "@/hooks/use-animated-list";
 import type {
@@ -67,7 +69,7 @@ export function SubscriptionsSection({
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("🔁");
+  const [icon, setIcon] = useState("repeat");
   const [amount, setAmount] = useState("");
   const [billingDay, setBillingDay] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -85,7 +87,7 @@ export function SubscriptionsSection({
   function reset() {
     setEditingId(null);
     setName("");
-    setIcon("🔁");
+    setIcon("repeat");
     setAmount("");
     setBillingDay("");
     setCategoryId("");
@@ -129,7 +131,7 @@ export function SubscriptionsSection({
     setSaving(true);
     const base = {
       name: name.trim(),
-      icon: icon.trim() || "🔁",
+      icon: icon.trim() || "repeat",
       amount: value,
       billing_day: day,
       category_id: categoryId ? Number(categoryId) : null,
@@ -170,15 +172,11 @@ export function SubscriptionsSection({
     }
   }
 
+  // texto secundário: só o nome, porque o ícone agora é um componente e não
+  // pode ser concatenado numa string
   function payLabel(s: Subscription): string | null {
-    if (s.bank_id) {
-      const b = bankById.get(s.bank_id);
-      return b ? `${b.icon} ${b.name}` : null;
-    }
-    if (s.card_id) {
-      const c = cardById.get(s.card_id);
-      return c ? `💳 ${c.name}` : null;
-    }
+    if (s.bank_id) return bankById.get(s.bank_id)?.name ?? null;
+    if (s.card_id) return cardById.get(s.card_id)?.name ?? null;
     return null;
   }
 
@@ -265,19 +263,13 @@ export function SubscriptionsSection({
         <Modal onClose={() => setOpen(false)} title={`${editingId ? "Editar" : "Nova"} Assinatura`}>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <input
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                maxLength={2}
-                className="w-12 rounded-lg border border-border bg-muted px-2 py-2 text-center text-sm"
-                placeholder="🔁"
-              />
+              <IconPicker value={icon} onChange={setIcon} fallback="subscription" />
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
                 placeholder="Nome (ex: Netflix)"
-                className="flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm"
               />
             </div>
 
@@ -309,7 +301,7 @@ export function SubscriptionsSection({
                 <option value="">Sem categoria</option>
                 {expenseCats.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -327,7 +319,7 @@ export function SubscriptionsSection({
                   <optgroup label="Contas">
                     {banks.map((b) => (
                       <option key={`b${b.id}`} value={`bank:${b.id}`}>
-                        {b.icon} {b.name}
+                        {b.name}
                       </option>
                     ))}
                   </optgroup>
@@ -336,7 +328,7 @@ export function SubscriptionsSection({
                   <optgroup label="Cartões">
                     {cards.map((c) => (
                       <option key={`c${c.id}`} value={`card:${c.id}`}>
-                        💳 {c.name}
+                        {c.name}
                       </option>
                     ))}
                   </optgroup>
@@ -376,7 +368,7 @@ function SubRow({
   muted?: boolean;
 }) {
   const sub: string[] = [];
-  if (cat) sub.push(`${cat.icon} ${cat.name}`);
+  if (cat) sub.push(cat.name);
   if (payLabel) sub.push(payLabel);
   if (s.billing_day) sub.push(`todo dia ${s.billing_day} · próx. ${formatDateBR(nextCharge(s.billing_day))}`);
 
@@ -387,7 +379,12 @@ function SubRow({
       }`}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="shrink-0 text-xl">{s.icon}</span>
+        <EntityIcon
+          value={s.icon}
+          fallback="subscription"
+          size={18}
+          className="h-9 w-9 rounded-full bg-muted text-muted-foreground"
+        />
         <div className="min-w-0">
           <p className="truncate font-medium">{s.name}</p>
           <p className="truncate text-xs text-muted-foreground">{sub.join(" · ") || "Sem detalhes"}</p>

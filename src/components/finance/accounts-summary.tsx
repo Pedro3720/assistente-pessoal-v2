@@ -10,6 +10,8 @@ import { createBank, deleteBank } from "@/lib/actions/finance";
 import { AnimatedNumber } from "@/components/effects/animated-number";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { DUR, EASE } from "@/lib/motion";
+import { EntityIcon } from "@/components/ui/entity-icon";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { MoneyInput } from "./money-input";
 import type { BankWithBalance } from "@/types/finance";
 
@@ -35,7 +37,7 @@ export function AccountsSummary({
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("🏦");
+  const [icon, setIcon] = useState("");
   const [opening, setOpening] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -52,11 +54,11 @@ export function AccountsSummary({
     try {
       await createBank({
         name: name.trim(),
-        icon: icon || "🏦",
+        icon: icon || "landmark",
         opening_balance: parseBRL(opening) || 0,
       });
       setName("");
-      setIcon("🏦");
+      setIcon("");
       setOpening("");
       setAdding(false);
       router.refresh();
@@ -84,9 +86,12 @@ export function AccountsSummary({
         aria-expanded={open}
         className="flex w-full items-center gap-4 text-left"
       >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-2xl">
-          {main?.icon ?? "🏦"}
-        </span>
+        <EntityIcon
+          value={main?.icon}
+          fallback="bank"
+          size={24}
+          className="h-12 w-12 rounded-full bg-muted text-muted-foreground"
+        />
         <span className="min-w-0 flex-1">
           <span className="block text-sm text-muted-foreground">Saldo em contas</span>
           <AnimatedNumber
@@ -154,13 +159,7 @@ export function AccountsSummary({
               {adding && (
                 <div className="mt-2 space-y-2 rounded-xl border border-dashed border-border p-3">
                   <div className="flex gap-2">
-                    <input
-                      value={icon}
-                      onChange={(e) => setIcon(e.target.value)}
-                      maxLength={2}
-                      className="w-12 rounded-lg border border-border bg-muted px-2 py-2 text-center text-sm"
-                      placeholder="🏦"
-                    />
+                    <IconPicker value={icon} onChange={setIcon} withBanks fallback="bank" />
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -199,9 +198,12 @@ export function AccountsSummary({
                 <div className="mt-2 divide-y divide-border">
                   {banks.map((bank) => (
                     <div key={bank.id} className="group flex items-center gap-3 py-2.5">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-base">
-                        {bank.icon}
-                      </span>
+                      <EntityIcon
+                        value={bank.icon}
+                        fallback="bank"
+                        size={18}
+                        className="h-9 w-9 rounded-full bg-muted text-muted-foreground"
+                      />
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">{bank.name}</span>
                       <span
                         className={`num shrink-0 text-sm font-semibold ${

@@ -29,7 +29,7 @@ export function StatementAccountSelect({
       >
         {banks.map((b) => (
           <option key={b.id} value={b.id}>
-            {b.icon} {b.name}
+            {b.name}
           </option>
         ))}
       </select>

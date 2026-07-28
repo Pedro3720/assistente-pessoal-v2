@@ -3,10 +3,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Pencil } from "lucide-react";
+import { EntityIcon } from "./entity-icon";
 
 export type SelectOption = {
   value: string;
   label: string;
+  /** valor da coluna `icon`: nome de ícone, "bank:<slug>" ou emoji legado */
   icon?: string;
   color?: string;
 };
@@ -101,8 +103,11 @@ export function SelectMenu({
         {selected?.color && (
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: selected.color }} />
         )}
+        {selected?.icon && (
+          <EntityIcon value={selected.icon} className="h-4 w-4 rounded-full" size={14} />
+        )}
         <span className={`min-w-0 flex-1 truncate text-left ${selected ? "" : "text-muted-foreground"}`}>
-          {selected ? `${selected.icon ?? ""} ${selected.label}`.trim() : placeholder}
+          {selected ? selected.label : placeholder}
         </span>
         <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
       </button>
@@ -143,7 +148,7 @@ export function SelectMenu({
                   {o.color && (
                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: o.color }} />
                   )}
-                  {o.icon && <span className="shrink-0">{o.icon}</span>}
+                  {o.icon && <EntityIcon value={o.icon} className="h-4 w-4 rounded-full" size={14} />}
                   <span className="min-w-0 flex-1 truncate">{o.label}</span>
                   {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
                 </button>

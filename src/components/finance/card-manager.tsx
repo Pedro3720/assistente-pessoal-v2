@@ -114,7 +114,7 @@ export function CardManager({
             <option value="">Sem conta vinculada</option>
             {banks.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.icon} {b.name}
+                {b.name}
               </option>
             ))}
           </select>

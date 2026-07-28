@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Check, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
+import { IconPicker } from "@/components/ui/icon-picker";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import { createCategory, updateCategory, deleteCategory } from "@/lib/actions/finance";
 import type { Category, TxType } from "@/types/finance";
 
@@ -17,7 +19,7 @@ export function CategoryManager({
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("📌");
+  const [icon, setIcon] = useState("tag");
   const [kind, setKind] = useState<TxType>("expense");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -26,8 +28,8 @@ export function CategoryManager({
   async function add() {
     if (!name.trim()) return;
     try {
-      await createCategory({ name: name.trim(), icon: icon || "📌", kind });
-      setName(""); setIcon("📌");
+      await createCategory({ name: name.trim(), icon: icon || "tag", kind });
+      setName(""); setIcon("tag");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao criar");
@@ -36,7 +38,7 @@ export function CategoryManager({
 
   async function saveEdit(id: number) {
     try {
-      await updateCategory(id, { name: editName.trim(), icon: editIcon || "📌" });
+      await updateCategory(id, { name: editName.trim(), icon: editIcon || "tag" });
       setEditingId(null);
       router.refresh();
     } catch (e) {
@@ -62,18 +64,12 @@ export function CategoryManager({
         {/* adicionar */}
         <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
           <div className="flex gap-2">
-            <input
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              maxLength={2}
-              className="w-12 rounded-lg border border-border bg-muted px-2 py-2 text-center text-sm"
-              placeholder="📌"
-            />
+            <IconPicker value={icon} onChange={setIcon} />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nome da categoria"
-              className="flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm"
             />
           </div>
           <div className="flex gap-2">
@@ -111,16 +107,11 @@ export function CategoryManager({
                 <div key={c.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
                   {editingId === c.id ? (
                     <>
-                      <input
-                        value={editIcon}
-                        onChange={(e) => setEditIcon(e.target.value)}
-                        maxLength={2}
-                        className="w-10 rounded border border-border bg-muted px-1 py-1 text-center text-sm"
-                      />
+                      <IconPicker value={editIcon} onChange={setEditIcon} />
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="flex-1 rounded border border-border bg-muted px-2 py-1 text-sm"
+                        className="min-w-0 flex-1 rounded border border-border bg-muted px-2 py-1 text-sm"
                       />
                       <button onClick={() => saveEdit(c.id)} className="p-1 text-green-600" title="Salvar">
                         <Check className="h-4 w-4" />
@@ -131,8 +122,8 @@ export function CategoryManager({
                     </>
                   ) : (
                     <>
-                      <span className="text-base">{c.icon}</span>
-                      <span className="flex-1 truncate text-sm">{c.name}</span>
+                      <EntityIcon value={c.icon} size={16} className="h-6 w-6 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate text-sm">{c.name}</span>
                       <button
                         onClick={() => { setEditingId(c.id); setEditName(c.name); setEditIcon(c.icon); }}
                         className="p-1 text-muted-foreground hover:text-primary"

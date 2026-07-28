@@ -16,7 +16,7 @@ export type TransactionInput = z.infer<typeof transactionInput>;
 
 export const bankInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
-  icon: z.string().trim().min(1).default("🏦"),
+  icon: z.string().trim().min(1).default("landmark"),
   opening_balance: z.number().default(0),
 });
 export type BankInput = z.infer<typeof bankInput>;
@@ -34,7 +34,7 @@ export type CardInput = z.infer<typeof cardInput>;
 
 export const categoryInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
-  icon: z.string().trim().min(1).default("📌"),
+  icon: z.string().trim().min(1).default("tag"),
   kind: txTypeSchema,
 });
 export type CategoryInput = z.infer<typeof categoryInput>;
@@ -60,7 +60,7 @@ export type TransferInput = z.infer<typeof transferInput>;
 
 export const subscriptionInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
-  icon: z.string().trim().min(1).default("🔁"),
+  icon: z.string().trim().min(1).default("repeat"),
   amount: z.number().positive("O valor deve ser maior que zero"),
   billing_day: z.number().int().min(1).max(31).nullable().default(null),
   category_id: z.number().int().nullable().default(null),
