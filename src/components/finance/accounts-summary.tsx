@@ -12,6 +12,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { DUR, EASE } from "@/lib/motion";
 import { EntityIcon } from "@/components/ui/entity-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
+import { ConnectBank } from "./connect-bank";
 import { MoneyInput } from "./money-input";
 import type { BankWithBalance } from "@/types/finance";
 
@@ -26,11 +27,14 @@ export function AccountsSummary({
   income,
   expense,
   invoicesTotal,
+  podeConectar = false,
 }: {
   banks: BankWithBalance[];
   income: number;
   expense: number;
   invoicesTotal: number;
+  /** true quando a integração bancária está configurada no servidor */
+  podeConectar?: boolean;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -146,14 +150,17 @@ export function AccountsSummary({
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">Contas</h3>
-                <button
-                  onClick={() => setAdding((v) => !v)}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-accent"
-                >
-                  <Plus className="h-3 w-3" /> Nova conta
-                </button>
+                <div className="flex items-center gap-2">
+                  {podeConectar && <ConnectBank />}
+                  <button
+                    onClick={() => setAdding((v) => !v)}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-accent"
+                  >
+                    <Plus className="h-3 w-3" /> Nova conta
+                  </button>
+                </div>
               </div>
 
               {adding && (

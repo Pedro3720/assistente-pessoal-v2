@@ -29,7 +29,9 @@ export type LimitName =
   | "passwordReset" // e-mail de recuperacao (por IP)
   | "passwordChange" // troca de senha (por IP)
   | "financeWrite" // escritas de financas (por usuario)
-  | "upload"; // envio de imagem (por usuario)
+  | "upload" // envio de imagem (por usuario)
+  | "pluggyConnect" // emissao de connect token (por usuario)
+  | "pluggySync"; // sync manual de um item (por usuario)
 
 const CONFIG: Record<LimitName, { tokens: number; window: Duration }> = {
   auth: { tokens: 10, window: "60 s" },
@@ -37,6 +39,9 @@ const CONFIG: Record<LimitName, { tokens: number; window: Duration }> = {
   passwordChange: { tokens: 10, window: "1 h" },
   financeWrite: { tokens: 60, window: "60 s" },
   upload: { tokens: 20, window: "300 s" },
+  // conectar banco é ação rara: teto baixo limita abuso da emissão de token
+  pluggyConnect: { tokens: 10, window: "300 s" },
+  pluggySync: { tokens: 12, window: "300 s" },
 };
 
 const cache = new Map<LimitName, Ratelimit>();

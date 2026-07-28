@@ -12,6 +12,7 @@ import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
 import { EntityIcon } from "@/components/ui/entity-icon";
+import { pluggyConfigurada } from "@/lib/pluggy/client";
 import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
 
@@ -96,6 +97,7 @@ export default async function FinancasPage({
           income={totals.income}
           expense={totals.expense}
           invoicesTotal={invoicesTotal}
+          podeConectar={pluggyConfigurada()}
         />
       </Reveal>
 
