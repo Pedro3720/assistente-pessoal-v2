@@ -591,6 +591,51 @@ mostrarem a logo do banco. Spec em `docs/superpowers/specs/2026-07-28-icones-e-l
   bancos, o seletor de categorias e assinaturas, e as telas onde o ícone aparece (extrato,
   transações, donut, planejamento).
 
+### 3.17 Onda 16: integração bancária automática via Pluggy (Open Finance) — 2026-07-29
+As movimentações do banco entram sozinhas e ao dono resta só categorizar. Fases 0 a 5 feitas;
+Fase 6 (cartão de crédito) pendente. **Migrações 0015, 0016 e 0017 JÁ RODADAS pelo dono.**
+
+- **Contratos confirmados no SDK instalado, não na doc web** (pluggy-sdk 0.90.0), e três
+  divergências apareceram: `createConnectToken(itemId?, options?)` e
+  `createWebhook(event, url, headers?)` são POSICIONAIS (a doc sugeria objeto único), e
+  `fetchTransactions` está deprecated (o certo é `fetchAllTransactions`).
+- **Sinal do valor:** a doc não garante, e na prática a Pluggy manda **negativo** para débito.
+  Por isso `mapearValor()` deriva a direção do campo `type` (DEBIT/CREDIT) e aplica `Math.abs`,
+  igual ao import de OFX. Se dependesse do sinal, os lançamentos entrariam invertidos.
+- **Arquivos:** `lib/pluggy/{client,sync}.ts`, `lib/actions/pluggy.ts`, `lib/data/pluggy.ts`,
+  `app/api/pluggy/connect-token/route.ts`, `app/api/webhooks/pluggy/route.ts`,
+  `app/api/cron/pluggy-sync/route.ts`, `components/finance/{connect-bank,pluggy-connections,
+  categorization-queue}.tsx`, `supabase/pgcron_pluggy.sql`.
+- **Dois bugs encontrados e corrigidos durante o teste real:**
+  1. *Widget girava para sempre.* A CSP da Onda 10 barrava o iframe de `connect.pluggy.ai` e as
+     chamadas a `api.pluggy.ai`. Liberados só esses dois domínios, e só em `frame-src` e
+     `connect-src`; `script-src` segue sem terceiros.
+  2. *Conexão criada sem contas.* O widget chama `onSuccess` quando o login dá certo, mas o item
+     ainda está em `UPDATING` e `fetchAccounts` volta vazio. Agora há polling curto (25s) e a
+     vinculação é idempotente, então o botão Sincronizar conserta conexão incompleta.
+  3. *Erro 42P10 no upsert.* Os índices de dedupe eram PARCIAIS e o Postgres não os infere no
+     ON CONFLICT. Migração 0017 troca por índices únicos totais: como dois NULL não são iguais,
+     contas manuais e transações digitadas seguem livres.
+- **Revisão de segurança (Fase 5), com evidência:**
+  - nenhum `NEXT_PUBLIC_PLUGGY` no código nem no `.env.local`; `lib/pluggy/client.ts` tem
+    `server-only`; os valores dos 3 segredos não aparecem em `.next/static`;
+  - nenhuma credencial bancária no app (o widget da Pluggy recebe a senha; o app só guarda o
+    `itemId`); a API Key é gerenciada pelo próprio SDK e nunca é exposta;
+  - connect-token exige sessão e tem rate limit por usuário; `savePluggyItem` recusa item cujo
+    `clientUserId` não seja o usuário da sessão;
+  - webhook: 401 sem segredo e com segredo errado, 200 em 0,018s com o correto (limite é 5s),
+    `itemId` forjado é ignorado; o dono vem do nosso banco, nunca do corpo;
+  - **RLS testado com a chave pública**: leitura de `pluggy_items`, `transactions`, `banks` e
+    `categories` sem sessão volta 0 linhas e o insert anônimo é negado com 401;
+  - dedupe idempotente confirmado: depois de rodar o cron sobre as mesmas transações, o banco
+    seguia com a mesma contagem e nenhum `external_id` repetido.
+- **Estado do sandbox:** 1 conexão (Pluggy Bank), 1 conta corrente vinculada, transações
+  importadas e fila de categorização funcionando. Há 1 conta CREDIT esperando a Fase 6, e o
+  extrato já traz "PAGAMENTO FATURA CARTAO VISA", que é justamente o caso de contagem em dobro
+  a tratar lá.
+- **Pendente do dono:** validar a fila no app; depois do deploy, conferir a primeira entrega
+  real do webhook; e a migração para produção da Pluggy (plano pago e due diligence).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
