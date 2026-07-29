@@ -6,6 +6,7 @@ import { ChevronDown, CreditCard, Plus, Trash2, TrendingDown, TrendingUp, X } fr
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
+import { formatDateBR } from "@/lib/dates";
 import { createBank, deleteBank } from "@/lib/actions/finance";
 import { AnimatedNumber } from "@/components/effects/animated-number";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
@@ -218,7 +219,14 @@ export function AccountsSummary({
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">
                         {bank.name}
                         {bank.is_auto && (
-                          <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          <span
+                            className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                            title={
+                              bank.last_synced_at
+                                ? `Última sincronização em ${formatDateBR(bank.last_synced_at.slice(0, 10))}`
+                                : "Ainda não sincronizado"
+                            }
+                          >
                             Sincronizado
                           </span>
                         )}

@@ -148,6 +148,98 @@ export async function savePluggyItem(itemId: string) {
 }
 
 /**
+ * Aplica uma categoria a várias transações de uma vez (fila "Para categorizar").
+ *
+ * A escrita passa pelo client da sessão, então o RLS já garante que ninguém
+ * categoriza transação de outra pessoa; o filtro por user_id é defesa extra.
+ */
+export async function categorizeTransactions(ids: number[], categoryId: number) {
+  const { supabase, userId } = await requireUser();
+  await enforceRate("financeWrite", userId);
+
+  const limpos = ids.filter((id) => Number.isInteger(id) && id > 0);
+  if (limpos.length === 0) throw new Error("Nenhuma transação selecionada.");
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    throw new Error("Categoria inválida.");
+  }
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category_id: categoryId })
+    .eq("user_id", userId)
+    .in("id", limpos);
+
+  if (error) throw new Error(`Não foi possível categorizar: ${error.message}`);
+  revalidate();
+  return { atualizadas: limpos.length };
+}
+
+/**
+ * Desconecta um banco.
+ *
+ * Apaga o item na Pluggy (para parar a coleta e a cobrança por conexão),
+ * remove o vínculo das contas e, conforme a escolha do usuário, mantém ou
+ * apaga o histórico já importado. Manter é o padrão: o extrato do passado
+ * continua fazendo sentido mesmo sem a conexão ativa.
+ */
+export async function disconnectPluggyItem(itemId: string, apagarTransacoes: boolean) {
+  const { supabase, userId } = await requireUser();
+  await enforceRate("pluggyConnect", userId);
+
+  const { data: vinculo, error: erroBusca } = await supabase
+    .from("pluggy_items")
+    .select("item_id")
+    .eq("user_id", userId)
+    .eq("item_id", itemId)
+    .maybeSingle();
+  if (erroBusca) throw new Error(erroBusca.message);
+  if (!vinculo) throw new Error("Conexão não encontrada.");
+
+  // contas do app que vieram desta conexão
+  const { data: contas } = await supabase
+    .from("banks")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("pluggy_item_id", itemId);
+  const idsContas = (contas ?? []).map((c) => c.id as number);
+
+  if (apagarTransacoes && idsContas.length > 0) {
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("source", "pluggy")
+      .in("bank_id", idsContas);
+    if (error) throw new Error(`Não foi possível apagar as transações: ${error.message}`);
+  }
+
+  // a conta deixa de ser automática, mas continua existindo com o histórico
+  const { error: erroContas } = await supabase
+    .from("banks")
+    .update({ is_auto: false, pluggy_item_id: null, pluggy_account_id: null })
+    .eq("user_id", userId)
+    .eq("pluggy_item_id", itemId);
+  if (erroContas) throw new Error(erroContas.message);
+
+  // para a coleta do lado da Pluggy (também interrompe a cobrança pelo item)
+  try {
+    await pluggy().deleteItem(itemId);
+  } catch (e) {
+    console.error("[pluggy] deleteItem:", e instanceof Error ? e.message : e);
+  }
+
+  const { error: erroItem } = await supabase
+    .from("pluggy_items")
+    .delete()
+    .eq("user_id", userId)
+    .eq("item_id", itemId);
+  if (erroItem) throw new Error(erroItem.message);
+
+  revalidate();
+  return { contas: idsContas.length };
+}
+
+/**
  * Sincroniza sob demanda (botão na UI). Também RE-VINCULA as contas, então
  * resolve o caso de uma conexão que ficou sem contas porque a Pluggy ainda
  * estava coletando. É o caminho usado em desenvolvimento, onde o webhook não

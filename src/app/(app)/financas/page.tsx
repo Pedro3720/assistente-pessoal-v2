@@ -1,5 +1,6 @@
 import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
-import { getPluggyItems } from "@/lib/data/pluggy";
+import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
+import { CategorizationQueue } from "@/components/finance/categorization-queue";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
@@ -47,7 +48,7 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan, pluggyItems] = await Promise.all([
+  const [statement, subs, plan, pluggyItems, paraCategorizar] = await Promise.all([
     selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
     getSubscriptions(year, month).catch(() => ({
       subscriptions: [],
@@ -60,6 +61,7 @@ export default async function FinancasPage({
       totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
     })),
     getPluggyItems().catch(() => []),
+    getPendingCategorization().catch(() => []),
   ]);
 
   const byCat = new Map<string, { icon: string; total: number }>();
@@ -103,6 +105,13 @@ export default async function FinancasPage({
           pluggyItems={pluggyItems}
         />
       </Reveal>
+
+      {/* fila do que chegou sozinho e ainda não tem categoria */}
+      {paraCategorizar.length > 0 && (
+        <Reveal>
+          <CategorizationQueue transactions={paraCategorizar} categories={categories} />
+        </Reveal>
+      )}
 
       {/* cartões */}
       <Reveal>
