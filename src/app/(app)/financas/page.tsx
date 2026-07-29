@@ -1,4 +1,5 @@
 import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
+import { getPluggyItems } from "@/lib/data/pluggy";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
@@ -46,7 +47,7 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan] = await Promise.all([
+  const [statement, subs, plan, pluggyItems] = await Promise.all([
     selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
     getSubscriptions(year, month).catch(() => ({
       subscriptions: [],
@@ -58,6 +59,7 @@ export default async function FinancasPage({
       suggestions: [],
       totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
     })),
+    getPluggyItems().catch(() => []),
   ]);
 
   const byCat = new Map<string, { icon: string; total: number }>();
@@ -98,6 +100,7 @@ export default async function FinancasPage({
           expense={totals.expense}
           invoicesTotal={invoicesTotal}
           podeConectar={pluggyConfigurada()}
+          pluggyItems={pluggyItems}
         />
       </Reveal>
 

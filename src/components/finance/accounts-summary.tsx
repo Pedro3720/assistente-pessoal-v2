@@ -13,8 +13,9 @@ import { DUR, EASE } from "@/lib/motion";
 import { EntityIcon } from "@/components/ui/entity-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { ConnectBank } from "./connect-bank";
+import { PluggyConnections } from "./pluggy-connections";
 import { MoneyInput } from "./money-input";
-import type { BankWithBalance } from "@/types/finance";
+import type { BankWithBalance, PluggyItem } from "@/types/finance";
 
 /**
  * Resumo das contas no topo de /financas: mostra o banco de maior saldo, a
@@ -28,6 +29,7 @@ export function AccountsSummary({
   expense,
   invoicesTotal,
   podeConectar = false,
+  pluggyItems = [],
 }: {
   banks: BankWithBalance[];
   income: number;
@@ -35,6 +37,8 @@ export function AccountsSummary({
   invoicesTotal: number;
   /** true quando a integração bancária está configurada no servidor */
   podeConectar?: boolean;
+  /** conexões de Open Finance já existentes */
+  pluggyItems?: PluggyItem[];
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -211,7 +215,14 @@ export function AccountsSummary({
                         size={18}
                         className="h-9 w-9 rounded-full bg-muted text-muted-foreground"
                       />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{bank.name}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {bank.name}
+                        {bank.is_auto && (
+                          <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                            Sincronizado
+                          </span>
+                        )}
+                      </span>
                       <span
                         className={`num shrink-0 text-sm font-semibold ${
                           bank.balance >= 0 ? "text-positive" : "text-negative"
@@ -230,6 +241,8 @@ export function AccountsSummary({
                   ))}
                 </div>
               )}
+
+              <PluggyConnections items={pluggyItems} />
             </div>
           </motion.div>
         )}
