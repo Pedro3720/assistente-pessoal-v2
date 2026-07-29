@@ -19,6 +19,14 @@ const supabaseWs = supabaseOrigin.replace(/^https:/, "wss:"); // realtime
 // Observação: script-src usa 'unsafe-inline' porque o Next e o next-themes injetam scripts
 // inline e a CSP aqui é estática (headers() não gera nonce por request). Isso ainda barra
 // scripts de origens externas; o próximo degrau de robustez seria CSP com nonce no middleware.
+// Pluggy (Open Finance): o widget roda num iframe servido por connect.pluggy.ai
+// e conversa com api.pluggy.ai. Sem estes dois liberados, o widget abre e fica
+// girando para sempre, porque o navegador barra o iframe e as chamadas.
+// São os ÚNICOS domínios externos liberados, e apenas para frame e connect:
+// nenhum script de terceiro passa a ser executado por causa disto.
+const pluggyFrame = "https://connect.pluggy.ai";
+const pluggyApi = "https://api.pluggy.ai";
+
 const csp = [
   `default-src 'self'`,
   `base-uri 'self'`,
@@ -29,7 +37,8 @@ const csp = [
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: ${supabaseOrigin}`,
   `font-src 'self' data:`,
-  `connect-src 'self' ${supabaseOrigin} ${supabaseWs}${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self' ${supabaseOrigin} ${supabaseWs} ${pluggyApi}${isDev ? " ws: wss:" : ""}`,
+  `frame-src 'self' ${pluggyFrame}`,
   `worker-src 'self' blob:`,
   `manifest-src 'self'`,
   `media-src 'self'`,
