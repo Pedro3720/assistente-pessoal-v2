@@ -243,7 +243,13 @@ export function TransactionsSection({
           </p>
         </EmptyState>
       ) : (
-        <DataTable ref={listRef} className="mt-4">
+        // bg-transparent: esta instância já vive dentro do card da própria
+        // seção (glass card-glow ... acima); sem isso o DataTable repetia
+        // fundo (bg-card) e raio por cima do card que já existe, um dentro
+        // do outro. A instância do modal "Ver todas" abaixo não repete: o
+        // Modal usa bg-popover, não bg-card, então ali é mesmo outra
+        // superfície e o fundo padrão do DataTable continua fazendo sentido.
+        <DataTable ref={listRef} className="mt-4 bg-transparent">
           {shown.map((t) => (
             <TxRow
               key={t.id}
