@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-29.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-03.**
 
 ---
 
@@ -43,6 +43,10 @@
   (o harness perdeu o Bash) foi rodado em 2026-08-03 e passou; o código foi commitado direto na
   `main`, não na branch citada na 3.18. **Pendente do dono:** medição no navegador e a
   configuração do provider Google no Supabase para o login funcionar de verdade.
+- **Onda 18 (2026-08-03): EM ANDAMENTO na branch `feat/onda18-redesign`** — redesign visual em
+  várias tasks (ver 3.19). Task 12 (legenda do donut com `Meter`, preparada para o limite por
+  categoria que ainda não existe no banco) feita e commitada (`407ed38`). Não mesclada na `main`,
+  sem push.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -691,6 +695,35 @@ plano em `docs/superpowers/plans/2026-07-29-onda17-google-ordem-centralizacao.md
   `.env.local`; (d) testar na ordem: entrar por senha, vincular no /perfil, sair, entrar com
   Google e confirmar que os dados aparecem (prova do mesmo `user_id`); (e) marcar as três
   sugestões como feito em /admin/sugestoes.
+
+### 3.19 Onda 18: redesign visual (EM ANDAMENTO, branch `feat/onda18-redesign`) — 2026-08-03
+Redesign visual em várias tasks numeradas, especificado em `.superpowers/sdd/task-*-brief.md`.
+Ainda **não mesclada na `main`**, nada foi dado push. Sem migração até aqui.
+
+- **Task 12 (FEITA nesta sessão): legenda do donut preparada para orçamento.** O donut de
+  despesas por categoria continua igual; a legenda ao lado mudou de forma. Antes cada linha
+  mostrava nome, valor, porcentagem de participação e uma barra de participação (redundante com
+  a fatia do próprio donut). Agora cada linha responde duas perguntas em contextos separados: a
+  fatia do donut diz participação no gasto, e uma barra nova (`Meter`) diz consumo do limite da
+  categoria. Como o limite por categoria ainda não existe no banco, toda categoria mostra
+  "Sem limite definido" por enquanto (comportamento esperado nesta task).
+  - `src/lib/finance/category-chart.ts`: `CategorySlice` ganhou `limit: number | null`;
+    `buildCategorySlices` passou a receber `limit` junto de `icon`/`total` em cada entrada; a
+    fatia "Outras" sempre recebe `limit: null` (somar limites de categorias diferentes não
+    significa nada).
+  - `src/components/finance/category-legend.tsx` (novo): `<CategoryLegend slices={...} />`,
+    consome `CategoryChip`, `Meter` e `Money` (componentes de UI já existentes da própria Onda
+    18) e `formatBRL`.
+  - `src/app/(app)/financas/page.tsx`: `byCat` passa `limit: null` na origem (a Task 15 troca
+    pelo valor real quando o campo existir no banco); a lista antiga manuscrita foi apagada por
+    completo e substituída por `<CategoryLegend slices={donut.slices} />` (a legenda agora
+    consome as mesmas 5 categorias + "Outras" do donut, em vez de todas as categorias); o
+    `className` do card do donut mudou de `"glass card-glow rounded-2xl border border-border
+    p-5"` para `"rounded-lg bg-card p-4"`; imports órfãos removidos (`EntityIcon`,
+    `categoryColor`, `formatBRL`, todos só usados na lista antiga).
+  - `npm run build` passou sem erros. Commit `407ed38` na branch `feat/onda18-redesign`.
+  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão) e as
+    próximas tasks da Onda 18, incluindo a Task 15 que vai trazer o limite real por categoria.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
