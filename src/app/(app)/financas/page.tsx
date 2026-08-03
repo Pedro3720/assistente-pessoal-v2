@@ -2,7 +2,6 @@ import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } fr
 import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
 import { CategorizationQueue } from "@/components/finance/categorization-queue";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
-import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
 import { AccountsSummary } from "@/components/finance/accounts-summary";
 import { AccountsCard } from "@/components/finance/accounts-card";
@@ -15,9 +14,9 @@ import { SubscriptionsSection } from "@/components/finance/subscriptions-section
 import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
-import { EntityIcon } from "@/components/ui/entity-icon";
+import { CategoryLegend } from "@/components/finance/category-legend";
 import { pluggyConfigurada } from "@/lib/pluggy/client";
-import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
+import { buildCategorySlices } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
 import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
 import { Segmented } from "@/components/ui/segmented";
@@ -90,14 +89,15 @@ export default async function FinancasPage({
     getPendingCategorization().catch(() => []),
   ]);
 
-  const byCat = new Map<string, { icon: string; total: number }>();
+  const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
     if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "tag";
     const prev = byCat.get(key);
-    byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount) });
+    // limite por categoria ainda não existe no banco; Task 15 troca por valor real
+    byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount), limit: null });
   }
   const expenseByCat = [...byCat.entries()].sort((a, b) => b[1].total - a[1].total);
   const donut = buildCategorySlices(expenseByCat, totals.expense);
@@ -155,7 +155,7 @@ export default async function FinancasPage({
           <div className="grid gap-6 md:grid-cols-[1fr_320px]">
             {/* despesas por categoria */}
             <Reveal>
-              <div className="glass card-glow rounded-2xl border border-border p-5">
+              <div className="rounded-lg bg-card p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">Despesas por categoria</h3>
                   <CategoryManagerButton categories={categories} />
@@ -170,38 +170,7 @@ export default async function FinancasPage({
                         A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
                       </p>
                     )}
-                    {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
-                    <div className="mt-4 space-y-4">
-                      {expenseByCat.map(([name, { icon, total }], i) => {
-                        const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
-                        const color = categoryColor(i);
-                        return (
-                          <div key={name} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                  className="h-2 w-2 shrink-0 rounded-full"
-                                  style={{ backgroundColor: color }}
-                                  aria-hidden
-                                />
-                                <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
-                                <span className="truncate font-medium">{name}</span>
-                              </div>
-                              <div className="shrink-0 text-right">
-                                <p className="num font-semibold">{formatBRL(total)}</p>
-                                <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
-                              </div>
-                            </div>
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                              <div
-                                className="bar-grow h-1.5 rounded-full"
-                                style={{ width: `${pct}%`, backgroundColor: color }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <CategoryLegend slices={donut.slices} />
                   </>
                 )}
               </div>
