@@ -876,11 +876,30 @@ completo com as decisões e os números de contraste em `.superpowers/sdd/final-
    agora zero fica neutro. `monthly_limit` e `credit_limit` (Zod) ganharam `.max(9999999999.99)`
    (teto do `numeric(12,2)` da coluna), evitando erro cru do Postgres num toast.
 
-**Pendências/observações desta revisão (ver relatório completo para os números):** vale
-conferir visualmente o `CardAvatar` novo (item 3) com as cores de `CARD_COLORS`
-(`lib/finance/defaults.ts`) para confirmar que o texto branco das iniciais fica legível em
-todas; a mudança de `--muted`/`--accent` (item 6) é global ao tema claro, não só Finanças, então
-vale um relance no resto do app antes de mesclar.
+**Pendências/observações desta revisão (ver relatório completo para os números):** o contraste
+das iniciais do `CardAvatar` (item 3) foi resolvido em `b228e7c`, escolhendo texto claro ou
+escuro pela luminância da cor do cartão (as 8 cores de `CARD_COLORS` agora passam de 3:1);
+a mudança de `--muted`/`--accent` (item 6) é global ao tema claro, não só Finanças, então
+vale um relance no resto do app.
+
+### 3.21 Correção pós-merge: prop de função cruzando a fronteira servidor/cliente — 2026-08-03
+Primeiro `npm run dev` depois do merge quebrou `/financas` com "Functions cannot be passed
+directly to Client Components". Causa raiz: `Segmented` é `"use client"` e recebia
+`hrefFor: (value: string) => string` de `FinancasPage`, que é Server Component. Função não é
+serializável e não atravessa a fronteira. **O `npm run build` não pega isso**: é erro de
+renderização, não de tipo, e foi a primeira vez que a tela rodou de verdade.
+
+Correção: `Segmented` passou a receber cada item com o `href` já pronto
+(`{ value, label, href }[]`), montado no servidor a partir do `TAB_ITEMS`. O comentário do
+componente registra o porquê, para a prop de função não voltar. Varredura confirmou que
+`Segmented` era o único primitivo novo com prop de função; `modal`, `select-menu` e
+`icon-picker` também têm callback, mas são pré-existentes e recebem de pais client, o que é
+válido.
+
+**Não corrigido, porque não é da onda:** o console error "Encountered a script tag while
+rendering React component" vem do `next-themes` 0.4.6, que injeta um `<script>` para aplicar
+o tema antes da primeira pintura. `theme-provider.tsx` tem um único commit no histórico (o
+"first commit") e a onda não encostou nele. É aviso, não falha.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 

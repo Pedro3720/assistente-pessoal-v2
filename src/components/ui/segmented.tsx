@@ -7,16 +7,19 @@ import { cn } from "@/lib/utils";
 /**
  * Abas em pill, navegadas por URL. Ser URL-driven é o que permite compartilhar
  * o link de uma aba e o que mantém a leitura de dados no servidor.
+ *
+ * Cada item já chega com o `href` pronto, em vez de o componente receber uma
+ * função que monta a URL: este é um Client Component, e função não atravessa
+ * a fronteira servidor/cliente (o Next só serializa dado). Quem usa monta a
+ * URL no servidor.
  */
 export function Segmented({
   items,
   value,
-  hrefFor,
   className,
 }: {
-  items: { value: string; label: string }[];
+  items: { value: string; label: string; href: string }[];
   value: string;
-  hrefFor: (value: string) => string;
   className?: string;
 }) {
   return (
@@ -26,7 +29,7 @@ export function Segmented({
         return (
           <Link
             key={item.value}
-            href={hrefFor(item.value)}
+            href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
               "whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition-colors",

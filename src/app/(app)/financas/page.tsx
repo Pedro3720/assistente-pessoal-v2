@@ -125,8 +125,10 @@ export default async function FinancasPage({
         tabs={
           <Segmented
             value={aba}
-            hrefFor={(v) => `/financas?aba=${v}${offset ? `&m=${offset}` : ""}`}
-            items={TAB_ITEMS}
+            items={TAB_ITEMS.map((t) => ({
+              ...t,
+              href: `/financas?aba=${t.value}${offset ? `&m=${offset}` : ""}`,
+            }))}
           />
         }
         actions={<ImportButton banks={banks} cards={cards} categories={categories} />}
