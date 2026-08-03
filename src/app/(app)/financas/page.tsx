@@ -17,13 +17,16 @@ import { EntityIcon } from "@/components/ui/entity-icon";
 import { pluggyConfigurada } from "@/lib/pluggy/client";
 import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
+import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
+import { Segmented } from "@/components/ui/segmented";
 
 export default async function FinancasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string; conta?: string }>;
+  searchParams: Promise<{ m?: string; conta?: string; aba?: string }>;
 }) {
-  const { m, conta } = await searchParams;
+  const { m, conta, aba: abaParam } = await searchParams;
+  const aba = typeof abaParam === "string" ? abaParam : "visao";
   const offset = Number(m) || 0; // permite meses futuros (planejamento)
 
   const { year: cy, month: cm } = currentYearMonth();
@@ -78,149 +81,189 @@ export default async function FinancasPage({
 
   return (
     <div className="space-y-6">
-      <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1
-            className="text-foreground text-3xl md:text-4xl font-bold leading-none tracking-tighter"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Finanças
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Controle receitas, despesas, contas e faturas
-          </p>
-          <MonthNav label={monthLabel(year, month)} offset={offset} />
-        </div>
-        <ImportButton banks={banks} cards={cards} categories={categories} />
-      </Reveal>
+      <PanelHeader
+        context={
+          <PanelContext>
+            <MonthNav label={monthLabel(year, month)} offset={offset} />
+          </PanelContext>
+        }
+        tabs={
+          <Segmented
+            value={aba}
+            hrefFor={(v) => `/financas?aba=${v}${offset ? `&m=${offset}` : ""}`}
+            items={[
+              { value: "visao", label: "Visão geral" },
+              { value: "transacoes", label: "Transações" },
+              { value: "cartoes", label: "Cartões" },
+              { value: "agendadas", label: "Agendadas" },
+              { value: "recorrentes", label: "Recorrentes" },
+            ]}
+          />
+        }
+        actions={<ImportButton banks={banks} cards={cards} categories={categories} />}
+      />
 
-      {/* resumo das contas (substitui os 4 cartões de indicador) */}
-      <Reveal>
-        <AccountsSummary
-          banks={banks}
-          income={totals.income}
-          expense={totals.expense}
-          invoicesTotal={invoicesTotal}
-          podeConectar={pluggyConfigurada()}
-          pluggyItems={pluggyItems}
-        />
-      </Reveal>
+      {/* o título só existe no celular: no desktop a sidebar e as abas já
+          dizem onde você está */}
+      <h1
+        className="px-4 text-2xl font-bold tracking-tight md:hidden"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Finanças
+      </h1>
 
-      {/* fila do que chegou sozinho e ainda não tem categoria */}
-      {paraCategorizar.length > 0 && (
-        <Reveal>
-          <CategorizationQueue transactions={paraCategorizar} categories={categories} />
-        </Reveal>
+      {aba === "visao" && (
+        <>
+          {/* resumo das contas (substitui os 4 cartões de indicador) */}
+          <Reveal>
+            <AccountsSummary
+              banks={banks}
+              income={totals.income}
+              expense={totals.expense}
+              invoicesTotal={invoicesTotal}
+              podeConectar={pluggyConfigurada()}
+              pluggyItems={pluggyItems}
+            />
+          </Reveal>
+
+          {/* fila do que chegou sozinho e ainda não tem categoria */}
+          {paraCategorizar.length > 0 && (
+            <Reveal>
+              <CategorizationQueue transactions={paraCategorizar} categories={categories} />
+            </Reveal>
+          )}
+
+          {/* despesas por categoria + transações */}
+          <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="glass card-glow rounded-2xl border border-border p-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Despesas por categoria</h3>
+                <CategoryManagerButton categories={categories} />
+              </div>
+              {expenseByCat.length === 0 ? (
+                <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
+              ) : (
+                <>
+                  <CategoryDonut slices={donut.slices} total={totals.expense} />
+                  {donut.othersCount > 0 && (
+                    <p className="mt-1 text-center text-[11px] text-muted-foreground">
+                      A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
+                    </p>
+                  )}
+                  {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
+                  <div className="mt-4 space-y-4">
+                    {expenseByCat.map(([name, { icon, total }], i) => {
+                      const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
+                      const color = categoryColor(i);
+                      return (
+                        <div key={name} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: color }}
+                                aria-hidden
+                              />
+                              <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
+                              <span className="truncate font-medium">{name}</span>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <p className="num font-semibold">{formatBRL(total)}</p>
+                              <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
+                            </div>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                            <div
+                              className="bar-grow h-1.5 rounded-full"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="lg:col-span-2">
+              <TransactionsSection
+                transactions={monthTransactions}
+                categories={categories}
+                banks={banks}
+                cards={cards}
+                defaultDate={defaultDate}
+                monthLabel={monthLabel(year, month)}
+              />
+            </div>
+          </Reveal>
+        </>
       )}
 
       {/* cartões */}
-      <Reveal>
-        <CardManager cards={cards} banks={banks} />
-      </Reveal>
+      {aba === "cartoes" && (
+        <Reveal>
+          <CardManager cards={cards} banks={banks} />
+        </Reveal>
+      )}
 
       {/* assinaturas recorrentes */}
-      <Reveal>
-        <SubscriptionsSection
-          subscriptions={subs.subscriptions}
-          candidates={subs.candidates}
-          monthlyTotal={subs.monthlyTotal}
-          categories={categories}
-          banks={banks}
-          cards={cards}
-        />
-      </Reveal>
+      {aba === "recorrentes" && (
+        <Reveal>
+          <SubscriptionsSection
+            subscriptions={subs.subscriptions}
+            candidates={subs.candidates}
+            monthlyTotal={subs.monthlyTotal}
+            categories={categories}
+            banks={banks}
+            cards={cards}
+          />
+        </Reveal>
+      )}
 
       {/* planejamento mensal */}
-      <Reveal>
-        <PlanningSection
-          items={plan.items}
-          suggestions={plan.suggestions}
-          previstoReceber={plan.totals.previstoReceber}
-          previstoPagar={plan.totals.previstoPagar}
-          saldoPrevisto={plan.totals.saldoPrevisto}
-          categories={categories}
-          banks={banks}
-          cards={cards}
-          defaultDate={defaultDate}
-        />
-      </Reveal>
-
-      {/* despesas por categoria + transações */}
-      <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="glass card-glow rounded-2xl border border-border p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Despesas por categoria</h3>
-            <CategoryManagerButton categories={categories} />
-          </div>
-          {expenseByCat.length === 0 ? (
-            <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
-          ) : (
-            <>
-              <CategoryDonut slices={donut.slices} total={totals.expense} />
-              {donut.othersCount > 0 && (
-                <p className="mt-1 text-center text-[11px] text-muted-foreground">
-                  A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
-                </p>
-              )}
-              {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
-              <div className="mt-4 space-y-4">
-                {expenseByCat.map(([name, { icon, total }], i) => {
-                  const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
-                  const color = categoryColor(i);
-                  return (
-                    <div key={name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: color }}
-                            aria-hidden
-                          />
-                          <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
-                          <span className="truncate font-medium">{name}</span>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="num font-semibold">{formatBRL(total)}</p>
-                          <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
-                        </div>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                        <div
-                          className="bar-grow h-1.5 rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: color }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="lg:col-span-2">
-          <TransactionsSection
-            transactions={monthTransactions}
+      {aba === "agendadas" && (
+        <Reveal>
+          <PlanningSection
+            items={plan.items}
+            suggestions={plan.suggestions}
+            previstoReceber={plan.totals.previstoReceber}
+            previstoPagar={plan.totals.previstoPagar}
+            saldoPrevisto={plan.totals.saldoPrevisto}
             categories={categories}
             banks={banks}
             cards={cards}
             defaultDate={defaultDate}
-            monthLabel={monthLabel(year, month)}
-          />
-        </div>
-      </Reveal>
-
-      {/* extrato bancário */}
-      {statement && (
-        <Reveal>
-          <Statement
-            statement={statement}
-            banks={banks}
-            selectedId={statement.bank.id}
-            categories={categories}
-            monthLabel={monthLabel(year, month)}
           />
         </Reveal>
+      )}
+
+      {aba === "transacoes" && (
+        <>
+          <Reveal>
+            <TransactionsSection
+              transactions={monthTransactions}
+              categories={categories}
+              banks={banks}
+              cards={cards}
+              defaultDate={defaultDate}
+              monthLabel={monthLabel(year, month)}
+            />
+          </Reveal>
+
+          {/* extrato bancário */}
+          {statement && (
+            <Reveal>
+              <Statement
+                statement={statement}
+                banks={banks}
+                selectedId={statement.bank.id}
+                categories={categories}
+                monthLabel={monthLabel(year, month)}
+              />
+            </Reveal>
+          )}
+        </>
       )}
     </div>
   );
