@@ -3,12 +3,13 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { Reveal } from "@/components/effects/reveal";
 import { NewPasswordForm } from "@/components/auth/new-password-form";
 import { NotificationsSetup } from "@/components/notifications/notifications-setup";
+import { GoogleIdentity } from "@/components/profile/google-identity";
 
 export default async function PerfilPage() {
   const profile = await getProfile();
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <Reveal>
         <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Perfil
@@ -25,6 +26,17 @@ export default async function PerfilPage() {
           <NewPasswordForm mode="change" />
         </div>
       </Reveal>
+      {process.env.NEXT_PUBLIC_GOOGLE_LOGIN_ON === "1" && (
+        <Reveal>
+          <div className="glass rounded-2xl border border-border p-6">
+            <h2 className="font-semibold">Conta Google</h2>
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">
+              Vincule para entrar com o Google nesta mesma conta, com os seus dados.
+            </p>
+            <GoogleIdentity />
+          </div>
+        </Reveal>
+      )}
       <Reveal>
         <div className="glass rounded-2xl border border-border p-6">
           <h2 className="font-semibold">Notificações</h2>

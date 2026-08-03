@@ -77,7 +77,7 @@ export default async function FinancasPage({
   const donut = buildCategorySlices(expenseByCat, totals.expense);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1

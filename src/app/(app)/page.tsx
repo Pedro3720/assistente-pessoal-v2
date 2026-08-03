@@ -69,7 +69,7 @@ export default async function Dashboard() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-5 md:space-y-8">
+    <div className="mx-auto max-w-5xl space-y-5 md:space-y-8">
       {/* header */}
       <Reveal>
         <p className="mb-1 text-sm text-muted-foreground">

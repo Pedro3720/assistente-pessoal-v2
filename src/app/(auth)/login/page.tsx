@@ -1,9 +1,12 @@
 import { Link } from "next-view-transitions";
 import Image from "next/image";
+import { headers } from "next/headers";
 import { login } from "@/lib/actions/auth";
 import { Input } from "@/components/ui/input";
 import { Reveal } from "@/components/effects/reveal";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { GoogleButton } from "@/components/auth/google-button";
+import { isWebViewUA } from "@/lib/auth/webview";
 
 export default async function LoginPage({
   searchParams,
@@ -11,6 +14,12 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const { error, message } = await searchParams;
+
+  // O botão do Google só entra quando o provider está configurado (interruptor
+  // de env) e fora do WebView do APK, onde o Google recusa o fluxo OAuth.
+  const ua = (await headers()).get("user-agent");
+  const mostrarGoogle =
+    process.env.NEXT_PUBLIC_GOOGLE_LOGIN_ON === "1" && !isWebViewUA(ua);
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -40,6 +49,17 @@ export default async function LoginPage({
             <p className="mt-4 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               {message}
             </p>
+          )}
+
+          {mostrarGoogle && (
+            <div className="mt-6 space-y-4">
+              <GoogleButton />
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">ou</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            </div>
           )}
 
           <form className="mt-6 space-y-4">

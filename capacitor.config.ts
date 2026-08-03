@@ -15,6 +15,11 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: "#080b12",
+    // Marca o WebView do app no user-agent. É o sinal determinístico que o
+    // isWebViewUA (src/lib/auth/webview.ts) usa para esconder o botão de login
+    // com Google, que o Google recusa em WebView. Só vale a partir do próximo
+    // APK gerado; até lá o detector cai no heurístico "; wv)".
+    appendUserAgent: "ZeniteApp",
   },
 };
 

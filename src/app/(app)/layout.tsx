@@ -32,7 +32,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           sugestao) estica o main inteiro e a pagina fica mais larga que a tela
           no celular, obrigando a arrastar para o lado (sugestao #32). */}
       <main className="min-w-0 flex-1">
-        <div className="px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+6rem)] md:px-10 md:pt-10 md:pb-10">
+        {/* Coluna do app: uma largura maxima só, centralizada. Cada pagina
+            centraliza a propria largura de leitura dentro dela (mx-auto no
+            wrapper externo da rota). Tambem é o que limita o calendario, que
+            nao tem largura propria. */}
+        <div className="mx-auto w-full max-w-7xl px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+6rem)] md:px-10 md:pt-10 md:pb-10">
           <IosInstallHint />
           <NotificationBanner />
           {children}

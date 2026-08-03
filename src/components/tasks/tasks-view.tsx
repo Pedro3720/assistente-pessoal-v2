@@ -14,12 +14,12 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { deleteTask, setTaskStatus, reorderTasks } from "@/lib/actions/task";
+import { reorderWithinFilter } from "@/lib/tasks/reorder";
 import { STATUS_META, PRIORITY_META } from "@/lib/tasks/constants";
 import { todayISO, formatDateBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
@@ -50,8 +50,6 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
   const orderKey = tasks.map((t) => t.id).join(",");
   useEffect(() => setOrder(tasks), [orderKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  // reordenar só quando nenhum filtro está ativo (ordem = lista completa)
-  const canReorder = filter === "all" && catFilter === "all";
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -106,9 +104,10 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const oldIndex = order.findIndex((t) => t.id === active.id);
-    const newIndex = order.findIndex((t) => t.id === over.id);
-    const next = arrayMove(order, oldIndex, newIndex);
+    // A lista pode estar filtrada: reordena entre os visíveis e devolve a ordem
+    // global, sem tirar do lugar quem o filtro esconde.
+    const next = reorderWithinFilter(order, shown, Number(active.id), Number(over.id));
+    if (!next) return;
     setOrder(next); // otimista
     try {
       await reorderTasks(next.map((t) => t.id));
@@ -120,7 +119,7 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
@@ -214,7 +213,6 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
                     category={t.category_id ? catById.get(t.category_id) ?? null : null}
                     done={done}
                     overdue={overdue}
-                    canReorder={canReorder}
                     onToggle={() => toggle(t)}
                     onEdit={() => { setEditing(t); setModalOpen(true); }}
                     onRemove={() => remove(t.id)}
@@ -237,7 +235,6 @@ function SortableTask({
   category,
   done,
   overdue,
-  canReorder,
   onToggle,
   onEdit,
   onRemove,
@@ -246,14 +243,12 @@ function SortableTask({
   category: TaskCategory | null;
   done: boolean;
   overdue: boolean;
-  canReorder: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: t.id,
-    disabled: !canReorder,
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
 
@@ -263,17 +258,15 @@ function SortableTask({
       style={style}
       className="glass card-glow flex items-start gap-3 rounded-2xl border border-border p-4"
     >
-      {canReorder && (
-        <button
-          type="button"
-          className="mt-0.5 cursor-grab touch-none text-muted-foreground/50 hover:text-foreground active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-          title="Arrastar para reordenar"
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-      )}
+      <button
+        type="button"
+        className="mt-0.5 cursor-grab touch-none text-muted-foreground/50 hover:text-foreground active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        title="Arrastar para reordenar"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
       <button
         onClick={onToggle}
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${

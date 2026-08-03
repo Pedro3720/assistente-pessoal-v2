@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-27.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-29.**
 
 ---
 
@@ -38,6 +38,11 @@
   (ver 3.13), commit `fb652bd`.
 - **Onda 14 (2026-07-28): COMPLETA** — calendário, card de contas e revisão do extrato (ver
   3.15). Correção da sugestão #32 (overflow no celular) no commit `7592c66`, ver 3.14.
+- **Onda 17 (2026-07-29): COMPLETA** — login com Google, reordenar tarefas com filtro ativo e
+  centralização das abas (ver 3.18). O `npm run build` que ficou pendente na sessão original
+  (o harness perdeu o Bash) foi rodado em 2026-08-03 e passou; o código foi commitado direto na
+  `main`, não na branch citada na 3.18. **Pendente do dono:** medição no navegador e a
+  configuração do provider Google no Supabase para o login funcionar de verdade.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -635,6 +640,57 @@ Fase 6 (cartão de crédito) pendente. **Migrações 0015, 0016 e 0017 JÁ RODAD
   a tratar lá.
 - **Pendente do dono:** validar a fila no app; depois do deploy, conferir a primeira entrega
   real do webhook; e a migração para produção da Pluggy (plano pago e due diligence).
+
+### 3.18 Onda 17: login com Google, ordem de tarefas por filtro e centralização das abas — 2026-07-29
+Três sugestões novas do dono (chegaram por chat: a tabela `suggestions` estava inacessível na
+sessão, o classificador do harness ficou intermitente). Spec em
+`docs/superpowers/specs/2026-07-29-onda17-login-google-ordem-tarefas-centralizacao-design.md`,
+plano em `docs/superpowers/plans/2026-07-29-onda17-google-ordem-centralizacao.md`.
+**Sem migração.**
+
+- **Centralização das abas:** existia só em /financas (`mx-auto max-w-7xl`); as outras páginas
+  tinham largura máxima SEM `mx-auto` e encostavam na esquerda. Agora a coluna do app é definida
+  uma vez no `(app)/layout.tsx` (`mx-auto w-full max-w-7xl`), cada rota centraliza sua largura de
+  leitura com `mx-auto` no wrapper externo, e /financas abriu mão da largura própria (virou papel
+  do layout, resultado visual idêntico). Efeito colateral bem-vindo: o calendário, que não tinha
+  teto de largura, passou a respeitar a coluna. Não se tocou nos `min-w-0 flex-1` do `<main>`
+  (correção da #32).
+- **Ordem de tarefas com filtro:** o bloqueio era explícito (`canReorder = filter === "all" &&
+  catFilter === "all"`). Como `tasks.position` é ordem GLOBAL por usuário, a solução não precisou
+  de migração nem de mudança na Server Action: a função pura `reorderWithinFilter`
+  (`src/lib/tasks/reorder.ts`) permuta apenas os slots que os itens visíveis já ocupavam, deixando
+  os escondidos parados, e valida que nenhum id se perdeu antes de deixar salvar. A alça passou a
+  aparecer com qualquer filtro, inclusive o de status.
+- **Login com Google:** provider do Supabase Auth, separado do Google Calendário (que segue com
+  OAuth próprio e tokens em `google_accounts`). Peças: `components/auth/google-button.tsx`
+  (client, `signInWithOAuth`), seção "Conta Google" no /perfil
+  (`components/profile/google-identity.tsx`, `linkIdentity`/`unlinkIdentity`),
+  `lib/auth/ensure-profile.ts` no callback e `lib/auth/webview.ts`.
+  - *Decisão que evita perder dados:* vincular a identidade no /perfil antes de usar o botão
+    garante o MESMO `user_id`. Login Google criando usuário novo abriria o app vazio.
+  - *Cuidado com a CSP:* o botão tem que ser navegação do cliente, NUNCA Server Action com
+    redirect, porque `form-action 'self'` faz o Chrome barrar a cadeia de redirect para
+    accounts.google.com depois de um submit de formulário.
+  - *Avatar:* o Google manda a URL do googleusercontent.com, que a CSP (`img-src`) barraria. O
+    `ensureProfile` descarta avatar de fora do nosso Storage e preenche o nome a partir de
+    `full_name`/`name` (o gatilho `handle_new_user` só conhece `display_name`).
+  - *APK Android:* o Google recusa OAuth em WebView, então o botão é escondido lá, decidido no
+    servidor pelo user-agent. `capacitor.config.ts` ganhou `appendUserAgent: "ZeniteApp"` (sinal
+    determinístico, válido do próximo APK em diante) e o detector também cobre o `; wv)` do APK
+    já instalado.
+  - *Interruptor:* o botão e a seção só aparecem com `NEXT_PUBLIC_GOOGLE_LOGIN_ON=1`, para o
+    código poder subir antes da configuração.
+- **NÃO VERIFICADO nesta sessão:** `npm run build`, medição no navegador e os commits. O
+  classificador de segurança do harness ficou indisponível e bloqueou o Bash. O código está na
+  árvore de trabalho; ao retomar, rodar o build, conferir no navegador (coluna centralizada a
+  1280px, alça de arrastar com filtro ativo) e só então commitar.
+- **Pendente do dono:** (a) Google Cloud, adicionar o redirect
+  `https://qlqewlrzjlbwrybwrimt.supabase.co/auth/v1/callback` no cliente válido; (b) Supabase,
+  Authentication, ligar o provider Google com Client ID e Secret, ligar **Manual linking** e
+  conferir a allowlist de Redirect URLs; (c) setar `NEXT_PUBLIC_GOOGLE_LOGIN_ON=1` na Vercel e no
+  `.env.local`; (d) testar na ordem: entrar por senha, vincular no /perfil, sair, entrar com
+  Google e confirmar que os dados aparecem (prova do mesmo `user_id`); (e) marcar as três
+  sugestões como feito em /admin/sugestoes.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 

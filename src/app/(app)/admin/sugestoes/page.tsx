@@ -15,7 +15,7 @@ export default async function AdminSugestoesPage() {
   const suggestions = await getAllSuggestions();
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <Reveal>
         <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Admin · Sugestões
