@@ -2,8 +2,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * Linha de topo do painel: contexto à esquerda, abas no meio, ações à direita.
- * Fica fora da área de scroll, então continua visível durante a leitura.
- * No celular quebra em duas linhas e rola na horizontal, sem virar menu.
+ * No desktop fica grudado no topo da área de scroll do painel (o AppFrame
+ * não expõe um slot de cabeçalho fora do scroll para quem usa `header`;
+ * como só esta página compõe um cabeçalho hoje, o mais simples é o próprio
+ * PanelHeader se fixar por cima do conteúdo enquanto rola). No celular quebra
+ * em duas linhas e rola na horizontal, sem virar menu, e não é sticky (a
+ * página inteira rola ali, não há painel).
  */
 export function PanelHeader({
   context,
@@ -19,7 +23,7 @@ export function PanelHeader({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 px-4 py-3 md:flex-nowrap md:px-6",
+        "flex flex-wrap items-center gap-2 px-4 py-3 md:flex-nowrap md:sticky md:top-0 md:z-10 md:bg-panel md:px-6",
         className
       )}
     >
