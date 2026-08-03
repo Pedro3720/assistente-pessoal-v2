@@ -45,8 +45,9 @@
   configuração do provider Google no Supabase para o login funcionar de verdade.
 - **Onda 18 (2026-08-03): EM ANDAMENTO na branch `feat/onda18-redesign`** — redesign visual em
   várias tasks (ver 3.19). Task 12 (legenda do donut com `Meter`, preparada para o limite por
-  categoria que ainda não existe no banco) feita e commitada (`407ed38`). Não mesclada na `main`,
-  sem push.
+  categoria que ainda não existe no banco) feita e commitada (`407ed38`). Task 14 (tabela de
+  transações no `DataTable`, última task do piloto) feita e commitada (`09f322a`); `AccountsSummary`
+  saiu da Visão geral e foi para a aba Cartões. Não mesclada na `main`, sem push.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -724,6 +725,41 @@ Ainda **não mesclada na `main`**, nada foi dado push. Sem migração até aqui.
   - `npm run build` passou sem erros. Commit `407ed38` na branch `feat/onda18-redesign`.
   - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão) e as
     próximas tasks da Onda 18, incluindo a Task 15 que vai trazer o limite real por categoria.
+
+- **Task 14 (FEITA nesta sessão): tabela de transações no sistema novo, última task do
+  piloto.** A lista de transações (compacta e o modal "Ver todas") trocou o card manuscrito
+  antigo por `DataTable`/`DataTableRow`, com `BrandAvatar` (avatar/inicial), `CategoryChip`
+  (nome + ícone da categoria) e `Money` (numeral tabular, cor semântica) no lugar da linha
+  antiga. Filtro por tipo, busca do "Ver todas", editar/excluir linha e os modais de criar/
+  editar transação **não mudaram**: só a apresentação da linha.
+  - `src/components/finance/transactions-section.tsx`: `TxRow` reescrito para retornar
+    `<DataTableRow>`; ícone de liderança por tipo (`Repeat` transferência, `ArrowUpRight`
+    despesa/coral, `ArrowDownLeft` receita/verde) substitui o badge de texto "· transferência"/
+    "· pagamento" que existia antes (perda de detalhe assumida, a linha nova é de uma coluna
+    só). Categoria sem cor própria no modelo: `CategoryChip` recebe `color="var(--muted-
+    foreground)"` fixo (a cor por posição do donut, `categoryColor(index)`, é um conceito só da
+    Visão geral; não dava pra reusar sem inventar uma ordenação nova, o que o brief da task
+    proibia).
+  - `src/components/ui/data-table.tsx`: `DataTable` ganhou `forwardRef` (não estava no escopo
+    literal da task, mas sem isso o `useAnimatedList()` perderia a animação de entrada/saída de
+    linha — o hook exige o `ref` no pai direto dos itens). Sem outros consumidores no projeto
+    ainda, mudança aditiva.
+  - `src/app/(app)/financas/page.tsx`: `AccountsSummary` saiu da aba "Visão geral". **Não foi
+    apagado**: é o único lugar do app que cria/exclui conta bancária (`AccountsCard`, que ficou
+    no rail da Visão geral, é só exibição). Foi movido para a aba "Cartões", que passa a
+    concentrar contas e cartões (`AccountsSummary` em cima, `CardManager` embaixo). Efeito
+    colateral: os indicadores "Entradas/Despesas/Faturas" do mês, antes visíveis dentro do
+    painel expansível do `AccountsSummary` na Visão geral, foram junto para a aba Cartões — a
+    Visão geral não mostra mais esses três números crus (o gráfico "Saídas por mês" e o donut
+    de categoria continuam lá, mas não são a mesma coisa).
+  - **`SearchInput` (Task 8) continua sem uso em finanças.** O brief da Task 14 pedia para
+    trocar "o campo de busca que já existe" pelo `SearchInput`, mas não existe busca por texto
+    em `transactions-section.tsx` (só o filtro por tipo). Como a task era só de apresentação,
+    não comportamento, optei por não inventar um filtro de texto novo. Fica pendente para uma
+    decisão explícita numa próxima onda.
+  - `npm run build` passou sem erros. Commit `09f322a` na branch `feat/onda18-redesign`.
+  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão); decidir
+    o destino do `SearchInput`; relatório completo em `.superpowers/sdd/task-14-report.md`.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
