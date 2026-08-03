@@ -105,8 +105,11 @@ export default async function FinancasPage({
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "tag";
     const prev = byCat.get(key);
-    // limite por categoria ainda não existe no banco; Task 15 troca por valor real
-    byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount), limit: null });
+    byCat.set(key, {
+      icon,
+      total: (prev?.total ?? 0) + Number(t.amount),
+      limit: cat?.monthly_limit ?? null,
+    });
   }
   const expenseByCat = [...byCat.entries()].sort((a, b) => b[1].total - a[1].total);
   const donut = buildCategorySlices(expenseByCat, totals.expense);

@@ -36,7 +36,7 @@ export function CategoryLegend({ slices }: { slices: CategorySlice[] }) {
                 max={slice.limit}
                 leftLabel={`${pct.toFixed(0)}% do limite`}
                 rightLabel={
-                  over ? "R$ 0,00 restante" : `${formatBRL(slice.limit - slice.total)} restante`
+                  over ? `${formatBRL(0)} restante` : `${formatBRL(slice.limit - slice.total)} restante`
                 }
               />
             ) : (

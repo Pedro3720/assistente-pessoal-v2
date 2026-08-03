@@ -6,6 +6,8 @@ export interface Category {
   name: string;
   icon: string;
   kind: CategoryKind;
+  /** limite mensal de gasto; null significa sem limite */
+  monthly_limit: number | null;
 }
 
 export interface Bank {

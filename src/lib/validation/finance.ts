@@ -36,6 +36,8 @@ export const categoryInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
   icon: z.string().trim().min(1).default("tag"),
   kind: txTypeSchema,
+  /** limite mensal de gasto (só faz sentido para despesa); null = sem limite */
+  monthly_limit: z.number().min(0, "Limite mensal inválido").nullable().default(null),
 });
 export type CategoryInput = z.infer<typeof categoryInput>;
 
