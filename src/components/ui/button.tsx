@@ -13,12 +13,15 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        pill: "rounded-full bg-primary text-primary-foreground hover:bg-primary/90",
+        chip: "rounded-full bg-muted text-muted-foreground hover:bg-secondary hover:text-foreground",
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-9 px-3",
         lg: "h-11 px-6",
         icon: "h-9 w-9",
+        pill: "h-9 rounded-full px-4 text-xs",
       },
     },
     defaultVariants: { variant: "default", size: "default" },
