@@ -1,8 +1,28 @@
-import { BrandAvatar } from "@/components/ui/brand-avatar";
 import { Meter } from "@/components/ui/meter";
 import { Money } from "@/components/ui/money";
 import { formatBRL } from "@/lib/money";
 import type { CardWithInvoice } from "@/types/finance";
+
+/**
+ * O cartão não tem campo de ícone (só `color`, escolhida pela própria pessoa
+ * no CardManager). Em vez do BrandAvatar, que cai numa inicial com tom cinza
+ * calculado por hash do nome (BRANDS nasce vazio de propósito em
+ * lib/finance/brands.ts), usamos a cor real do cartão: é identidade que já
+ * existe e o CardManager já mostra como uma bolinha ao lado do nome.
+ */
+function CardAvatar({ name, color, size = 28 }: { name: string; color: string; size?: number }) {
+  const word = name.trim().split(/\s+/)[0] ?? "";
+  const initials = word.slice(0, 2).toUpperCase() || "?";
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
+      style={{ width: size, height: size, backgroundColor: color, fontSize: Math.round(size * 0.36) }}
+      aria-hidden
+    >
+      {initials}
+    </span>
+  );
+}
 
 /**
  * Cartão de crédito responde outra pergunta: quanto devo (fatura) e quanto
@@ -25,7 +45,7 @@ export function CardsCard({ cards }: { cards: CardWithInvoice[] }) {
           return (
             <div key={card.id} className="border-t border-border py-3 first:border-t-0 first:pt-0">
               <div className="flex items-center gap-3">
-                <BrandAvatar name={card.name} size={28} />
+                <CardAvatar name={card.name} color={card.color} size={28} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{card.name}</span>
                   <span className="block text-[11px] text-subtle-foreground">

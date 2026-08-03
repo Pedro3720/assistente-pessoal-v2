@@ -1,4 +1,4 @@
-import { BrandAvatar } from "@/components/ui/brand-avatar";
+import { EntityIcon } from "@/components/ui/entity-icon";
 import { Money } from "@/components/ui/money";
 import type { BankWithBalance } from "@/types/finance";
 
@@ -25,7 +25,12 @@ export function AccountsCard({ banks }: { banks: BankWithBalance[] }) {
             key={bank.id}
             className="flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0"
           >
-            <BrandAvatar name={bank.name} size={28} />
+            <EntityIcon
+              value={bank.icon}
+              fallback="bank"
+              size={16}
+              className="h-7 w-7 rounded-full bg-muted text-muted-foreground"
+            />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">{bank.name}</span>
               <span className="block text-[11px] text-subtle-foreground">Conta bancária</span>
