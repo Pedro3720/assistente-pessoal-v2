@@ -47,7 +47,10 @@
   várias tasks (ver 3.19). Task 12 (legenda do donut com `Meter`, preparada para o limite por
   categoria que ainda não existe no banco) feita e commitada (`407ed38`). Task 14 (tabela de
   transações no `DataTable`, última task do piloto) feita e commitada (`09f322a`); `AccountsSummary`
-  saiu da Visão geral e foi para a aba Cartões. Não mesclada na `main`, sem push.
+  saiu da Visão geral e foi para a aba Cartões. Task 15 (limite mensal por categoria, única task
+  com funcionalidade nova) feita e commitada (`53718ba`): migração já rodada pelo dono (`aa6a4b1`),
+  campo "Limite mensal" no formulário de categorias, e a legenda (Task 12) agora mostra o limite
+  real em vez de "Sem limite definido" fixo. Não mesclada na `main`, sem push.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -760,6 +763,43 @@ Ainda **não mesclada na `main`**, nada foi dado push. Sem migração até aqui.
   - `npm run build` passou sem erros. Commit `09f322a` na branch `feat/onda18-redesign`.
   - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão); decidir
     o destino do `SearchInput`; relatório completo em `.superpowers/sdd/task-14-report.md`.
+
+- **Task 15 (FEITA nesta sessão): limite mensal por categoria (única task da Onda com
+  funcionalidade nova, não só visual).** Migração (`supabase/migrations/
+  20260701000018_category_monthly_limit.sql`, coluna `categories.monthly_limit numeric(12,2)`,
+  nula por padrão) já tinha sido escrita e **rodada pelo dono** antes desta sessão (commit
+  `aa6a4b1`). Esta sessão fez os steps 3 a 8 do brief.
+  - O brief supunha uma Server Action que lê `FormData` e devolve `{ error }` — **não é o
+    padrão real**. `src/lib/actions/finance.ts` (`createCategory`/`updateCategory`) recebe um
+    objeto plano e valida com zod (`categoryInput` em `src/lib/validation/finance.ts`), lançando
+    `Error` em falha (o componente client captura e mostra `toast`). A extensão real foi no
+    schema: `monthly_limit: z.number().min(0).nullable().default(null)`. Cobre criação (parse
+    cheio) e edição (`.partial()`) sem mudar a action em si.
+  - O brief também supunha o `MoneyInput` como campo de formulário não controlado
+    (`id`/`name`/`defaultValue`). O componente real (`src/components/finance/money-input.tsx`)
+    é **controlado** (`value`/`onChange`, sem `id`/`name`). Segui o padrão já usado em
+    `card-manager.tsx` para `credit_limit`: estado string, inicializado com
+    `formatBRL(v).replace("R$", "").trim()` e convertido de volta com `parseBRL` no submit.
+  - `src/components/finance/category-manager.tsx`: campo "Limite mensal" acrescentado tanto no
+    bloco de criação (visível só quando `kind === "expense"`, com `setLimit("")` ao trocar de
+    kind pra não vazar valor de despesa pra uma receita) quanto na edição inline por linha
+    (visível quando `c.kind === "expense"`; o kind de categoria existente não é editável neste
+    componente, então não muda de tela). Label sem `htmlFor` (mesma convenção do
+    `card-manager.tsx`, já que `MoneyInput` não repassa `id`).
+  - `src/types/finance.ts`: `Category` ganhou `monthly_limit: number | null`.
+  - `src/lib/data/finance.ts` **não precisou de ajuste**: a query de categorias já é
+    `select("*")`, então a coluna nova chega sozinha.
+  - `src/app/(app)/financas/page.tsx`: `byCat` troca o `limit: null` fixo (Task 12) por
+    `cat?.monthly_limit ?? null` — a barra de orçamento da legenda (Task 12) passa a mostrar o
+    limite de verdade.
+  - Extra fora do brief: `src/components/finance/category-legend.tsx` trocou o literal
+    `"R$ 0,00 restante"` (estouro de limite) por `` `${formatBRL(0)} restante` ``, pra não ter
+    duas fontes de formato de dinheiro (`formatBRL` usa espaço não separável antes do número).
+  - `npm run build` passou sem erros. Commit `53718ba` na branch `feat/onda18-redesign`.
+  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão: definir
+    limite de R$ 500, gastar acima, conferir barra travando em 100%/coral/"R$ 0,00 restante", e
+    categoria sem limite continuar em "Sem limite definido"); relatório completo em
+    `.superpowers/sdd/task-15-report.md`.
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
