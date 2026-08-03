@@ -133,8 +133,8 @@ export default async function FinancasPage({
             </Reveal>
           )}
 
-          {/* despesas por categoria + transações */}
-          <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* despesas por categoria */}
+          <Reveal>
             <div className="glass card-glow rounded-2xl border border-border p-5">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Despesas por categoria</h3>
@@ -184,17 +184,6 @@ export default async function FinancasPage({
                   </div>
                 </>
               )}
-            </div>
-
-            <div className="lg:col-span-2">
-              <TransactionsSection
-                transactions={monthTransactions}
-                categories={categories}
-                banks={banks}
-                cards={cards}
-                defaultDate={defaultDate}
-                monthLabel={monthLabel(year, month)}
-              />
             </div>
           </Reveal>
         </>
