@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Space_Grotesk, Inter } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -15,14 +15,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swa
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-display",
-  display: "swap",
-});
-
-// Números/valores — Plus Jakarta Sans (sans proporcional, bold; visual fintech)
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-num",
   display: "swap",
 });
 
@@ -47,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#080b12",
+  themeColor: "#05070c",
   viewportFit: "cover",
   // Trava a escala em 1 para o PWA instalado sempre abrir na proporção correta,
   // sem ficar preso em zoom (o iOS memoriza o pinch entre aberturas). Cara de app nativo.
@@ -65,7 +57,7 @@ export default function RootLayout({
   return (
     <ViewTransitions>
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${plusJakarta.variable}`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable}`}>
         <AppleSplash />
         <ThemeProvider
           attribute="class"
@@ -74,7 +66,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="relative z-10">{children}</div>
-          <div className="grain-overlay" aria-hidden />
           <ThemedToaster />
           <RegisterSW />
           <LockZoom />

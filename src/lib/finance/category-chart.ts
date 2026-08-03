@@ -32,6 +32,8 @@ export type CategorySlice = {
   /** participação no total de despesas, em porcentagem */
   pct: number;
   color: string;
+  /** limite mensal da categoria, quando definido (Onda 18, fase final) */
+  limit: number | null;
 };
 
 /** Cor de uma categoria pela posição na lista ordenada (desc por valor). */
@@ -46,17 +48,18 @@ export function categoryColor(index: number): string {
  * ilegível, e ciclar cor quebraria a identidade).
  */
 export function buildCategorySlices(
-  entries: [string, { icon: string; total: number }][],
+  entries: [string, { icon: string; total: number; limit: number | null }][],
   expenseTotal: number
 ): { slices: CategorySlice[]; othersCount: number } {
   const pctOf = (v: number) => (expenseTotal > 0 ? (v / expenseTotal) * 100 : 0);
 
-  const head = entries.slice(0, MAX_SLICES).map(([name, { icon, total }], i) => ({
+  const head = entries.slice(0, MAX_SLICES).map(([name, { icon, total, limit }], i) => ({
     name,
     icon,
     total,
     pct: pctOf(total),
     color: categoryColor(i),
+    limit,
   }));
 
   const rest = entries.slice(MAX_SLICES);
@@ -72,6 +75,8 @@ export function buildCategorySlices(
         total: othersTotal,
         pct: pctOf(othersTotal),
         color: OTHERS_COLOR,
+        // soma de limites de categorias diferentes não significa nada
+        limit: null,
       },
     ],
     othersCount: rest.length,

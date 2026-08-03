@@ -24,7 +24,7 @@ export type BankInput = z.infer<typeof bankInput>;
 export const cardInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
   bank_id: z.number().int().nullable().default(null),
-  credit_limit: z.number().min(0).default(0),
+  credit_limit: z.number().min(0).max(9999999999.99).default(0),
   opening_invoice: z.number().min(0).default(0),
   closing_day: z.number().int().min(1).max(31).nullable().default(null),
   due_day: z.number().int().min(1).max(31).nullable().default(null),
@@ -36,6 +36,13 @@ export const categoryInput = z.object({
   name: z.string().trim().min(1, "Nome obrigatório"),
   icon: z.string().trim().min(1).default("tag"),
   kind: txTypeSchema,
+  /** limite mensal de gasto (só faz sentido para despesa); null = sem limite */
+  monthly_limit: z
+    .number()
+    .min(0, "Limite mensal inválido")
+    .max(9999999999.99, "Limite mensal inválido")
+    .nullable()
+    .default(null),
 });
 export type CategoryInput = z.infer<typeof categoryInput>;
 

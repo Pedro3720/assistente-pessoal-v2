@@ -1,10 +1,17 @@
-import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
+import {
+  getFinanceData,
+  getBankStatement,
+  getSubscriptions,
+  getMonthlyPlan,
+  getMonthlyExpenseSeries,
+} from "@/lib/data/finance";
 import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
 import { CategorizationQueue } from "@/components/finance/categorization-queue";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
-import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
 import { AccountsSummary } from "@/components/finance/accounts-summary";
+import { AccountsCard } from "@/components/finance/accounts-card";
+import { CardsCard } from "@/components/finance/cards-card";
 import { CardManager } from "@/components/finance/card-manager";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
@@ -13,17 +20,42 @@ import { SubscriptionsSection } from "@/components/finance/subscriptions-section
 import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
-import { EntityIcon } from "@/components/ui/entity-icon";
+import { CategoryLegend } from "@/components/finance/category-legend";
+import { MonthlyExpenseChart } from "@/components/finance/monthly-expense-chart";
 import { pluggyConfigurada } from "@/lib/pluggy/client";
-import { buildCategorySlices, categoryColor } from "@/lib/finance/category-chart";
+import { buildCategorySlices } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
+import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
+import { Segmented } from "@/components/ui/segmented";
+
+/**
+ * Fonte única das abas: Segmented (rótulos) e a validação da URL (Aba,
+ * isAba) derivam daqui, para nunca ficarem fora de sincronia.
+ */
+const TAB_ITEMS = [
+  { value: "visao", label: "Visão geral" },
+  { value: "transacoes", label: "Transações" },
+  { value: "cartoes", label: "Cartões" },
+  { value: "agendadas", label: "Agendadas" },
+  { value: "recorrentes", label: "Recorrentes" },
+] satisfies { value: string; label: string }[];
+
+type Aba = (typeof TAB_ITEMS)[number]["value"];
+const TAB_VALUES: readonly string[] = TAB_ITEMS.map((t) => t.value);
+
+function isAba(value: string | undefined): value is Aba {
+  return !!value && TAB_VALUES.includes(value);
+}
 
 export default async function FinancasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string; conta?: string }>;
+  searchParams: Promise<{ m?: string; conta?: string; aba?: string }>;
 }) {
-  const { m, conta } = await searchParams;
+  const { m, conta, aba: abaParam } = await searchParams;
+  // aba=lixo (valor desconhecido na URL) não pode cair numa página em branco:
+  // valida contra a lista conhecida e volta para "visao" quando não bater.
+  const aba: Aba = isAba(abaParam) ? abaParam : "visao";
   const offset = Number(m) || 0; // permite meses futuros (planejamento)
 
   const { year: cy, month: cm } = currentYearMonth();
@@ -48,179 +80,202 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan, pluggyItems, paraCategorizar] = await Promise.all([
-    selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
-    getSubscriptions(year, month).catch(() => ({
-      subscriptions: [],
-      candidates: [],
-      monthlyTotal: 0,
-    })),
-    getMonthlyPlan(year, month).catch(() => ({
-      items: [],
-      suggestions: [],
-      totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
-    })),
-    getPluggyItems().catch(() => []),
-    getPendingCategorization().catch(() => []),
-  ]);
+  const [statement, subs, plan, pluggyItems, paraCategorizar, monthlyExpenseSeries] =
+    await Promise.all([
+      selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
+      getSubscriptions(year, month).catch(() => ({
+        subscriptions: [],
+        candidates: [],
+        monthlyTotal: 0,
+      })),
+      getMonthlyPlan(year, month).catch(() => ({
+        items: [],
+        suggestions: [],
+        totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
+      })),
+      getPluggyItems().catch(() => []),
+      getPendingCategorization().catch(() => []),
+      getMonthlyExpenseSeries(year, month).catch(() => []),
+    ]);
 
-  const byCat = new Map<string, { icon: string; total: number }>();
+  const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
     if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "tag";
     const prev = byCat.get(key);
-    byCat.set(key, { icon, total: (prev?.total ?? 0) + Number(t.amount) });
+    byCat.set(key, {
+      icon,
+      total: (prev?.total ?? 0) + Number(t.amount),
+      limit: cat?.monthly_limit ?? null,
+    });
   }
   const expenseByCat = [...byCat.entries()].sort((a, b) => b[1].total - a[1].total);
   const donut = buildCategorySlices(expenseByCat, totals.expense);
 
   return (
     <div className="space-y-6">
-      <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1
-            className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Finanças
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Controle receitas, despesas, contas e faturas
-          </p>
-          <MonthNav label={monthLabel(year, month)} offset={offset} />
+      <PanelHeader
+        context={
+          <PanelContext>
+            <MonthNav label={monthLabel(year, month)} offset={offset} />
+          </PanelContext>
+        }
+        tabs={
+          <Segmented
+            value={aba}
+            hrefFor={(v) => `/financas?aba=${v}${offset ? `&m=${offset}` : ""}`}
+            items={TAB_ITEMS}
+          />
+        }
+        actions={<ImportButton banks={banks} cards={cards} categories={categories} />}
+      />
+
+      {/* o título só existe no celular: no desktop a sidebar e as abas já
+          dizem onde você está */}
+      <h1
+        className="px-4 text-2xl font-bold tracking-tight md:hidden"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Finanças
+      </h1>
+
+      {aba === "visao" && (
+        <>
+          {/* fila do que chegou sozinho e ainda não tem categoria */}
+          {paraCategorizar.length > 0 && (
+            <Reveal>
+              <CategorizationQueue transactions={paraCategorizar} categories={categories} />
+            </Reveal>
+          )}
+
+          {/* conteúdo principal à esquerda, rail (contas e cartões) à direita;
+              uma coluna só no celular */}
+          <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+            {/* coluna principal: série mensal em cima, categorias embaixo */}
+            <div className="space-y-6">
+              <Reveal>
+                <MonthlyExpenseChart data={monthlyExpenseSeries} />
+              </Reveal>
+
+              {/* despesas por categoria */}
+              <Reveal>
+                <div className="rounded-lg bg-card p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Despesas por categoria</h3>
+                    <CategoryManagerButton categories={categories} />
+                  </div>
+                  {expenseByCat.length === 0 ? (
+                    <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
+                  ) : (
+                    <>
+                      <CategoryDonut slices={donut.slices} total={totals.expense} />
+                      {donut.othersCount > 0 && (
+                        <p className="mt-1 text-center text-[11px] text-muted-foreground">
+                          A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
+                        </p>
+                      )}
+                      <CategoryLegend slices={donut.slices} />
+                    </>
+                  )}
+                </div>
+              </Reveal>
+            </div>
+
+            {/* rail: contas e cartões são entidades separadas no modelo, uma
+                diz quanto você tem, a outra quanto você deve */}
+            <div className="space-y-6">
+              <Reveal>
+                <AccountsCard banks={banks} />
+              </Reveal>
+              <Reveal>
+                <CardsCard cards={cards} />
+              </Reveal>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* contas e cartões: a criação e a exclusão de conta moram no
+          AccountsSummary (Onda 18 só validou AccountsCard/CardsCard como
+          exibição; a ação de criar/excluir conta continua só aqui até uma
+          onda futura levar isso para um formulário próprio) */}
+      {aba === "cartoes" && (
+        <div className="space-y-6">
+          <Reveal>
+            <AccountsSummary
+              banks={banks}
+              income={totals.income}
+              expense={totals.expense}
+              invoicesTotal={invoicesTotal}
+              podeConectar={pluggyConfigurada()}
+              pluggyItems={pluggyItems}
+            />
+          </Reveal>
+          <Reveal>
+            <CardManager cards={cards} banks={banks} />
+          </Reveal>
         </div>
-        <ImportButton banks={banks} cards={cards} categories={categories} />
-      </Reveal>
+      )}
 
-      {/* resumo das contas (substitui os 4 cartões de indicador) */}
-      <Reveal>
-        <AccountsSummary
-          banks={banks}
-          income={totals.income}
-          expense={totals.expense}
-          invoicesTotal={invoicesTotal}
-          podeConectar={pluggyConfigurada()}
-          pluggyItems={pluggyItems}
-        />
-      </Reveal>
-
-      {/* fila do que chegou sozinho e ainda não tem categoria */}
-      {paraCategorizar.length > 0 && (
+      {/* assinaturas recorrentes */}
+      {aba === "recorrentes" && (
         <Reveal>
-          <CategorizationQueue transactions={paraCategorizar} categories={categories} />
+          <SubscriptionsSection
+            subscriptions={subs.subscriptions}
+            candidates={subs.candidates}
+            monthlyTotal={subs.monthlyTotal}
+            categories={categories}
+            banks={banks}
+            cards={cards}
+          />
         </Reveal>
       )}
 
-      {/* cartões */}
-      <Reveal>
-        <CardManager cards={cards} banks={banks} />
-      </Reveal>
-
-      {/* assinaturas recorrentes */}
-      <Reveal>
-        <SubscriptionsSection
-          subscriptions={subs.subscriptions}
-          candidates={subs.candidates}
-          monthlyTotal={subs.monthlyTotal}
-          categories={categories}
-          banks={banks}
-          cards={cards}
-        />
-      </Reveal>
-
       {/* planejamento mensal */}
-      <Reveal>
-        <PlanningSection
-          items={plan.items}
-          suggestions={plan.suggestions}
-          previstoReceber={plan.totals.previstoReceber}
-          previstoPagar={plan.totals.previstoPagar}
-          saldoPrevisto={plan.totals.saldoPrevisto}
-          categories={categories}
-          banks={banks}
-          cards={cards}
-          defaultDate={defaultDate}
-        />
-      </Reveal>
-
-      {/* despesas por categoria + transações */}
-      <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="glass card-glow rounded-2xl border border-border p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Despesas por categoria</h3>
-            <CategoryManagerButton categories={categories} />
-          </div>
-          {expenseByCat.length === 0 ? (
-            <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
-          ) : (
-            <>
-              <CategoryDonut slices={donut.slices} total={totals.expense} />
-              {donut.othersCount > 0 && (
-                <p className="mt-1 text-center text-[11px] text-muted-foreground">
-                  A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
-                </p>
-              )}
-              {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
-              <div className="mt-4 space-y-4">
-                {expenseByCat.map(([name, { icon, total }], i) => {
-                  const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
-                  const color = categoryColor(i);
-                  return (
-                    <div key={name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: color }}
-                            aria-hidden
-                          />
-                          <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
-                          <span className="truncate font-medium">{name}</span>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="num font-semibold">{formatBRL(total)}</p>
-                          <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
-                        </div>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                        <div
-                          className="bar-grow h-1.5 rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: color }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="lg:col-span-2">
-          <TransactionsSection
-            transactions={monthTransactions}
+      {aba === "agendadas" && (
+        <Reveal>
+          <PlanningSection
+            items={plan.items}
+            suggestions={plan.suggestions}
+            previstoReceber={plan.totals.previstoReceber}
+            previstoPagar={plan.totals.previstoPagar}
+            saldoPrevisto={plan.totals.saldoPrevisto}
             categories={categories}
             banks={banks}
             cards={cards}
             defaultDate={defaultDate}
-            monthLabel={monthLabel(year, month)}
-          />
-        </div>
-      </Reveal>
-
-      {/* extrato bancário */}
-      {statement && (
-        <Reveal>
-          <Statement
-            statement={statement}
-            banks={banks}
-            selectedId={statement.bank.id}
-            categories={categories}
-            monthLabel={monthLabel(year, month)}
           />
         </Reveal>
+      )}
+
+      {aba === "transacoes" && (
+        <>
+          <Reveal>
+            <TransactionsSection
+              transactions={monthTransactions}
+              categories={categories}
+              banks={banks}
+              cards={cards}
+              defaultDate={defaultDate}
+              monthLabel={monthLabel(year, month)}
+            />
+          </Reveal>
+
+          {/* extrato bancário */}
+          {statement && (
+            <Reveal>
+              <Statement
+                statement={statement}
+                banks={banks}
+                selectedId={statement.bank.id}
+                categories={categories}
+                monthLabel={monthLabel(year, month)}
+              />
+            </Reveal>
+          )}
+        </>
       )}
     </div>
   );

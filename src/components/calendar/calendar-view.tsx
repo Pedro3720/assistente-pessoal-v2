@@ -124,7 +124,7 @@ export function CalendarView({
         <div>
           <p className="num text-sm font-medium text-muted-foreground">{year}</p>
           <h1
-            className="text-gradient-animated text-3xl font-bold leading-none tracking-tighter md:text-4xl"
+            className="text-foreground text-3xl font-bold leading-none tracking-tighter md:text-4xl"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {MONTH_NAMES[month - 1]}
@@ -190,7 +190,7 @@ export function CalendarView({
           </div>
           <div className="grid grid-cols-7 border-t border-border">
             {Array.from({ length: firstWeekday }).map((_, i) => (
-              <div key={`e-${i}`} className="min-h-[76px] border-b border-r border-border/50 md:min-h-[116px]" />
+              <div key={`e-${i}`} className="min-h-[76px] border-b border-r border-border md:min-h-[116px]" />
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
@@ -203,7 +203,7 @@ export function CalendarView({
                 <button
                   key={day}
                   onClick={() => clickDay(dateStr)}
-                  className={`min-w-0 min-h-[76px] border-b border-r border-border/50 p-1.5 text-left align-top transition-colors hover:bg-accent/40 md:min-h-[116px] md:p-2 ${
+                  className={`min-w-0 min-h-[76px] border-b border-r border-border p-1.5 text-left align-top transition-colors hover:bg-accent/40 md:min-h-[116px] md:p-2 ${
                     weekend ? "bg-muted/20" : ""
                   }`}
                 >

@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-07-29.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-03.**
 
 ---
 
@@ -43,6 +43,29 @@
   (o harness perdeu o Bash) foi rodado em 2026-08-03 e passou; o código foi commitado direto na
   `main`, não na branch citada na 3.18. **Pendente do dono:** medição no navegador e a
   configuração do provider Google no Supabase para o login funcionar de verdade.
+- **Onda 18 (2026-08-03): COMPLETA na branch `feat/onda18-redesign`** — redesign visual em 16
+  tasks, das quais 15 mexem em código/design e a 16ª é o fechamento (ver 3.19). Escala de
+  superfícies nova nos dois temas (`--panel` novo, `--radius` 0.75rem, `--primary` claro mais
+  contrastado), duas famílias de fonte (Inter + Space Grotesk, saiu Plus Jakarta Sans), grão/
+  gradiente/halo restritos às telas de auth, `AppFrame` com painel de scroll interno no desktop,
+  nove primitivos novos em `src/components/ui/`, e Finanças reorganizada em abas por URL com o
+  sistema novo (tabela, legenda com `Meter`, gráfico de saídas por mês). Única funcionalidade
+  nova (não só visual): limite mensal por categoria, migração `20260701000018_category_monthly_
+  limit.sql` **já rodada pelo dono**. Build final limpo, varreduras de travessão e de tokens
+  antigos sem ocorrência. **Ainda não mesclada na `main`, sem push. Pendência grande do dono:**
+  nenhuma tela foi vista por olho humano depois da troca de cor/raio/fonte, em nenhum tema,
+  largura ou no app instalado (ver seção 4).
+- **Revisão final da branch inteira (2026-08-03): 8 blocos corrigidos, mesma branch
+  `feat/onda18-redesign`** (ver 3.20) — achados que as revisões por task não pegaram porque
+  cruzavam tasks: `Reveal` (GSAP ScrollTrigger) parado no desktop desde que o scroll virou do
+  `AppFrame`, `PanelHeader` sem fixar ao rolar (slot `header` do `AppFrame` nunca teve
+  consumidor, removido), `AccountsCard`/`CardsCard` com `BrandAvatar` cinza em vez do
+  `EntityIcon`/cor real que o resto do app já usa, `MonthNav` torto e sem hover visível dentro
+  do `PanelContext`, contraste das barras do gráfico de saídas, separação de superfícies do
+  tema claro no mobile (`--muted`/`--accent` escurecidos), card duplicado na aba Transações, e
+  `Money`/limites de dinheiro. `npm run build` limpo depois de cada bloco. Relatório completo
+  (decisões, valores de cor, contraste calculado) em `.superpowers/sdd/final-fix-report.md`
+  (fora do git, `.superpowers/` é ignorado).
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -692,6 +715,173 @@ plano em `docs/superpowers/plans/2026-07-29-onda17-google-ordem-centralizacao.md
   Google e confirmar que os dados aparecem (prova do mesmo `user_id`); (e) marcar as três
   sugestões como feito em /admin/sugestoes.
 
+### 3.19 Onda 18: redesign visual clean (COMPLETA, branch `feat/onda18-redesign`) — 2026-08-03
+Redesign visual monocromático em 16 tasks (6 fases, A a F), especificado em
+`docs/superpowers/specs/2026-08-03-onda18-redesign-visual-clean-design.md`, plano em
+`docs/superpowers/plans/2026-08-03-onda18-redesign-visual-clean.md`, cada task com brief e
+relatório próprios em `.superpowers/sdd/task-*-brief.md`/`task-*-report.md`. Executada por SDD,
+uma task por commit, todas com `npm run build` limpo. **Ainda não mesclada na `main`, sem
+push.** Uma migração (Task 15), já rodada pelo dono.
+
+**Fase A — fundação de tokens (Tasks 1 e 2):** escala de superfícies nova nos dois temas:
+`--background` virou a moldura (fundo atrás de tudo), `--panel` é o novo nível intermediário
+(fundo do `AppFrame`), `--card`/`--secondary`/`--accent` recalibrados, `--subtle-foreground`
+novo (texto terciário, mais apagado que `--muted-foreground`). `--radius` subiu de 0.625rem
+para 0.75rem. `--primary` no tema claro mudou de `#3b82f6` para `#2563eb` (mais contraste sobre
+o `--background` novo, mais claro). `--accent` deixou de ser azul de marca e virou cinza
+neutro (passou a significar só "estado ativo/selecionado", não destaque). `--chart-1` a
+`--chart-5` (paleta categórica validada para daltonismo) **não mudaram**. Grão, gradiente de
+texto (`.text-gradient`), halo e deslocamento no hover saíram do app inteiro e ficaram só nas
+telas de auth, que ganharam `src/app/(auth)/layout.tsx` próprio para herdar o grão que saiu do
+root `layout.tsx`. Scrollbar de 10px azul virou 6px neutra. Anel de foco virou 2px com
+afastamento (`outline-offset-2`), no lugar do halo antigo. Commits `120609e` (tokens/raio/
+fontes) e `7dea693` (varredura de regressão: usos que dependiam do azul do `--accent` antigo ou
+de hex literal, e remoção de `text-gradient` de dentro do app).
+
+**Fase B — shell (Tasks 3 e 4):** `AppFrame` novo (`src/components/ui/app-frame.tsx`): no
+desktop o conteúdo passou a viver num painel arredondado que flutua sobre o fundo com margem e
+rola por dentro (o cabeçalho fica sempre visível); no celular a estrutura **não mudou** (a
+regra global da onda era não mexer no shell mobile, só na pele). Sidebar perdeu a borda e o
+blur (mesma cor da moldura, separada por vão em vez de linha) e o item ativo virou preenchimento
+cinza neutro em vez de azul. Commits `585de3b` (AppFrame + layout), `f0eb439` (fix de padding
+interno do painel, achado ao conferir o alinhamento com o cabeçalho) e `88824f9` (sidebar).
+
+**Fase C — biblioteca de primitivos (Tasks 5 a 9):** nove componentes novos em
+`src/components/ui/`, nenhum com consumidor além dos que a Fase D liga: `money.tsx` (numeral
+tabular, sinal e cor semântica), `category-chip.tsx` (marcador de cor + nome, sem fundo),
+`meter.tsx` (barra de progresso de 4px com rótulos, trava em 100% mesmo passando do limite,
+componente central da onda: serve orçamento de categoria e limite de cartão), `brand-avatar.tsx`
++ `src/lib/finance/brands.ts` (círculo com logo de marca reconhecida por palavra-chave na
+descrição da transação, ou inicial como fallback; **o mapa nasce vazio de propósito**, ver
+pendência na seção 4), `segmented.tsx` (abas em pill navegadas por URL), `search-input.tsx`
+(campo de busca pill), variantes `pill`/`chip` no `Button` existente, `panel-header.tsx` (linha
+de topo do painel: contexto + abas + ações, com `PanelContext` para o chip de contexto) e
+`data-table.tsx` (`DataTable`/`DataTableHead`/`DataTableRow`, densidade 54px, separação por
+hairline, hover na linha inteira). Commits `aa3fcd5` (Money/CategoryChip), `e3e2d50` (Meter),
+`b94339e` (BrandAvatar/brands.ts), `b65a405` (Segmented/SearchInput/Button) e `139137a`
+(PanelHeader/DataTable).
+
+**Fase D — piloto em Finanças (Tasks 10 a 14):** única tela migrada para os componentes novos
+nesta onda.
+- **Abas por URL** (`?aba=`, valores `visao`/`transacoes`/`cartoes`/`agendadas`/`recorrentes`):
+  o scroll longo de sete seções empilhadas virou `PanelHeader` (contexto do mês + `Segmented` +
+  botão de importar) com conteúdo trocando por aba, sem inventar seções que a referência tinha
+  e o Zênite não tem (Categorias e Contas são modal, não tela). Commits `36d91f7` (abas) e
+  `abc1ffb` (fix: uma seção de transações vazava para fora da própria aba).
+- **Contas e cartões separados no rail:** `AccountsCard` (só contas bancárias, sem cartão) e
+  `CardsCard` (cartão com `Meter` de limite) substituem a lista única antiga. Commit `7efeb01`.
+- **Legenda do donut com `Meter`:** cada linha da legenda de "Despesas por categoria" passou a
+  responder duas perguntas em contextos separados: a fatia do donut diz participação no gasto,
+  e uma barra `Meter` nova diz consumo do limite da categoria (antes a legenda tinha nome, valor,
+  % e uma barra de participação redundante com a própria fatia). `CategorySlice` ganhou
+  `limit: number | null` (a fatia "Outras" sempre `null`, porque somar limites de categorias
+  diferentes não significa nada). Enquanto o limite real não existia (antes da Task 15), toda
+  categoria mostrava "Sem limite definido". Novo `src/components/finance/category-legend.tsx`.
+  Commit `407ed38`.
+- **Gráfico de saídas por mês:** não existia série mensal no projeto (só o donut); nova
+  `getMonthlyExpenseSeries()` em `src/lib/data/finance.ts` (9 meses, exclui transferência e
+  pagamento de fatura pela mesma regra do donut) e `MonthlyExpenseChart` (barras CSS puras, sem
+  recharts, sem eixo nem grade; o mês atual ganha um bloco de fundo em vez de mudar de cor,
+  porque cor ali significaria categoria). Commit `6315066`.
+- **Tabela de transações:** a lista (compacta e o modal "Ver todas") trocou o card manuscrito
+  por `DataTable`/`DataTableRow`, com `BrandAvatar`, `CategoryChip` (cor fixa neutra, o modelo
+  não tem cor própria por categoria fora da posição do donut) e `Money`. Filtro, busca, editar/
+  excluir e os modais de criar/editar **não mudaram**, só a apresentação da linha. `DataTable`
+  ganhou `forwardRef` (fora do escopo literal, mas necessário para o `useAnimatedList()` animar
+  entrada/saída de linha). `AccountsSummary` saiu da aba "Visão geral" e foi para "Cartões" (não
+  foi apagado: é a única porta de criação/exclusão de conta do app); os indicadores
+  "Entradas/Despesas/Faturas" que moravam no painel expansível dele foram junto (ver pendência
+  na seção 4). `SearchInput` (Fase C) **ficou sem uso**: não existe busca textual em transações
+  hoje, só filtro por tipo, e criar uma seria funcionalidade nova fora do escopo da task (ver
+  pendência na seção 4). Commit `09f322a`.
+
+**Fase E — orçamento por categoria (Task 15, única com funcionalidade nova):** limite mensal por
+categoria. Migração `supabase/migrations/20260701000018_category_monthly_limit.sql`
+(`categories.monthly_limit numeric(12,2)`, nula por padrão) **JÁ RODADA pelo dono** (commit
+`aa6a4b1`, antes do resto da task). Campo "Limite mensal" no formulário de categoria
+(`category-manager.tsx`, visível só para categoria de despesa, criação e edição inline),
+validado em `categoryInput` (Zod, `src/lib/validation/finance.ts`) e persistido pela
+`createCategory`/`updateCategory` já existentes (o brief supunha `FormData` cru; o padrão real é
+objeto plano + Zod). `Category` (`src/types/finance.ts`) ganhou `monthly_limit: number | null`.
+A legenda da Fase D (`byCat` em `financas/page.tsx`) passou a usar `cat?.monthly_limit ?? null`
+em vez do `null` fixo, então a barra da legenda mostra o limite de verdade. Commit `53718ba`.
+
+**Fase F — fechamento (Task 16, esta sessão):** varreduras de `rg "—|–" src` (zero ocorrência
+em string visível ao usuário; os únicos travessões do código são comentários internos) e de
+`rg "font-num|Plus_Jakarta|text-gradient" "src/app/(app)" src/components` (zero ocorrência;
+`text-gradient` só remanesce nas 4 telas de `(auth)`, como esperado); `npm run build` limpo,
+sem erro nem aviso novo; consolidação desta entrada do HANDOFF. **Não foi possível fazer a
+conferência visual manual** (Step 4 do brief): o app exige login no Supabase e esta sessão não
+tem credenciais; fica registrada como pendência do dono na seção 4, com destaque, porque a onda
+mudou a cor/raio/fonte de toda tela e nenhuma foi vista por olho humano ainda.
+
+**Fora de escopo desta onda (adiado de propósito):** barra de comando (não fazia parte do
+plano), migração visual das telas fora de Finanças (Dashboard, Calendário, Tarefas, Senhas,
+Sugestões, Perfil, Admin, que herdaram os tokens novos mas não os componentes) e mudança de
+estrutura do `AppFrame` no mobile (só telas de desktop ganharam o painel flutuante; a regra
+global do plano proibia mexer no shell do celular nesta onda).
+
+### 3.20 Revisão final da branch `feat/onda18-redesign` (2026-08-03) — 8 correções, um commit cada
+Uma revisão da branch inteira (não por task) achou 8 problemas que atravessavam mais de uma
+task da Onda 18. Todos corrigidos, um commit por bloco, `npm run build` limpo ao final. Relatório
+completo com as decisões e os números de contraste em `.superpowers/sdd/final-fix-report.md`
+(fora do git: `.superpowers/` está no `.gitignore`).
+
+1. **`Reveal` parado no desktop** (`src/components/effects/reveal.tsx`, commit `7c245f6`): o
+   `scroller` padrão do GSAP ScrollTrigger é a `window`, mas a Onda 18 tornou a `window` não
+   rolável no desktop (`md:overflow-hidden` no layout + scroll dentro do `AppFrame`). O trigger
+   nunca disparava e todo `<Reveal>` abaixo da dobra ficava `opacity:0` para sempre no desktop
+   (29 ocorrências em 8 rotas, 11 só em Finanças). Trocado por `IntersectionObserver` com
+   `root: null` (respeita o recorte de qualquer ancestral com overflow, funciona nos dois
+   layouts). Removida a dependência de `@gsap/react`/`ScrollTrigger` neste arquivo; a animação
+   continua GSAP puro. Mantém animação única e `prefers-reduced-motion`.
+2. **Cabeçalho do painel sumia ao rolar** (`src/components/ui/panel-header.tsx` +
+   `app-frame.tsx`, commit `aff65a8`): o slot `header` do `AppFrame` (fora da área de scroll)
+   nunca teve consumidor. `PanelHeader` passou a se fixar sozinho (`md:sticky md:top-0 md:z-10
+   md:bg-panel`) em vez de depender do slot. Prop `header` do `AppFrame` removida por ficar sem
+   nenhum uso.
+3. **Logo de banco descartado** (`accounts-card.tsx` + `cards-card.tsx`, commit `bc590f0`):
+   `AccountsCard` usava `BrandAvatar` (mapa vazio de propósito) em vez do `EntityIcon`/
+   `bank.icon` que o `AccountsSummary` já usa corretamente (28 bancos reais em
+   `lib/finance/banks.ts`); mesma conta tinha logo numa aba e inicial cinza na outra. Trocado
+   para `EntityIcon`. `CreditCard` não tem campo de ícone, só `color` (escolhida no
+   `CardManager`); criado `CardAvatar` local em `cards-card.tsx` que usa essa cor real em vez do
+   tom cinza calculado por hash do `BrandAvatar`.
+4. **`MonthNav` torto no chip de contexto** (`month-nav.tsx` + `panel-header.tsx`, commit
+   `57fbd90`): removido o `mt-3` (sobrava de quando ficava embaixo do `<h1>`, hoje é filho único
+   do `PanelContext`); hover dos botões trocado de `hover:bg-accent` (idêntico ao fundo da
+   pílula, sem efeito nenhum) para `hover:bg-secondary`; `PanelContext` trocado de `<span>` para
+   `<div>` (tinha um `<div>` aninhado dentro, HTML inválido).
+5. **Contraste das barras do gráfico de saídas** (`monthly-expense-chart.tsx`, commit
+   `3e13505`): barras não correntes eram `bg-secondary` sobre `bg-card` (1,10:1 nos dois temas,
+   graves porque é o único canal que carrega o valor). `bg-muted-foreground/40`/`/50` (sugestão
+   inicial) **não chegam** a 3:1 por cálculo de luminância WCAG; usado `/70`, que dá ~3,58:1
+   claro e ~4,08:1 escuro.
+6. **Tema claro colapsava no mobile** (`src/app/globals.css`, `:root`, commit `eb36953`):
+   `--muted` (`#eceff3`) e `--accent` (`#e7eaf0`) ficavam quase idênticos a `--background`
+   (`#eef0f4`) — diferença de 2/1/1 e 7/6/4 em RGB. No desktop não aparecia porque tudo vive
+   sobre `--panel`; no mobile (sem `md:bg-panel`) o fundo é `--background` puro e a trilha das
+   abas, a pílula ativa e o chip de contexto quase somem. Escurecidos `--muted` → `#e0e3ea` e
+   `--accent` → `#d6dae3` (em vez de clarear `--background`, que também alimenta `--sidebar` e
+   encolheria a diferença já validada com `--panel` no desktop). `--panel`, `--card` e o tema
+   escuro não foram tocados.
+7. **Card dentro de card em Transações** (`transactions-section.tsx`, commit `96f4894`): o
+   `DataTable` novo (`bg-card` sólido) ficava aninhado dentro do card antigo da seção (`glass
+   card-glow rounded-2xl border p-5`). Resolvido com `className="bg-transparent"` na instância
+   que vive dentro do card da seção (o `cn()`/`tailwind-merge` do projeto resolve o conflito
+   com o `bg-card` padrão do `DataTable`); a instância do modal "Ver todas" não mudou (o `Modal`
+   usa `bg-popover`, não é duplicação ali). Não migrou nenhuma outra seção de Finanças.
+8. **`Money` e limites de dinheiro** (`money.tsx` + `lib/validation/finance.ts`, commit
+   `b19ac8c`): `Money` com `colorize` pintava valor zero de verde (condição era só `value < 0`);
+   agora zero fica neutro. `monthly_limit` e `credit_limit` (Zod) ganharam `.max(9999999999.99)`
+   (teto do `numeric(12,2)` da coluna), evitando erro cru do Postgres num toast.
+
+**Pendências/observações desta revisão (ver relatório completo para os números):** vale
+conferir visualmente o `CardAvatar` novo (item 3) com as cores de `CARD_COLORS`
+(`lib/finance/defaults.ts`) para confirmar que o texto branco das iniciais fica legível em
+todas; a mudança de `--muted`/`--accent` (item 6) é global ao tema claro, não só Finanças, então
+vale um relance no resto do app antes de mesclar.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
@@ -724,6 +914,29 @@ plano em `docs/superpowers/plans/2026-07-29-onda17-google-ordem-centralizacao.md
    nova senha → cai logado. E em /perfil → "Trocar senha".*
 - (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY; migrações
   0000–0011 rodadas.)
+
+> **Atualização 2026-08-03 (Onda 18, redesign visual clean):**
+> 1. **Conferência visual manual, destaque: NENHUMA tela foi vista por olho humano desde o
+>    redesign.** A onda mudou cor, raio e fonte de superfície de toda rota do app, nos dois
+>    temas. Não deu pra fazer nesta sessão porque o app exige login no Supabase e a sessão não
+>    tem credenciais. Percorrer todas as rotas em claro e escuro, desktop e celular, e no app
+>    instalado (Capacitor) conferir especificamente safe-area, teclado e overscroll (o shell do
+>    mobile não mudou de estrutura nesta onda, mas a pele mudou em cima dele).
+> 2. **Indicadores de Entradas/Despesas/Faturas sumiram da aba "Visão geral" de Finanças.** Eles
+>    moravam dentro do painel expansível do `AccountsSummary`, que a Task 14 moveu para a aba
+>    "Cartões" (é a única porta de criação de conta do app). Decidir se os três números voltam
+>    como um card próprio na Visão geral ou se ficam só em Cartões.
+> 3. **Avatares de marca caem todos na inicial.** `src/lib/finance/brands.ts` nasce com o mapa
+>    `BRANDS` vazio de propósito (nenhum SVG de marca real foi fabricado). Para ativar: soltar os
+>    arquivos `.svg` em `public/brands/<slug>.svg` e acrescentar a palavra-chave correspondente no
+>    mapa (formato já documentado no arquivo).
+> 4. **`SearchInput` (componente da Fase C) foi criado mas não tem uso.** A seção de transações
+>    de Finanças não tem busca textual hoje, só filtro por tipo; criar essa busca é feature nova,
+>    não redesign, e ficou fora desta onda de propósito.
+> 5. **Demais telas ainda não migraram para os componentes novos.** Dashboard, Calendário,
+>    Tarefas, Senhas, Sugestões, Perfil e Admin herdaram os tokens (cor/raio/fonte) automaticamente
+>    por serem CSS global, mas continuam com os componentes antigos (cards manuscritos, sem
+>    `DataTable`/`PanelHeader`/etc.). Migrar essas telas para o sistema novo é onda futura.
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,

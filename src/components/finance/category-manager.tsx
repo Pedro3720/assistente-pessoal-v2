@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { EntityIcon } from "@/components/ui/entity-icon";
+import { MoneyInput } from "./money-input";
+import { formatBRL, parseBRL } from "@/lib/money";
 import { createCategory, updateCategory, deleteCategory } from "@/lib/actions/finance";
 import type { Category, TxType } from "@/types/finance";
 
@@ -21,15 +23,18 @@ export function CategoryManager({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("tag");
   const [kind, setKind] = useState<TxType>("expense");
+  const [limit, setLimit] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editIcon, setEditIcon] = useState("");
+  const [editLimit, setEditLimit] = useState("");
 
   async function add() {
     if (!name.trim()) return;
     try {
-      await createCategory({ name: name.trim(), icon: icon || "tag", kind });
-      setName(""); setIcon("tag");
+      const monthlyLimit = kind === "expense" && limit.trim() ? parseBRL(limit) : null;
+      await createCategory({ name: name.trim(), icon: icon || "tag", kind, monthly_limit: monthlyLimit });
+      setName(""); setIcon("tag"); setLimit("");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao criar");
@@ -38,7 +43,8 @@ export function CategoryManager({
 
   async function saveEdit(id: number) {
     try {
-      await updateCategory(id, { name: editName.trim(), icon: editIcon || "tag" });
+      const monthlyLimit = editLimit.trim() ? parseBRL(editLimit) : null;
+      await updateCategory(id, { name: editName.trim(), icon: editIcon || "tag", monthly_limit: monthlyLimit });
       setEditingId(null);
       router.refresh();
     } catch (e) {
@@ -76,7 +82,7 @@ export function CategoryManager({
             {(["expense", "income"] as const).map((k) => (
               <button
                 key={k}
-                onClick={() => setKind(k)}
+                onClick={() => { setKind(k); setLimit(""); }}
                 className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium ${
                   kind === k ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground"
                 }`}
@@ -85,6 +91,15 @@ export function CategoryManager({
               </button>
             ))}
           </div>
+          {kind === "expense" && (
+            <div>
+              <label className="text-xs text-muted-foreground">Limite mensal</label>
+              <MoneyInput value={limit} onChange={setLimit} />
+              <p className="mt-1 text-[11px] text-subtle-foreground">
+                Deixe vazio para não ter limite.
+              </p>
+            </div>
+          )}
           <button
             onClick={add}
             disabled={!name.trim()}
@@ -104,28 +119,44 @@ export function CategoryManager({
               <p className="text-sm text-muted-foreground">Nenhuma.</p>
             ) : (
               list(k).map((c) => (
-                <div key={c.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                <div key={c.id} className="rounded-lg border border-border p-2">
                   {editingId === c.id ? (
-                    <>
-                      <IconPicker value={editIcon} onChange={setEditIcon} />
-                      <input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="min-w-0 flex-1 rounded border border-border bg-muted px-2 py-1 text-sm"
-                      />
-                      <button onClick={() => saveEdit(c.id)} className="p-1 text-green-600" title="Salvar">
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground" title="Cancelar">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <IconPicker value={editIcon} onChange={setEditIcon} />
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="min-w-0 flex-1 rounded border border-border bg-muted px-2 py-1 text-sm"
+                        />
+                        <button onClick={() => saveEdit(c.id)} className="p-1 text-green-600" title="Salvar">
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground" title="Cancelar">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {c.kind === "expense" && (
+                        <div>
+                          <label className="text-xs text-muted-foreground">Limite mensal</label>
+                          <MoneyInput value={editLimit} onChange={setEditLimit} />
+                          <p className="mt-1 text-[11px] text-subtle-foreground">
+                            Deixe vazio para não ter limite.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-2">
                       <EntityIcon value={c.icon} size={16} className="h-6 w-6 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate text-sm">{c.name}</span>
                       <button
-                        onClick={() => { setEditingId(c.id); setEditName(c.name); setEditIcon(c.icon); }}
+                        onClick={() => {
+                          setEditingId(c.id);
+                          setEditName(c.name);
+                          setEditIcon(c.icon);
+                          setEditLimit(c.monthly_limit ? formatBRL(c.monthly_limit).replace("R$", "").trim() : "");
+                        }}
                         className="p-1 text-muted-foreground hover:text-primary"
                         title="Editar"
                       >
@@ -134,7 +165,7 @@ export function CategoryManager({
                       <button onClick={() => remove(c.id)} className="p-1 text-muted-foreground hover:text-red-500" title="Excluir">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               ))

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, CreditCard, Edit3, Trash2,
+  Plus, ArrowUpRight, ArrowDownLeft, Repeat, Edit3, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -14,7 +14,10 @@ import {
   createTransfer, deleteTransferGroup,
 } from "@/lib/actions/finance";
 import { Modal } from "@/components/ui/modal";
-import { EntityIcon } from "@/components/ui/entity-icon";
+import { DataTable, DataTableRow } from "@/components/ui/data-table";
+import { BrandAvatar } from "@/components/ui/brand-avatar";
+import { CategoryChip } from "@/components/ui/category-chip";
+import { Money } from "@/components/ui/money";
 import { MoneyInput } from "./money-input";
 import { useAnimatedList } from "@/hooks/use-animated-list";
 import { EmptyState } from "@/components/effects/empty-state";
@@ -233,15 +236,21 @@ export function TransactionsSection({
         </div>
       </div>
 
-      <div ref={listRef} className="mt-4 space-y-2">
-        {shown.length === 0 ? (
-          <EmptyState lottie="/lottie/empty-transactions.lottie" className="py-6">
-            <p className="text-center text-sm text-muted-foreground">
-              Nenhuma transação neste mês.
-            </p>
-          </EmptyState>
-        ) : (
-          shown.map((t) => (
+      {shown.length === 0 ? (
+        <EmptyState lottie="/lottie/empty-transactions.lottie" className="mt-4 py-6">
+          <p className="text-center text-sm text-muted-foreground">
+            Nenhuma transação neste mês.
+          </p>
+        </EmptyState>
+      ) : (
+        // bg-transparent: esta instância já vive dentro do card da própria
+        // seção (glass card-glow ... acima); sem isso o DataTable repetia
+        // fundo (bg-card) e raio por cima do card que já existe, um dentro
+        // do outro. A instância do modal "Ver todas" abaixo não repete: o
+        // Modal usa bg-popover, não bg-card, então ali é mesmo outra
+        // superfície e o fundo padrão do DataTable continua fazendo sentido.
+        <DataTable ref={listRef} className="mt-4 bg-transparent">
+          {shown.map((t) => (
             <TxRow
               key={t.id}
               t={t}
@@ -249,9 +258,9 @@ export function TransactionsSection({
               onEdit={() => openEdit(t)}
               onRemove={() => remove(t.id)}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </DataTable>
+      )}
 
       {fullOpen && (
         <Modal size="full" title={`Transações de ${monthLabel}`} onClose={() => setFullOpen(false)}>
@@ -264,11 +273,11 @@ export function TransactionsSection({
               <Plus className="h-3.5 w-3.5" /> Nova
             </button>
           </div>
-          <div ref={fullListRef} className="space-y-2">
-            {shown.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
-            ) : (
-              shown.map((t) => (
+          {shown.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
+          ) : (
+            <DataTable ref={fullListRef}>
+              {shown.map((t) => (
                 <TxRow
                   key={t.id}
                   t={t}
@@ -276,9 +285,9 @@ export function TransactionsSection({
                   onEdit={() => openEdit(t)}
                   onRemove={() => remove(t.id)}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </DataTable>
+          )}
         </Modal>
       )}
 
@@ -496,51 +505,59 @@ function TxRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent/30">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className={`shrink-0 rounded-full p-2 ${t.type === "income" ? "bg-green-100" : "bg-red-100"}`}>
-          {t.type === "income" ? (
-            <ArrowUpRight className="h-4 w-4 text-positive" />
-          ) : (
-            <ArrowDownRight className="h-4 w-4 text-negative" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="truncate font-medium">{t.description}</p>
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            {t.is_transfer ? (
-              <>
-                <ArrowLeftRight className="h-3 w-3 shrink-0" /> transferência
-              </>
-            ) : cat ? (
-              <>
-                <EntityIcon value={cat.icon} size={12} className="h-3 w-3" />
-                <span className="truncate">{cat.name}</span>
-              </>
-            ) : (
-              "Sem categoria"
-            )}
-            {t.is_card_payment && (
-              <>
-                · <CreditCard className="h-3 w-3 shrink-0" /> pagamento
-              </>
-            )}
-            <span className="shrink-0">· {formatDateBR(t.occurred_on)}</span>
-          </p>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span className={`num font-semibold ${t.type === "income" ? "text-positive" : "text-negative"}`}>
-          {t.type === "income" ? "+" : "-"}
-          {formatBRL(Number(t.amount))}
-        </span>
-        <button onClick={onEdit} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+    <DataTableRow>
+      {t.is_transfer ? (
+        <Repeat className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+      ) : t.type === "expense" ? (
+        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-negative" strokeWidth={1.5} />
+      ) : (
+        <ArrowDownLeft className="h-3.5 w-3.5 shrink-0 text-positive" strokeWidth={1.5} />
+      )}
+
+      <BrandAvatar name={t.description} size={28} />
+
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.description}</span>
+
+      <span className="hidden w-32 shrink-0 sm:block">
+        {cat ? (
+          // O modelo de categoria não guarda cor própria (só a home dela
+          // no donut tem, via posição na lista ordenada por valor, um
+          // conceito que essa seção não tem). Sem uma cor de verdade para
+          // reusar, o marcador fica neutro em vez de inventar uma ordem só
+          // para colorir.
+          <CategoryChip name={cat.name} color="var(--muted-foreground)" icon={cat.icon} />
+        ) : (
+          <span className="text-xs text-subtle-foreground">Sem categoria</span>
+        )}
+      </span>
+
+      <span className="hidden w-20 shrink-0 text-xs text-subtle-foreground md:block">
+        {formatDateBR(t.occurred_on)}
+      </span>
+
+      <Money
+        value={t.type === "expense" ? -Number(t.amount) : Number(t.amount)}
+        signed
+        colorize
+        className="w-28 shrink-0 text-right text-sm font-medium"
+      />
+
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <button
+          onClick={onEdit}
+          aria-label="Editar transação"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-accent"
+        >
           <Edit3 className="h-4 w-4" />
         </button>
-        <button onClick={onRemove} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+        <button
+          onClick={onRemove}
+          aria-label="Excluir transação"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-accent"
+        >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </DataTableRow>
   );
 }

@@ -69,7 +69,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden w-56 flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-xl transition-all duration-300 ease-in-out",
+        "hidden w-56 flex-col bg-sidebar transition-all duration-300 ease-in-out",
         "md:sticky md:top-0 md:flex md:h-screen",
         collapsed && "md:w-16"
       )}
@@ -77,7 +77,7 @@ export function Sidebar({
       {/* Brand */}
       <div
         className={cn(
-          "flex h-[72px] items-center justify-between gap-2 border-b border-sidebar-border px-4",
+          "flex h-[72px] items-center justify-between gap-2 px-4",
           collapsed && "md:justify-center md:px-2"
         )}
       >
@@ -110,19 +110,17 @@ export function Sidebar({
               href={item.href}
               title={item.label}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150",
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150",
                 collapsed && "md:justify-center md:px-0",
                 isActive
                   ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                  : "font-normal text-sidebar-foreground/45 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                  : "font-normal text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <Icon
                 className={cn(
-                  "h-4 w-4 shrink-0 transition-all",
-                  isActive
-                    ? "text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/35 group-hover:text-sidebar-foreground/70"
+                  "h-4 w-4 shrink-0 transition-colors",
+                  isActive ? "text-sidebar-accent-foreground" : "text-muted-foreground"
                 )}
                 strokeWidth={isActive ? 2 : 1.5}
               />

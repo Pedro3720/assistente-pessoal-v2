@@ -69,7 +69,7 @@ export function Statement({
               return (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-2.5 last:border-0"
+                  className="flex items-center justify-between gap-3 border-b border-border px-5 py-2.5 last:border-0"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <EntityIcon

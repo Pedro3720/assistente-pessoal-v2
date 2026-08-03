@@ -408,3 +408,57 @@ export async function getMonthlyPlan(year: number, month: number) {
 }
 
 export type MonthlyPlanData = Awaited<ReturnType<typeof getMonthlyPlan>>;
+
+// ─── Série mensal de saídas ───────────────────────────────
+
+/**
+ * Saídas somadas por mês, terminando três meses depois do mês visto, para o
+ * gráfico dar contexto de passado e de compromissos já lançados à frente.
+ * Exclui transferência e pagamento de fatura, que não são despesa nova, pela
+ * mesma regra do donut (ver byCat em app/(app)/financas/page.tsx).
+ */
+export async function getMonthlyExpenseSeries(
+  year: number,
+  month: number,
+  months = 9
+): Promise<{ label: string; total: number; current: boolean }[]> {
+  const supabase = await createClient();
+
+  const first = shiftMonth(year, month, 4 - months);
+  const last = shiftMonth(year, month, 3);
+  const { start } = monthBounds(first.year, first.month);
+  const { end } = monthBounds(last.year, last.month);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("amount, occurred_on, type, is_transfer, is_card_payment")
+    .gte("occurred_on", start)
+    .lte("occurred_on", end);
+
+  if (error || !data) return [];
+
+  const buckets = new Map<string, number>();
+  for (let i = 0; i < months; i++) {
+    const { year: by, month: bm } = shiftMonth(first.year, first.month, i);
+    buckets.set(`${by}-${bm - 1}`, 0);
+  }
+
+  for (const t of data) {
+    if (t.type !== "expense" || t.is_transfer || t.is_card_payment) continue;
+    const [y, m] = t.occurred_on.split("-").map(Number);
+    const key = `${y}-${m - 1}`;
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + Number(t.amount));
+  }
+
+  return [...buckets.entries()].map(([key, total]) => {
+    const [y, m] = key.split("-").map(Number);
+    return {
+      label: new Date(Date.UTC(y, m, 1)).toLocaleDateString("pt-BR", {
+        month: "short",
+        timeZone: "UTC",
+      }),
+      total,
+      current: y === year && m === month - 1,
+    };
+  });
+}

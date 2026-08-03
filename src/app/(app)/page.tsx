@@ -75,7 +75,7 @@ export default async function Dashboard() {
         <p className="mb-1 text-sm text-muted-foreground">
           {greeting}, {displayName}
         </p>
-        <h1 className="text-gradient-animated text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-foreground text-3xl md:text-4xl font-extrabold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Seu Painel
         </h1>
       </Reveal>
