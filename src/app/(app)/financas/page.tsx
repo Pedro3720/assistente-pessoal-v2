@@ -140,18 +140,6 @@ export default async function FinancasPage({
 
       {aba === "visao" && (
         <>
-          {/* resumo das contas (substitui os 4 cartões de indicador) */}
-          <Reveal>
-            <AccountsSummary
-              banks={banks}
-              income={totals.income}
-              expense={totals.expense}
-              invoicesTotal={invoicesTotal}
-              podeConectar={pluggyConfigurada()}
-              pluggyItems={pluggyItems}
-            />
-          </Reveal>
-
           {/* fila do que chegou sozinho e ainda não tem categoria */}
           {paraCategorizar.length > 0 && (
             <Reveal>
@@ -206,11 +194,26 @@ export default async function FinancasPage({
         </>
       )}
 
-      {/* cartões */}
+      {/* contas e cartões: a criação e a exclusão de conta moram no
+          AccountsSummary (Onda 18 só validou AccountsCard/CardsCard como
+          exibição; a ação de criar/excluir conta continua só aqui até uma
+          onda futura levar isso para um formulário próprio) */}
       {aba === "cartoes" && (
-        <Reveal>
-          <CardManager cards={cards} banks={banks} />
-        </Reveal>
+        <div className="space-y-6">
+          <Reveal>
+            <AccountsSummary
+              banks={banks}
+              income={totals.income}
+              expense={totals.expense}
+              invoicesTotal={invoicesTotal}
+              podeConectar={pluggyConfigurada()}
+              pluggyItems={pluggyItems}
+            />
+          </Reveal>
+          <Reveal>
+            <CardManager cards={cards} banks={banks} />
+          </Reveal>
+        </div>
       )}
 
       {/* assinaturas recorrentes */}

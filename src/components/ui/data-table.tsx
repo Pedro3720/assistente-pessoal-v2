@@ -1,21 +1,25 @@
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 /**
  * Casca de tabela do app: densidade de 54px, separação por hairline (não por
  * gap) e hover na linha inteira. Não sabe nada sobre o dado; as colunas são
  * montadas por quem usa.
+ *
+ * Encaminha `ref` para o container que envolve as linhas diretamente: é o que
+ * permite plugar `useAnimatedList()` (AutoAnimate observa o pai direto dos
+ * itens) sem precisar de uma div extra por fora.
  */
-export function DataTable({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export const DataTable = forwardRef<
+  HTMLDivElement,
+  { children: React.ReactNode; className?: string }
+>(function DataTable({ children, className }, ref) {
   return (
-    <div className={cn("overflow-hidden rounded-lg bg-card", className)}>{children}</div>
+    <div ref={ref} className={cn("overflow-hidden rounded-lg bg-card", className)}>
+      {children}
+    </div>
   );
-}
+});
 
 export function DataTableHead({ children }: { children: React.ReactNode }) {
   return (
