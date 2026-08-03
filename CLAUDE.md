@@ -24,14 +24,20 @@
   systematic-debugging para bug, etc.); só depois comece a mexer.
 - Vale mesmo para pedidos que parecem simples. Perguntas puras, sem modificação, não precisam.
 
-## Mudanças de design (UI/visual): use /ui-ux-pro-max:ui-ux-pro-max
+## Mudanças de front end e de design: use /frontend-design:frontend-design
 
-- **Sempre que for fazer alterações de design** (visual, layout, cores, tipografia, espaçamento,
-  novos componentes de UI, responsividade, dark mode), **use o skill `ui-ux-pro-max:ui-ux-pro-max`**
-  para guiar as escolhas.
-- Ordem dos skills: o `using-superpowers` (regra acima) roteia o fluxo primeiro (processo); para o
-  trabalho de design em si, aplique o `ui-ux-pro-max` (implementação). Process skills antes,
-  implementation skills depois.
+- **Sempre que for mexer no front end do site** (qualquer alteração visual: layout, cores,
+  tipografia, espaçamento, novos componentes de UI, responsividade, dark mode, animação),
+  **invoque o skill `frontend-design:frontend-design` antes de escrever o código**. Ele guia a
+  direção estética e evita que a interface caia no visual "template padrão".
+- O `ui-ux-pro-max:ui-ux-pro-max` continua disponível como consulta complementar quando precisar
+  de catálogo (padrões de componente, tipos de gráfico, checklists de UX). A direção visual quem
+  manda é o `frontend-design`.
+- Ordem dos skills: `using-superpowers` roteia o fluxo primeiro (processo); depois o
+  `frontend-design` conduz a implementação visual. Process skills antes, implementation skills
+  depois.
+- A direção visual vigente está em `docs/superpowers/specs/` (spec de design mais recente).
+  Leia antes de propor mudanças de estilo, para não brigar com o sistema já definido.
 
 ## Regras de escrita (texto visível ao usuário)
 

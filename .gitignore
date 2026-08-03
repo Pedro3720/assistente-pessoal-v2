@@ -39,3 +39,6 @@ next-env.d.ts
 
 # graphify: grafo de conhecimento gerado localmente (regenerável com /graphify), não versionar
 /graphify-out/
+
+# superpowers: mockups e estado da sessão de brainstorming visual, não versionar
+/.superpowers/
