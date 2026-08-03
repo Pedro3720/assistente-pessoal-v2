@@ -17,7 +17,7 @@ export default async function AdminSugestoesPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Reveal>
-        <h1 className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-foreground text-3xl md:text-4xl font-bold leading-none tracking-tighter" style={{ fontFamily: "var(--font-display)" }}>
           Admin · Sugestões
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">Todas as sugestões enviadas pelos usuários.</p>

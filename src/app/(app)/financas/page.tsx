@@ -81,7 +81,7 @@ export default async function FinancasPage({
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1
-            className="text-gradient text-3xl md:text-4xl font-bold leading-none tracking-tighter"
+            className="text-foreground text-3xl md:text-4xl font-bold leading-none tracking-tighter"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Finanças
