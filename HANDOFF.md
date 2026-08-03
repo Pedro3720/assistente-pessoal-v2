@@ -43,14 +43,18 @@
   (o harness perdeu o Bash) foi rodado em 2026-08-03 e passou; o código foi commitado direto na
   `main`, não na branch citada na 3.18. **Pendente do dono:** medição no navegador e a
   configuração do provider Google no Supabase para o login funcionar de verdade.
-- **Onda 18 (2026-08-03): EM ANDAMENTO na branch `feat/onda18-redesign`** — redesign visual em
-  várias tasks (ver 3.19). Task 12 (legenda do donut com `Meter`, preparada para o limite por
-  categoria que ainda não existe no banco) feita e commitada (`407ed38`). Task 14 (tabela de
-  transações no `DataTable`, última task do piloto) feita e commitada (`09f322a`); `AccountsSummary`
-  saiu da Visão geral e foi para a aba Cartões. Task 15 (limite mensal por categoria, única task
-  com funcionalidade nova) feita e commitada (`53718ba`): migração já rodada pelo dono (`aa6a4b1`),
-  campo "Limite mensal" no formulário de categorias, e a legenda (Task 12) agora mostra o limite
-  real em vez de "Sem limite definido" fixo. Não mesclada na `main`, sem push.
+- **Onda 18 (2026-08-03): COMPLETA na branch `feat/onda18-redesign`** — redesign visual em 16
+  tasks, das quais 15 mexem em código/design e a 16ª é o fechamento (ver 3.19). Escala de
+  superfícies nova nos dois temas (`--panel` novo, `--radius` 0.75rem, `--primary` claro mais
+  contrastado), duas famílias de fonte (Inter + Space Grotesk, saiu Plus Jakarta Sans), grão/
+  gradiente/halo restritos às telas de auth, `AppFrame` com painel de scroll interno no desktop,
+  nove primitivos novos em `src/components/ui/`, e Finanças reorganizada em abas por URL com o
+  sistema novo (tabela, legenda com `Meter`, gráfico de saídas por mês). Única funcionalidade
+  nova (não só visual): limite mensal por categoria, migração `20260701000018_category_monthly_
+  limit.sql` **já rodada pelo dono**. Build final limpo, varreduras de travessão e de tokens
+  antigos sem ocorrência. **Ainda não mesclada na `main`, sem push. Pendência grande do dono:**
+  nenhuma tela foi vista por olho humano depois da troca de cor/raio/fonte, em nenhum tema,
+  largura ou no app instalado (ver seção 4).
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -700,106 +704,111 @@ plano em `docs/superpowers/plans/2026-07-29-onda17-google-ordem-centralizacao.md
   Google e confirmar que os dados aparecem (prova do mesmo `user_id`); (e) marcar as três
   sugestões como feito em /admin/sugestoes.
 
-### 3.19 Onda 18: redesign visual (EM ANDAMENTO, branch `feat/onda18-redesign`) — 2026-08-03
-Redesign visual em várias tasks numeradas, especificado em `.superpowers/sdd/task-*-brief.md`.
-Ainda **não mesclada na `main`**, nada foi dado push. Sem migração até aqui.
+### 3.19 Onda 18: redesign visual clean (COMPLETA, branch `feat/onda18-redesign`) — 2026-08-03
+Redesign visual monocromático em 16 tasks (6 fases, A a F), especificado em
+`docs/superpowers/specs/2026-08-03-onda18-redesign-visual-clean-design.md`, plano em
+`docs/superpowers/plans/2026-08-03-onda18-redesign-visual-clean.md`, cada task com brief e
+relatório próprios em `.superpowers/sdd/task-*-brief.md`/`task-*-report.md`. Executada por SDD,
+uma task por commit, todas com `npm run build` limpo. **Ainda não mesclada na `main`, sem
+push.** Uma migração (Task 15), já rodada pelo dono.
 
-- **Task 12 (FEITA nesta sessão): legenda do donut preparada para orçamento.** O donut de
-  despesas por categoria continua igual; a legenda ao lado mudou de forma. Antes cada linha
-  mostrava nome, valor, porcentagem de participação e uma barra de participação (redundante com
-  a fatia do próprio donut). Agora cada linha responde duas perguntas em contextos separados: a
-  fatia do donut diz participação no gasto, e uma barra nova (`Meter`) diz consumo do limite da
-  categoria. Como o limite por categoria ainda não existe no banco, toda categoria mostra
-  "Sem limite definido" por enquanto (comportamento esperado nesta task).
-  - `src/lib/finance/category-chart.ts`: `CategorySlice` ganhou `limit: number | null`;
-    `buildCategorySlices` passou a receber `limit` junto de `icon`/`total` em cada entrada; a
-    fatia "Outras" sempre recebe `limit: null` (somar limites de categorias diferentes não
-    significa nada).
-  - `src/components/finance/category-legend.tsx` (novo): `<CategoryLegend slices={...} />`,
-    consome `CategoryChip`, `Meter` e `Money` (componentes de UI já existentes da própria Onda
-    18) e `formatBRL`.
-  - `src/app/(app)/financas/page.tsx`: `byCat` passa `limit: null` na origem (a Task 15 troca
-    pelo valor real quando o campo existir no banco); a lista antiga manuscrita foi apagada por
-    completo e substituída por `<CategoryLegend slices={donut.slices} />` (a legenda agora
-    consome as mesmas 5 categorias + "Outras" do donut, em vez de todas as categorias); o
-    `className` do card do donut mudou de `"glass card-glow rounded-2xl border border-border
-    p-5"` para `"rounded-lg bg-card p-4"`; imports órfãos removidos (`EntityIcon`,
-    `categoryColor`, `formatBRL`, todos só usados na lista antiga).
-  - `npm run build` passou sem erros. Commit `407ed38` na branch `feat/onda18-redesign`.
-  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão) e as
-    próximas tasks da Onda 18, incluindo a Task 15 que vai trazer o limite real por categoria.
+**Fase A — fundação de tokens (Tasks 1 e 2):** escala de superfícies nova nos dois temas:
+`--background` virou a moldura (fundo atrás de tudo), `--panel` é o novo nível intermediário
+(fundo do `AppFrame`), `--card`/`--secondary`/`--accent` recalibrados, `--subtle-foreground`
+novo (texto terciário, mais apagado que `--muted-foreground`). `--radius` subiu de 0.625rem
+para 0.75rem. `--primary` no tema claro mudou de `#3b82f6` para `#2563eb` (mais contraste sobre
+o `--background` novo, mais claro). `--accent` deixou de ser azul de marca e virou cinza
+neutro (passou a significar só "estado ativo/selecionado", não destaque). `--chart-1` a
+`--chart-5` (paleta categórica validada para daltonismo) **não mudaram**. Grão, gradiente de
+texto (`.text-gradient`), halo e deslocamento no hover saíram do app inteiro e ficaram só nas
+telas de auth, que ganharam `src/app/(auth)/layout.tsx` próprio para herdar o grão que saiu do
+root `layout.tsx`. Scrollbar de 10px azul virou 6px neutra. Anel de foco virou 2px com
+afastamento (`outline-offset-2`), no lugar do halo antigo. Commits `120609e` (tokens/raio/
+fontes) e `7dea693` (varredura de regressão: usos que dependiam do azul do `--accent` antigo ou
+de hex literal, e remoção de `text-gradient` de dentro do app).
 
-- **Task 14 (FEITA nesta sessão): tabela de transações no sistema novo, última task do
-  piloto.** A lista de transações (compacta e o modal "Ver todas") trocou o card manuscrito
-  antigo por `DataTable`/`DataTableRow`, com `BrandAvatar` (avatar/inicial), `CategoryChip`
-  (nome + ícone da categoria) e `Money` (numeral tabular, cor semântica) no lugar da linha
-  antiga. Filtro por tipo, busca do "Ver todas", editar/excluir linha e os modais de criar/
-  editar transação **não mudaram**: só a apresentação da linha.
-  - `src/components/finance/transactions-section.tsx`: `TxRow` reescrito para retornar
-    `<DataTableRow>`; ícone de liderança por tipo (`Repeat` transferência, `ArrowUpRight`
-    despesa/coral, `ArrowDownLeft` receita/verde) substitui o badge de texto "· transferência"/
-    "· pagamento" que existia antes (perda de detalhe assumida, a linha nova é de uma coluna
-    só). Categoria sem cor própria no modelo: `CategoryChip` recebe `color="var(--muted-
-    foreground)"` fixo (a cor por posição do donut, `categoryColor(index)`, é um conceito só da
-    Visão geral; não dava pra reusar sem inventar uma ordenação nova, o que o brief da task
-    proibia).
-  - `src/components/ui/data-table.tsx`: `DataTable` ganhou `forwardRef` (não estava no escopo
-    literal da task, mas sem isso o `useAnimatedList()` perderia a animação de entrada/saída de
-    linha — o hook exige o `ref` no pai direto dos itens). Sem outros consumidores no projeto
-    ainda, mudança aditiva.
-  - `src/app/(app)/financas/page.tsx`: `AccountsSummary` saiu da aba "Visão geral". **Não foi
-    apagado**: é o único lugar do app que cria/exclui conta bancária (`AccountsCard`, que ficou
-    no rail da Visão geral, é só exibição). Foi movido para a aba "Cartões", que passa a
-    concentrar contas e cartões (`AccountsSummary` em cima, `CardManager` embaixo). Efeito
-    colateral: os indicadores "Entradas/Despesas/Faturas" do mês, antes visíveis dentro do
-    painel expansível do `AccountsSummary` na Visão geral, foram junto para a aba Cartões — a
-    Visão geral não mostra mais esses três números crus (o gráfico "Saídas por mês" e o donut
-    de categoria continuam lá, mas não são a mesma coisa).
-  - **`SearchInput` (Task 8) continua sem uso em finanças.** O brief da Task 14 pedia para
-    trocar "o campo de busca que já existe" pelo `SearchInput`, mas não existe busca por texto
-    em `transactions-section.tsx` (só o filtro por tipo). Como a task era só de apresentação,
-    não comportamento, optei por não inventar um filtro de texto novo. Fica pendente para uma
-    decisão explícita numa próxima onda.
-  - `npm run build` passou sem erros. Commit `09f322a` na branch `feat/onda18-redesign`.
-  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão); decidir
-    o destino do `SearchInput`; relatório completo em `.superpowers/sdd/task-14-report.md`.
+**Fase B — shell (Tasks 3 e 4):** `AppFrame` novo (`src/components/ui/app-frame.tsx`): no
+desktop o conteúdo passou a viver num painel arredondado que flutua sobre o fundo com margem e
+rola por dentro (o cabeçalho fica sempre visível); no celular a estrutura **não mudou** (a
+regra global da onda era não mexer no shell mobile, só na pele). Sidebar perdeu a borda e o
+blur (mesma cor da moldura, separada por vão em vez de linha) e o item ativo virou preenchimento
+cinza neutro em vez de azul. Commits `585de3b` (AppFrame + layout), `f0eb439` (fix de padding
+interno do painel, achado ao conferir o alinhamento com o cabeçalho) e `88824f9` (sidebar).
 
-- **Task 15 (FEITA nesta sessão): limite mensal por categoria (única task da Onda com
-  funcionalidade nova, não só visual).** Migração (`supabase/migrations/
-  20260701000018_category_monthly_limit.sql`, coluna `categories.monthly_limit numeric(12,2)`,
-  nula por padrão) já tinha sido escrita e **rodada pelo dono** antes desta sessão (commit
-  `aa6a4b1`). Esta sessão fez os steps 3 a 8 do brief.
-  - O brief supunha uma Server Action que lê `FormData` e devolve `{ error }` — **não é o
-    padrão real**. `src/lib/actions/finance.ts` (`createCategory`/`updateCategory`) recebe um
-    objeto plano e valida com zod (`categoryInput` em `src/lib/validation/finance.ts`), lançando
-    `Error` em falha (o componente client captura e mostra `toast`). A extensão real foi no
-    schema: `monthly_limit: z.number().min(0).nullable().default(null)`. Cobre criação (parse
-    cheio) e edição (`.partial()`) sem mudar a action em si.
-  - O brief também supunha o `MoneyInput` como campo de formulário não controlado
-    (`id`/`name`/`defaultValue`). O componente real (`src/components/finance/money-input.tsx`)
-    é **controlado** (`value`/`onChange`, sem `id`/`name`). Segui o padrão já usado em
-    `card-manager.tsx` para `credit_limit`: estado string, inicializado com
-    `formatBRL(v).replace("R$", "").trim()` e convertido de volta com `parseBRL` no submit.
-  - `src/components/finance/category-manager.tsx`: campo "Limite mensal" acrescentado tanto no
-    bloco de criação (visível só quando `kind === "expense"`, com `setLimit("")` ao trocar de
-    kind pra não vazar valor de despesa pra uma receita) quanto na edição inline por linha
-    (visível quando `c.kind === "expense"`; o kind de categoria existente não é editável neste
-    componente, então não muda de tela). Label sem `htmlFor` (mesma convenção do
-    `card-manager.tsx`, já que `MoneyInput` não repassa `id`).
-  - `src/types/finance.ts`: `Category` ganhou `monthly_limit: number | null`.
-  - `src/lib/data/finance.ts` **não precisou de ajuste**: a query de categorias já é
-    `select("*")`, então a coluna nova chega sozinha.
-  - `src/app/(app)/financas/page.tsx`: `byCat` troca o `limit: null` fixo (Task 12) por
-    `cat?.monthly_limit ?? null` — a barra de orçamento da legenda (Task 12) passa a mostrar o
-    limite de verdade.
-  - Extra fora do brief: `src/components/finance/category-legend.tsx` trocou o literal
-    `"R$ 0,00 restante"` (estouro de limite) por `` `${formatBRL(0)} restante` ``, pra não ter
-    duas fontes de formato de dinheiro (`formatBRL` usa espaço não separável antes do número).
-  - `npm run build` passou sem erros. Commit `53718ba` na branch `feat/onda18-redesign`.
-  - **Pendente:** verificação visual manual no navegador (não foi feita nesta sessão: definir
-    limite de R$ 500, gastar acima, conferir barra travando em 100%/coral/"R$ 0,00 restante", e
-    categoria sem limite continuar em "Sem limite definido"); relatório completo em
-    `.superpowers/sdd/task-15-report.md`.
+**Fase C — biblioteca de primitivos (Tasks 5 a 9):** nove componentes novos em
+`src/components/ui/`, nenhum com consumidor além dos que a Fase D liga: `money.tsx` (numeral
+tabular, sinal e cor semântica), `category-chip.tsx` (marcador de cor + nome, sem fundo),
+`meter.tsx` (barra de progresso de 4px com rótulos, trava em 100% mesmo passando do limite,
+componente central da onda: serve orçamento de categoria e limite de cartão), `brand-avatar.tsx`
++ `src/lib/finance/brands.ts` (círculo com logo de marca reconhecida por palavra-chave na
+descrição da transação, ou inicial como fallback; **o mapa nasce vazio de propósito**, ver
+pendência na seção 4), `segmented.tsx` (abas em pill navegadas por URL), `search-input.tsx`
+(campo de busca pill), variantes `pill`/`chip` no `Button` existente, `panel-header.tsx` (linha
+de topo do painel: contexto + abas + ações, com `PanelContext` para o chip de contexto) e
+`data-table.tsx` (`DataTable`/`DataTableHead`/`DataTableRow`, densidade 54px, separação por
+hairline, hover na linha inteira). Commits `aa3fcd5` (Money/CategoryChip), `e3e2d50` (Meter),
+`b94339e` (BrandAvatar/brands.ts), `b65a405` (Segmented/SearchInput/Button) e `139137a`
+(PanelHeader/DataTable).
+
+**Fase D — piloto em Finanças (Tasks 10 a 14):** única tela migrada para os componentes novos
+nesta onda.
+- **Abas por URL** (`?aba=`, valores `visao`/`transacoes`/`cartoes`/`agendadas`/`recorrentes`):
+  o scroll longo de sete seções empilhadas virou `PanelHeader` (contexto do mês + `Segmented` +
+  botão de importar) com conteúdo trocando por aba, sem inventar seções que a referência tinha
+  e o Zênite não tem (Categorias e Contas são modal, não tela). Commits `36d91f7` (abas) e
+  `abc1ffb` (fix: uma seção de transações vazava para fora da própria aba).
+- **Contas e cartões separados no rail:** `AccountsCard` (só contas bancárias, sem cartão) e
+  `CardsCard` (cartão com `Meter` de limite) substituem a lista única antiga. Commit `7efeb01`.
+- **Legenda do donut com `Meter`:** cada linha da legenda de "Despesas por categoria" passou a
+  responder duas perguntas em contextos separados: a fatia do donut diz participação no gasto,
+  e uma barra `Meter` nova diz consumo do limite da categoria (antes a legenda tinha nome, valor,
+  % e uma barra de participação redundante com a própria fatia). `CategorySlice` ganhou
+  `limit: number | null` (a fatia "Outras" sempre `null`, porque somar limites de categorias
+  diferentes não significa nada). Enquanto o limite real não existia (antes da Task 15), toda
+  categoria mostrava "Sem limite definido". Novo `src/components/finance/category-legend.tsx`.
+  Commit `407ed38`.
+- **Gráfico de saídas por mês:** não existia série mensal no projeto (só o donut); nova
+  `getMonthlyExpenseSeries()` em `src/lib/data/finance.ts` (9 meses, exclui transferência e
+  pagamento de fatura pela mesma regra do donut) e `MonthlyExpenseChart` (barras CSS puras, sem
+  recharts, sem eixo nem grade; o mês atual ganha um bloco de fundo em vez de mudar de cor,
+  porque cor ali significaria categoria). Commit `6315066`.
+- **Tabela de transações:** a lista (compacta e o modal "Ver todas") trocou o card manuscrito
+  por `DataTable`/`DataTableRow`, com `BrandAvatar`, `CategoryChip` (cor fixa neutra, o modelo
+  não tem cor própria por categoria fora da posição do donut) e `Money`. Filtro, busca, editar/
+  excluir e os modais de criar/editar **não mudaram**, só a apresentação da linha. `DataTable`
+  ganhou `forwardRef` (fora do escopo literal, mas necessário para o `useAnimatedList()` animar
+  entrada/saída de linha). `AccountsSummary` saiu da aba "Visão geral" e foi para "Cartões" (não
+  foi apagado: é a única porta de criação/exclusão de conta do app); os indicadores
+  "Entradas/Despesas/Faturas" que moravam no painel expansível dele foram junto (ver pendência
+  na seção 4). `SearchInput` (Fase C) **ficou sem uso**: não existe busca textual em transações
+  hoje, só filtro por tipo, e criar uma seria funcionalidade nova fora do escopo da task (ver
+  pendência na seção 4). Commit `09f322a`.
+
+**Fase E — orçamento por categoria (Task 15, única com funcionalidade nova):** limite mensal por
+categoria. Migração `supabase/migrations/20260701000018_category_monthly_limit.sql`
+(`categories.monthly_limit numeric(12,2)`, nula por padrão) **JÁ RODADA pelo dono** (commit
+`aa6a4b1`, antes do resto da task). Campo "Limite mensal" no formulário de categoria
+(`category-manager.tsx`, visível só para categoria de despesa, criação e edição inline),
+validado em `categoryInput` (Zod, `src/lib/validation/finance.ts`) e persistido pela
+`createCategory`/`updateCategory` já existentes (o brief supunha `FormData` cru; o padrão real é
+objeto plano + Zod). `Category` (`src/types/finance.ts`) ganhou `monthly_limit: number | null`.
+A legenda da Fase D (`byCat` em `financas/page.tsx`) passou a usar `cat?.monthly_limit ?? null`
+em vez do `null` fixo, então a barra da legenda mostra o limite de verdade. Commit `53718ba`.
+
+**Fase F — fechamento (Task 16, esta sessão):** varreduras de `rg "—|–" src` (zero ocorrência
+em string visível ao usuário; os únicos travessões do código são comentários internos) e de
+`rg "font-num|Plus_Jakarta|text-gradient" "src/app/(app)" src/components` (zero ocorrência;
+`text-gradient` só remanesce nas 4 telas de `(auth)`, como esperado); `npm run build` limpo,
+sem erro nem aviso novo; consolidação desta entrada do HANDOFF. **Não foi possível fazer a
+conferência visual manual** (Step 4 do brief): o app exige login no Supabase e esta sessão não
+tem credenciais; fica registrada como pendência do dono na seção 4, com destaque, porque a onda
+mudou a cor/raio/fonte de toda tela e nenhuma foi vista por olho humano ainda.
+
+**Fora de escopo desta onda (adiado de propósito):** barra de comando (não fazia parte do
+plano), migração visual das telas fora de Finanças (Dashboard, Calendário, Tarefas, Senhas,
+Sugestões, Perfil, Admin, que herdaram os tokens novos mas não os componentes) e mudança de
+estrutura do `AppFrame` no mobile (só telas de desktop ganharam o painel flutuante; a regra
+global do plano proibia mexer no shell do celular nesta onda).
 
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
@@ -833,6 +842,29 @@ Ainda **não mesclada na `main`**, nada foi dado push. Sem migração até aqui.
    nova senha → cai logado. E em /perfil → "Trocar senha".*
 - (Já feitos: #9 Google em produção; env do Admin na Vercel; rotação da SUPABASE_SECRET_KEY; migrações
   0000–0011 rodadas.)
+
+> **Atualização 2026-08-03 (Onda 18, redesign visual clean):**
+> 1. **Conferência visual manual, destaque: NENHUMA tela foi vista por olho humano desde o
+>    redesign.** A onda mudou cor, raio e fonte de superfície de toda rota do app, nos dois
+>    temas. Não deu pra fazer nesta sessão porque o app exige login no Supabase e a sessão não
+>    tem credenciais. Percorrer todas as rotas em claro e escuro, desktop e celular, e no app
+>    instalado (Capacitor) conferir especificamente safe-area, teclado e overscroll (o shell do
+>    mobile não mudou de estrutura nesta onda, mas a pele mudou em cima dele).
+> 2. **Indicadores de Entradas/Despesas/Faturas sumiram da aba "Visão geral" de Finanças.** Eles
+>    moravam dentro do painel expansível do `AccountsSummary`, que a Task 14 moveu para a aba
+>    "Cartões" (é a única porta de criação de conta do app). Decidir se os três números voltam
+>    como um card próprio na Visão geral ou se ficam só em Cartões.
+> 3. **Avatares de marca caem todos na inicial.** `src/lib/finance/brands.ts` nasce com o mapa
+>    `BRANDS` vazio de propósito (nenhum SVG de marca real foi fabricado). Para ativar: soltar os
+>    arquivos `.svg` em `public/brands/<slug>.svg` e acrescentar a palavra-chave correspondente no
+>    mapa (formato já documentado no arquivo).
+> 4. **`SearchInput` (componente da Fase C) foi criado mas não tem uso.** A seção de transações
+>    de Finanças não tem busca textual hoje, só filtro por tipo; criar essa busca é feature nova,
+>    não redesign, e ficou fora desta onda de propósito.
+> 5. **Demais telas ainda não migraram para os componentes novos.** Dashboard, Calendário,
+>    Tarefas, Senhas, Sugestões, Perfil e Admin herdaram os tokens (cor/raio/fonte) automaticamente
+>    por serem CSS global, mas continuam com os componentes antigos (cards manuscritos, sem
+>    `DataTable`/`PanelHeader`/etc.). Migrar essas telas para o sistema novo é onda futura.
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
