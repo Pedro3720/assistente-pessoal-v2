@@ -5,6 +5,8 @@ import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates"
 import { formatBRL } from "@/lib/money";
 import { MonthNav } from "@/components/finance/month-nav";
 import { AccountsSummary } from "@/components/finance/accounts-summary";
+import { AccountsCard } from "@/components/finance/accounts-card";
+import { CardsCard } from "@/components/finance/cards-card";
 import { CardManager } from "@/components/finance/card-manager";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
@@ -20,13 +22,34 @@ import { Reveal } from "@/components/effects/reveal";
 import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
 import { Segmented } from "@/components/ui/segmented";
 
+/**
+ * Fonte única das abas: Segmented (rótulos) e a validação da URL (Aba,
+ * isAba) derivam daqui, para nunca ficarem fora de sincronia.
+ */
+const TAB_ITEMS = [
+  { value: "visao", label: "Visão geral" },
+  { value: "transacoes", label: "Transações" },
+  { value: "cartoes", label: "Cartões" },
+  { value: "agendadas", label: "Agendadas" },
+  { value: "recorrentes", label: "Recorrentes" },
+] satisfies { value: string; label: string }[];
+
+type Aba = (typeof TAB_ITEMS)[number]["value"];
+const TAB_VALUES: readonly string[] = TAB_ITEMS.map((t) => t.value);
+
+function isAba(value: string | undefined): value is Aba {
+  return !!value && TAB_VALUES.includes(value);
+}
+
 export default async function FinancasPage({
   searchParams,
 }: {
   searchParams: Promise<{ m?: string; conta?: string; aba?: string }>;
 }) {
   const { m, conta, aba: abaParam } = await searchParams;
-  const aba = typeof abaParam === "string" ? abaParam : "visao";
+  // aba=lixo (valor desconhecido na URL) não pode cair numa página em branco:
+  // valida contra a lista conhecida e volta para "visao" quando não bater.
+  const aba: Aba = isAba(abaParam) ? abaParam : "visao";
   const offset = Number(m) || 0; // permite meses futuros (planejamento)
 
   const { year: cy, month: cm } = currentYearMonth();
@@ -91,13 +114,7 @@ export default async function FinancasPage({
           <Segmented
             value={aba}
             hrefFor={(v) => `/financas?aba=${v}${offset ? `&m=${offset}` : ""}`}
-            items={[
-              { value: "visao", label: "Visão geral" },
-              { value: "transacoes", label: "Transações" },
-              { value: "cartoes", label: "Cartões" },
-              { value: "agendadas", label: "Agendadas" },
-              { value: "recorrentes", label: "Recorrentes" },
-            ]}
+            items={TAB_ITEMS}
           />
         }
         actions={<ImportButton banks={banks} cards={cards} categories={categories} />}
@@ -133,59 +150,74 @@ export default async function FinancasPage({
             </Reveal>
           )}
 
-          {/* despesas por categoria */}
-          <Reveal>
-            <div className="glass card-glow rounded-2xl border border-border p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Despesas por categoria</h3>
-                <CategoryManagerButton categories={categories} />
-              </div>
-              {expenseByCat.length === 0 ? (
-                <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
-              ) : (
-                <>
-                  <CategoryDonut slices={donut.slices} total={totals.expense} />
-                  {donut.othersCount > 0 && (
-                    <p className="mt-1 text-center text-[11px] text-muted-foreground">
-                      A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
-                    </p>
-                  )}
-                  {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
-                  <div className="mt-4 space-y-4">
-                    {expenseByCat.map(([name, { icon, total }], i) => {
-                      const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
-                      const color = categoryColor(i);
-                      return (
-                        <div key={name} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span
-                                className="h-2 w-2 shrink-0 rounded-full"
-                                style={{ backgroundColor: color }}
-                                aria-hidden
+          {/* conteúdo principal à esquerda, rail (contas e cartões) à direita;
+              uma coluna só no celular */}
+          <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+            {/* despesas por categoria */}
+            <Reveal>
+              <div className="glass card-glow rounded-2xl border border-border p-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Despesas por categoria</h3>
+                  <CategoryManagerButton categories={categories} />
+                </div>
+                {expenseByCat.length === 0 ? (
+                  <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
+                ) : (
+                  <>
+                    <CategoryDonut slices={donut.slices} total={totals.expense} />
+                    {donut.othersCount > 0 && (
+                      <p className="mt-1 text-center text-[11px] text-muted-foreground">
+                        A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
+                      </p>
+                    )}
+                    {/* a lista é a legenda do donut: mesma cor, com nome, valor e % */}
+                    <div className="mt-4 space-y-4">
+                      {expenseByCat.map(([name, { icon, total }], i) => {
+                        const pct = totals.expense > 0 ? (total / totals.expense) * 100 : 0;
+                        const color = categoryColor(i);
+                        return (
+                          <div key={name} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full"
+                                  style={{ backgroundColor: color }}
+                                  aria-hidden
+                                />
+                                <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
+                                <span className="truncate font-medium">{name}</span>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <p className="num font-semibold">{formatBRL(total)}</p>
+                                <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
+                              </div>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                              <div
+                                className="bar-grow h-1.5 rounded-full"
+                                style={{ width: `${pct}%`, backgroundColor: color }}
                               />
-                              <EntityIcon value={icon} size={16} className="h-7 w-7 rounded-full bg-muted text-muted-foreground" />
-                              <span className="truncate font-medium">{name}</span>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <p className="num font-semibold">{formatBRL(total)}</p>
-                              <p className="num text-xs text-muted-foreground">{pct.toFixed(0)}%</p>
                             </div>
                           </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                            <div
-                              className="bar-grow h-1.5 rounded-full"
-                              style={{ width: `${pct}%`, backgroundColor: color }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </Reveal>
+
+            {/* rail: contas e cartões são entidades separadas no modelo, uma
+                diz quanto você tem, a outra quanto você deve */}
+            <div className="space-y-6">
+              <Reveal>
+                <AccountsCard banks={banks} />
+              </Reveal>
+              <Reveal>
+                <CardsCard cards={cards} />
+              </Reveal>
             </div>
-          </Reveal>
+          </div>
         </>
       )}
 
