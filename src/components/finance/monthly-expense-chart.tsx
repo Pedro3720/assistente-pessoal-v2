@@ -29,7 +29,7 @@ export function MonthlyExpenseChart({
               <div
                 className={cn(
                   "w-full max-w-[26px] rounded-t-md",
-                  item.current ? "bg-muted-foreground" : "bg-secondary"
+                  item.current ? "bg-muted-foreground" : "bg-muted-foreground/70"
                 )}
                 style={{ height: `${Math.max((item.total / max) * 100, 2)}%` }}
               />
