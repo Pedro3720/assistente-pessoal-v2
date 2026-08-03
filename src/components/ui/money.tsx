@@ -27,7 +27,8 @@ export function Money({
     <span
       className={cn(
         "num",
-        colorize && (negative ? "text-negative" : "text-positive"),
+        // zero não é entrada nem saída: fica neutro, sem cor
+        colorize && value !== 0 && (negative ? "text-negative" : "text-positive"),
         className
       )}
     >
