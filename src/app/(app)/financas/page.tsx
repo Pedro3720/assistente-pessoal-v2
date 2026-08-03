@@ -1,4 +1,10 @@
-import { getFinanceData, getBankStatement, getSubscriptions, getMonthlyPlan } from "@/lib/data/finance";
+import {
+  getFinanceData,
+  getBankStatement,
+  getSubscriptions,
+  getMonthlyPlan,
+  getMonthlyExpenseSeries,
+} from "@/lib/data/finance";
 import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
 import { CategorizationQueue } from "@/components/finance/categorization-queue";
 import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
@@ -15,6 +21,7 @@ import { PlanningSection } from "@/components/finance/planning-section";
 import { ImportButton } from "@/components/finance/import-button";
 import { CategoryDonut } from "@/components/finance/category-donut";
 import { CategoryLegend } from "@/components/finance/category-legend";
+import { MonthlyExpenseChart } from "@/components/finance/monthly-expense-chart";
 import { pluggyConfigurada } from "@/lib/pluggy/client";
 import { buildCategorySlices } from "@/lib/finance/category-chart";
 import { Reveal } from "@/components/effects/reveal";
@@ -73,21 +80,23 @@ export default async function FinancasPage({
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan, pluggyItems, paraCategorizar] = await Promise.all([
-    selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
-    getSubscriptions(year, month).catch(() => ({
-      subscriptions: [],
-      candidates: [],
-      monthlyTotal: 0,
-    })),
-    getMonthlyPlan(year, month).catch(() => ({
-      items: [],
-      suggestions: [],
-      totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
-    })),
-    getPluggyItems().catch(() => []),
-    getPendingCategorization().catch(() => []),
-  ]);
+  const [statement, subs, plan, pluggyItems, paraCategorizar, monthlyExpenseSeries] =
+    await Promise.all([
+      selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
+      getSubscriptions(year, month).catch(() => ({
+        subscriptions: [],
+        candidates: [],
+        monthlyTotal: 0,
+      })),
+      getMonthlyPlan(year, month).catch(() => ({
+        items: [],
+        suggestions: [],
+        totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
+      })),
+      getPluggyItems().catch(() => []),
+      getPendingCategorization().catch(() => []),
+      getMonthlyExpenseSeries(year, month).catch(() => []),
+    ]);
 
   const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
@@ -153,28 +162,35 @@ export default async function FinancasPage({
           {/* conteúdo principal à esquerda, rail (contas e cartões) à direita;
               uma coluna só no celular */}
           <div className="grid gap-6 md:grid-cols-[1fr_320px]">
-            {/* despesas por categoria */}
-            <Reveal>
-              <div className="rounded-lg bg-card p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Despesas por categoria</h3>
-                  <CategoryManagerButton categories={categories} />
+            {/* coluna principal: série mensal em cima, categorias embaixo */}
+            <div className="space-y-6">
+              <Reveal>
+                <MonthlyExpenseChart data={monthlyExpenseSeries} />
+              </Reveal>
+
+              {/* despesas por categoria */}
+              <Reveal>
+                <div className="rounded-lg bg-card p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Despesas por categoria</h3>
+                    <CategoryManagerButton categories={categories} />
+                  </div>
+                  {expenseByCat.length === 0 ? (
+                    <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
+                  ) : (
+                    <>
+                      <CategoryDonut slices={donut.slices} total={totals.expense} />
+                      {donut.othersCount > 0 && (
+                        <p className="mt-1 text-center text-[11px] text-muted-foreground">
+                          A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
+                        </p>
+                      )}
+                      <CategoryLegend slices={donut.slices} />
+                    </>
+                  )}
                 </div>
-                {expenseByCat.length === 0 ? (
-                  <p className="mt-4 text-center text-sm text-muted-foreground">Nenhuma despesa.</p>
-                ) : (
-                  <>
-                    <CategoryDonut slices={donut.slices} total={totals.expense} />
-                    {donut.othersCount > 0 && (
-                      <p className="mt-1 text-center text-[11px] text-muted-foreground">
-                        A fatia &quot;Outras&quot; reúne {donut.othersCount} categorias menores.
-                      </p>
-                    )}
-                    <CategoryLegend slices={donut.slices} />
-                  </>
-                )}
-              </div>
-            </Reveal>
+              </Reveal>
+            </div>
 
             {/* rail: contas e cartões são entidades separadas no modelo, uma
                 diz quanto você tem, a outra quanto você deve */}
