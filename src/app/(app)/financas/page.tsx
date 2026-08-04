@@ -15,6 +15,7 @@ import { AccountsCard } from "@/components/finance/accounts-card";
 import { CardsCard } from "@/components/finance/cards-card";
 import { CardWallet } from "@/components/finance/card-wallet";
 import { CardDetail } from "@/components/finance/card-detail";
+import { CardInvoiceRows } from "@/components/finance/card-invoice-rows";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
@@ -109,14 +110,35 @@ export default async function FinancasPage({
       getCardPayments(year, month).catch(() => []),
     ]);
 
+  // Movimentações da fatura de cada cartão (Task 9, Onda 19): mesmo critério
+  // de fatura_mes em getFinanceData (card_id, type "expense", dentro da
+  // janela do ciclo), para o total da lista bater com o valor mostrado no
+  // CardDetail. Sem ciclo definido (cartão sem closing_day), cai no
+  // mês-calendário inteiro, que já é o que monthTransactions cobre; nesse
+  // caso o total pode não bater com fatura_mes, que ali é cumulativo desde a
+  // abertura do cartão (comportamento antigo mantido por getFinanceData,
+  // não algo que esta task tenta resolver).
+  const invoiceRowsByCardId: Record<number, typeof monthTransactions> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      monthTransactions.filter((t) => {
+        if (t.card_id !== c.id || t.type !== "expense") return false;
+        if (c.cycle_start && c.cycle_end) {
+          return t.occurred_on >= c.cycle_start && t.occurred_on <= c.cycle_end;
+        }
+        return true;
+      }),
+    ])
+  );
+
   // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
-  // datas (Task 8). Os blocos seguintes (movimentações, parcelamentos,
-  // projeção, gerenciar) entram como children em tasks futuras da Onda 19.
-  // Pré-renderizado aqui (Server Component) e entregue como ReactNode por
-  // cartão, porque o CardWallet é "use client" e não pode receber função
-  // como prop. Pagamentos vêm de getCardPayments (janela mês anterior +
-  // atual), não de monthTransactions: o ciclo pode começar no mês anterior
-  // ao vencimento quando o cartão fecha depois do dia de vencimento.
+  // datas (Task 8), com as movimentações da fatura como children (Task 9).
+  // Os blocos seguintes (parcelamentos, projeção, gerenciar) entram em tasks
+  // futuras da Onda 19. Pré-renderizado aqui (Server Component) e entregue
+  // como ReactNode por cartão, porque o CardWallet é "use client" e não pode
+  // receber função como prop. Pagamentos vêm de getCardPayments (janela mês
+  // anterior + atual), não de monthTransactions: o ciclo pode começar no mês
+  // anterior ao vencimento quando o cartão fecha depois do dia de vencimento.
   const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
     cards.map((c) => [
       c.id,
@@ -126,7 +148,13 @@ export default async function FinancasPage({
         year={year}
         month={month}
         payments={cardPayments.filter((t) => t.card_id === c.id)}
-      />,
+      >
+        <CardInvoiceRows
+          transactions={invoiceRowsByCardId[c.id] ?? []}
+          categories={categories}
+          janela={c.cycle_start && c.cycle_end ? { start: c.cycle_start, end: c.cycle_end } : null}
+        />
+      </CardDetail>,
     ])
   );
 
