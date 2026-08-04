@@ -5,13 +5,14 @@ Status: spec aprovado, aguardando plano de implementação
 
 ## 1. Objetivo
 
-Transformar a aba Cartões de uma listagem de texto numa carteira: os cartões
-empilhados com arte própria, um em foco por vez, e abaixo dele tudo que importa
-sobre aquele cartão (fatura, limite, datas, movimentações, parcelamentos e o que
-já está comprometido à frente).
+Transformar a aba Cartões de uma listagem de texto numa carteira: os cartões em
+leque, com arte própria, um em foco por vez, e abaixo dele tudo que importa sobre
+aquele cartão (fatura, limite, datas, movimentações, parcelamentos e o que já
+está comprometido à frente).
 
-O pedido veio com uma referência visual de carteira empilhada e com o desejo de
-que cada cartão se pareça com o cartão real correspondente.
+O pedido veio com duas referências visuais, uma de carteira e outra de galeria em
+leque que se abre em grade, e com o desejo de que cada cartão se pareça com o
+cartão real correspondente.
 
 ## 2. Decisões tomadas
 
@@ -20,7 +21,9 @@ que cada cartão se pareça com o cartão real correspondente.
 | Escopo | Só a aba Cartões. Ajustes da Visão geral ficam para outra onda |
 | Arte do cartão | Composta pelo app a partir do emissor, não replicada do cartão físico |
 | Campos novos | Bandeira, titular, quatro últimos dígitos e variante |
-| Interação | O cartão escolhido sobe ao topo da pilha e abre o detalhe abaixo |
+| Interação | Três estados: leque vertical, grade com todos, e cartão aberto com o detalhe abaixo |
+| Selo do emissor | Entra na proporção original, sem achatar em branco |
+| Edições na fatura | Categoria da movimentação e título do parcelamento, editáveis na própria linha |
 | Recorte das movimentações | Ciclo de fatura, não mês-calendário |
 | Alcance do ciclo | O ciclo passa a valer no app inteiro, não só na aba |
 | Detalhe | Fatura, limite, datas, movimentações, parcelamentos, projeção e gerenciar |
@@ -78,7 +81,14 @@ para frente:
    Isso é o que permite um Inter Black e um Inter Gold conviverem sem exigir
    arte por produto.
 3. **Brilho diagonal** em gradiente CSS, sem imagem, para não pesar no bundle.
-4. **Logo do banco** no topo à esquerda, de `public/banks/<slug>.svg`.
+4. **Selo do emissor** no topo à esquerda, de `public/banks/<slug>.svg`. Esse
+   arquivo já é um selo quadrado (viewBox 108x108) com o fundo na cor da marca e
+   o símbolo em branco, e o próprio gerador deixa o formato para o CSS decidir.
+   Ele entra na arte **com a proporção original e sem filtro de cor**,
+   arredondado por CSS. Preservar o selo é o que mantém a identidade de emissores
+   cujo símbolo não sobrevive achatado em branco, e é o mesmo formato que o app
+   já usa na lista de contas, então o cartão e a conta passam a mostrar a mesma
+   marca.
 5. **Número mascarado** ao centro-baixo, tabular.
 6. **Titular** na base à esquerda, caixa alta com tracking largo.
 7. **Bandeira** na base à direita, de `public/networks/<network>.svg`.
@@ -95,6 +105,53 @@ antes da implementação.
 usuário é uso nominativo, o mesmo que o app já faz com bancos. Redesenhar o
 cartão para imitar o físico seria copiar trade dress de terceiro, e é por isso
 que a arte é composta, não replicada.
+
+### 4.1 Biblioteca de emissores completa
+
+O projeto já consome `@edusites/bancos-brasil` (MIT) através de
+`scripts/gen-banks.mjs`, que gera `public/banks/<slug>.svg` e a lista em
+`src/lib/finance/banks.ts`. Só que o gerador tem uma lista curada de 28 emissores
+enquanto o pacote oferece 41.
+
+Esta onda estende a lista para os 41, incorporando os 13 que faltavam: Cora,
+InfinitePay, Wise, PayPal, Stripe, Revolut, Efibank, Ton, Iugu, Asaas, NG Cash,
+Avenue e Nomad. São fintechs e meios de pagamento, justamente o tipo de emissor
+que hoje cai no fallback sem logo.
+
+O trabalho é editar a lista `BANCOS` em `scripts/gen-banks.mjs`, rodar o gerador
+e commitar os SVGs novos junto com o `banks.ts` regenerado. O arquivo continua
+gerado, nunca editado à mão.
+
+### 4.2 Emissores extras, fora do pacote
+
+Alguns emissores não existem em `@edusites/bancos-brasil`: Renner é o caso do
+próprio dono. Como `src/lib/finance/banks.ts` é gerado e traz o aviso "NAO EDITAR
+A MAO", acrescentar um emissor ali seria perdido na próxima regeração.
+
+A solução é uma lista paralela, `src/lib/finance/banks-extra.ts`, escrita à mão,
+com o mesmo formato (`slug`, `nome`, `cor`) e assets em `public/banks/`. O
+consumidor passa a ler da união das duas listas, com a lista gerada tendo
+precedência em caso de slug repetido, para o pacote continuar sendo a fonte
+preferencial.
+
+Isso resolve o problema de forma permanente: qualquer emissor que o pacote não
+cubra entra pela lista extra sem brigar com o gerador.
+
+**A arte de emissor extra só existe quando o arquivo existe.** Ele é fornecido
+pelo dono, a partir do material de marca do próprio emissor. Sem arquivo, o
+cartão cai na cor de `CARD_COLORS` com o nome em texto, que é o comportamento
+correto e previsto.
+
+O carregador aceita `public/banks/<slug>.svg` **ou** `<slug>.png`, nesta ordem de
+preferência. Vetor é melhor por escalar sem perda, mas exigir vetor travaria a
+adição de emissores cujo material de marca só existe em bitmap.
+
+**Renner é o primeiro caso.** O dono forneceu o selo (círculo vermelho com o "r"
+branco), no mesmo formato dos selos gerados. O arquivo precisa ser salvo em
+`public/banks/renner.png` (ou `.svg`, se houver vetor) e a entrada
+`{ slug: "renner", nome: "Renner", cor: "#E30613" }` acrescentada a
+`banks-extra.ts`. Enquanto o arquivo não estiver no repositório, o cartão segue
+no fallback.
 
 ## 5. Ciclo de fatura
 
@@ -151,17 +208,61 @@ reapareceria em toda fatura e inflaria todas.
 
 ## 6. A carteira
 
-- Pilha vertical com sobreposição de cerca de 56px, o bastante para a faixa
-  superior de cada cartão mostrar logo e nome.
-- O cartão selecionado sobe ao topo em tamanho `hero`; os demais ficam atrás,
-  levemente reduzidos e mais apagados.
-- Trocar de cartão é um toque, com transição curta de posição e cor.
-- Navegável por teclado: setas percorrem a pilha, Enter abre, foco visível.
-- Sem teto artificial de cartões: a pilha rola.
+Três estados, ligados por transição de elemento compartilhado.
+
+**Estado 1, leque vertical.** Os cartões ficam alinhados no mesmo eixo
+horizontal, centralizados, e escalonados para baixo com cerca de 38px entre um e
+outro. O de baixo fica à frente, então cada cartão acima mostra exatamente a
+própria faixa superior, que é onde mora o selo do banco: você enxerga a marca de
+todos de uma vez. A inclinação é discreta, poucos graus alternados, só para não
+parecer uma pilha de software. Passar o mouse levanta o cartão e o traz à frente.
+
+O leque mostra no máximo quatro cartões. Havendo mais, um botão "Ver todos os N
+cartões" aparece **abaixo da pilha, em fluxo normal**, nunca sobreposto a ela.
+Isso não é detalhe de estilo: no protótipo esse botão estava posicionado sobre a
+área do quarto cartão, e a regra de `z-index` que levanta o cartão no hover
+passava por cima dele, tornando-o inclicável. Elemento de ação não divide espaço
+com elemento que se move.
+
+**Estado 2, grade.** O botão do contador abre todos os cartões numa grade
+responsiva, em tamanho médio, para escolher olhando. Dali, clicar num cartão vai
+direto para o estado aberto. Um botão volta ao leque.
+
+**Estado 3, cartão aberto.** O cartão escolhido aparece em destaque no topo, e
+todos os cartões viram uma **fileira sem sobreposição** logo abaixo dele:
+pequenos, inteiros, lado a lado, todos clicáveis de uma vez, com o ativo
+marcado por contorno.
+
+Essa separação é deliberada. O leque é bonito quando não há nada aberto, mas
+sobreposição atrapalha quando a tarefa é escolher: cartão coberto pela metade é
+alvo pequeno, e com quatro ou mais o de trás fica inalcançável sem rolar a tela.
+Fechado, a tela é vitrine e o leque cabe; aberto, a tela é ferramenta e a fileira
+serve melhor. Trocar de cartão continua sendo um clique, sem rolagem.
+
+Quando os cartões não couberem na largura, a fileira rola na horizontal, com o
+cartão ativo sempre trazido para a área visível.
+
+Detalhes de implementação:
+
+- A transição usa `layoutId` por cartão no `motion`, então é o mesmo elemento que
+  viaja entre leque, grade e destaque, não um fade entre elementos diferentes.
+  É o que dá a sensação da referência, e é justamente o que o protótipo em CSS
+  não conseguiu reproduzir.
+- Mola com `stiffness 160`, `damping 18`, `mass 1`, que dá o peso de objeto
+  físico em vez de deslizamento de software.
+- Respeita movimento reduzido pelo hook `use-reduced-motion.ts` que já existe:
+  nesse caso a troca é imediata, sem mola.
+- Teclado: Tab percorre os cartões, Enter abre, Esc volta ao estado anterior.
+  Clique fora também volta, por um `use-outside-click.ts` novo.
 - `+ Adicionar` sai da listagem e vira ação do cabeçalho do painel.
 
-No celular é a mesma coisa, sem layout alternativo: a metáfora de carteira
-nasceu em tela estreita e o `AppFrame` já trata a diferença de scroll.
+No celular é a mesma coisa, sem layout alternativo: o leque encolhe e o detalhe
+continua abaixo.
+
+**Custo de dependência: zero.** O `motion` ^12.42.2 já está no projeto, que é
+exatamente o pacote que a referência usa (`motion/react`). Setas vêm do
+`lucide-react` já instalado, não de uma biblioteca de ícones nova. O único
+arquivo de infraestrutura novo é o hook de clique fora.
 
 ## 7. O detalhe do cartão
 
@@ -181,8 +282,19 @@ Abaixo do cartão aberto, nesta ordem:
 3. **Três datas** lado a lado: melhor dia de compra, fechamento, vencimento.
 4. **Movimentações da fatura**, no `DataTable` da aba Transações, com
    `BrandAvatar`, `CategoryChip` e `Money`. Nenhum componente novo.
+   **A categoria é editável na própria linha:** clicar no chip abre o
+   `SelectMenu` de categorias que já existe, e a escolha salva na hora pela
+   Server Action de transação, sem abrir modal. É a correção que mais se faz numa
+   fatura, e obrigar a abrir o modal inteiro só para trocar a categoria é atrito
+   diário. A linha mostra estado de salvando e desfaz visualmente se a ação
+   falhar.
 5. **Parcelamentos em aberto**, com "parcela 3 de 10", valor da parcela e quanto
    falta no total. O dado vem da estrutura de parcelamento que já existe.
+   **O título é editável ali mesmo:** clicar no nome vira um campo de texto que
+   salva ao confirmar. Descrição importada de extrato costuma vir truncada ou com
+   código do adquirente, e renomear "PARC 03/10 MERCPAGO*LOJA" para "Monitor 27"
+   é o que torna a lista legível. A edição altera o título de todas as parcelas
+   do mesmo parcelamento, não só a da fatura aberta, porque são a mesma compra.
 6. **Próximas faturas**, seis ciclos à frente, com o valor já comprometido por
    parcelas futuras e assinaturas vinculadas ao cartão.
 7. **Gerenciar**, com editar e excluir no rodapé, saindo dos ícones soltos de

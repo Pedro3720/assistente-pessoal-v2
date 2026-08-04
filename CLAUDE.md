@@ -24,6 +24,35 @@
   systematic-debugging para bug, etc.); só depois comece a mexer.
 - Vale mesmo para pedidos que parecem simples. Perguntas puras, sem modificação, não precisam.
 
+## Planejamento detalhado antes de implementar (obrigatório)
+
+- **Toda modificação no projeto passa pela fase de planejamento completa, nesta ordem:**
+  1. `superpowers:brainstorming`, com perguntas **uma a uma** (não em lote), cada decisão
+     registrada com o porquê e com as alternativas descartadas.
+  2. Spec escrito em `docs/superpowers/specs/AAAA-MM-DD-<tema>-design.md` e commitado.
+  3. Aval do dono sobre o spec.
+  4. `superpowers:writing-plans`, gerando o plano em `docs/superpowers/plans/`.
+  5. Só então a implementação começa.
+- Vale para feature nova, correção de UI, refatoração e mudança de config. Pedido que parece
+  simples também passa: é justamente onde suposição não examinada custa caro.
+- **O planejamento acontece no terminal, em texto.** O navegador não é o meio de discutir cada
+  pergunta: ele é a etapa final de validação.
+
+## Visualizar no navegador antes de implementar (obrigatório)
+
+- **Depois do plano pronto e antes de escrever qualquer código**, monte a visualização do
+  resultado no navegador, com o visual companion do skill `superpowers:brainstorming`
+  (`skills/brainstorming/scripts/start-server.sh`). O dono precisa ver como vai ficar antes de
+  a implementação começar.
+- Se o dono não gostar de algo na visualização, **volte ao planejamento**, ajuste o spec e
+  monte a visualização de novo. A implementação só começa com o visual aprovado.
+- Monte a visualização com os dados e as cores reais do projeto (tokens de `globals.css`,
+  logos de `public/`), não com paleta genérica: o objetivo é antecipar o resultado real, não
+  fazer um desenho bonito.
+- No Windows o `start-server.sh` não sobrevive ao harness. Suba o servidor direto:
+  `node server.cjs` com `BRAINSTORM_DIR`, `BRAINSTORM_HOST` e `BRAINSTORM_URL_HOST`, em
+  background, e leia a URL em `$BRAINSTORM_DIR/state/server-info`.
+
 ## Mudanças de front end e de design: use /frontend-design:frontend-design
 
 - **Sempre que for mexer no front end do site** (qualquer alteração visual: layout, cores,
