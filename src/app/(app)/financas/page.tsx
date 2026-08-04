@@ -36,6 +36,7 @@ import { Segmented } from "@/components/ui/segmented";
 const TAB_ITEMS = [
   { value: "visao", label: "Visão geral" },
   { value: "transacoes", label: "Transações" },
+  { value: "contas", label: "Contas" },
   { value: "cartoes", label: "Cartões" },
   { value: "agendadas", label: "Agendadas" },
   { value: "recorrentes", label: "Recorrentes" },
@@ -222,26 +223,25 @@ export default async function FinancasPage({
         </>
       )}
 
-      {/* contas e cartões: a criação e a exclusão de conta moram no
-          AccountsSummary (Onda 18 só validou AccountsCard/CardsCard como
-          exibição; a ação de criar/excluir conta continua só aqui até uma
-          onda futura levar isso para um formulário próprio) */}
+      {/* contas bancárias: criar e excluir conta */}
+      {aba === "contas" && (
+        <Reveal>
+          <AccountsSummary
+            banks={banks}
+            income={totals.income}
+            expense={totals.expense}
+            invoicesTotal={invoicesTotal}
+            podeConectar={pluggyConfigurada()}
+            pluggyItems={pluggyItems}
+          />
+        </Reveal>
+      )}
+
+      {/* carteira de cartões de crédito */}
       {aba === "cartoes" && (
-        <div className="space-y-6">
-          <Reveal>
-            <AccountsSummary
-              banks={banks}
-              income={totals.income}
-              expense={totals.expense}
-              invoicesTotal={invoicesTotal}
-              podeConectar={pluggyConfigurada()}
-              pluggyItems={pluggyItems}
-            />
-          </Reveal>
-          <Reveal>
-            <CardWallet cards={cards} bankSlugById={bankSlugById} renderDetail={cardDetailById} />
-          </Reveal>
-        </div>
+        <Reveal>
+          <CardWallet cards={cards} bankSlugById={bankSlugById} renderDetail={cardDetailById} />
+        </Reveal>
       )}
 
       {/* assinaturas recorrentes */}
