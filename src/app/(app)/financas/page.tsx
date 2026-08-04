@@ -13,7 +13,7 @@ import { AccountsSummary } from "@/components/finance/accounts-summary";
 import { AccountsCard } from "@/components/finance/accounts-card";
 import { CardsCard } from "@/components/finance/cards-card";
 import { CardWallet } from "@/components/finance/card-wallet";
-import { Money } from "@/components/ui/money";
+import { CardDetail } from "@/components/finance/card-detail";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
@@ -87,18 +87,22 @@ export default async function FinancasPage({
     banks.map((b) => [b.id, b.icon.startsWith("bank:") ? b.icon.slice(5) : null])
   );
 
-  // Detalhe do estado aberto da carteira: nesta task só nome do cartão e
-  // valor da fatura. O detalhe completo (limite, datas, movimentações,
-  // parcelamentos, projeção) entra em tasks seguintes. Pré-renderizado aqui
-  // (Server Component) e entregue como ReactNode por cartão, porque o
-  // CardWallet é "use client" e não pode receber função como prop.
+  // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
+  // datas (Task 8). Os blocos seguintes (movimentações, parcelamentos,
+  // projeção, gerenciar) entram como children em tasks futuras da Onda 19.
+  // Pré-renderizado aqui (Server Component) e entregue como ReactNode por
+  // cartão, porque o CardWallet é "use client" e não pode receber função
+  // como prop.
   const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
     cards.map((c) => [
       c.id,
-      <div key={c.id} className="rounded-xl border border-border p-4">
-        <p className="text-sm font-semibold">{c.name}</p>
-        <Money value={c.fatura_mes} className="mt-1 text-lg font-bold" />
-      </div>,
+      <CardDetail
+        key={c.id}
+        card={c}
+        year={year}
+        month={month}
+        payments={monthTransactions.filter((t) => t.is_card_payment && t.card_id === c.id)}
+      />,
     ])
   );
 
