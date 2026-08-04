@@ -44,6 +44,19 @@ const BANCOS = [
   ["mercadopago", "Mercado Pago"],
   ["pagbank", "PagBank"],
   ["stone", "Stone"],
+  ["cora", "Cora"],
+  ["infinitepay", "InfinitePay"],
+  ["wise", "Wise"],
+  ["paypal", "PayPal"],
+  ["stripe", "Stripe"],
+  ["revolut", "Revolut"],
+  ["efibank", "Efí"],
+  ["ton", "Ton"],
+  ["iugu", "Iugu"],
+  ["asaas", "Asaas"],
+  ["ngcash", "NG Cash"],
+  ["avenue", "Avenue"],
+  ["nomad", "Nomad"],
 ];
 
 // cores oficiais (fundo da marca + cor do símbolo), do preset do pacote
@@ -76,6 +89,19 @@ const CORES = {
   mercadopago: ["#00A6E0", "#FFFFFF"],
   pagbank: ["#0F9B4F", "#FFFFFF"],
   stone: ["#00A868", "#FFFFFF"],
+  cora: ["#000000", "#FFFFFF"],
+  infinitepay: ["#00D563", "#000000"],
+  wise: ["#9FE870", "#000000"],
+  paypal: ["#003087", "#FFFFFF"],
+  stripe: ["#635BFF", "#FFFFFF"],
+  revolut: ["#000000", "#FFFFFF"],
+  efibank: ["#FF6B00", "#FFFFFF"],
+  ton: ["#FF5031", "#FFFFFF"],
+  iugu: ["#0B1F3B", "#FFFFFF"],
+  asaas: ["#0057C2", "#FFFFFF"],
+  ngcash: ["#FF2D78", "#FFFFFF"],
+  avenue: ["#0B6E4F", "#FFFFFF"],
+  nomad: ["#0F172A", "#FFFFFF"],
 };
 
 /** Extrai o viewBox e o conteúdo interno do <svg> do pacote. */
