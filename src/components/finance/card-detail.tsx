@@ -20,18 +20,6 @@ const ROTULO: Record<Estado, string> = {
   fechada: "Fechada",
 };
 
-/** Último dia do mês (mês 1-based), para travar o vencimento num mês curto.
- *  Duplicado de billing-cycle.ts: lastDayOfMonth/iso são privados lá (não
- *  exportados, servem só ao cálculo da janela) e o vencimento em si nunca
- *  chegou a ser calculado ali, só o fechamento. */
-function lastDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
-
-function isoDate(year: number, month: number, day: number): string {
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 /** "DD/MM" a partir de um "YYYY-MM-DD". O ano fica de fora: a fatura em foco
  *  já deixa o ano implícito pelo mês selecionado na página. */
 function ddmm(iso: string): string {
@@ -54,16 +42,13 @@ function ddmm(iso: string): string {
  */
 function invoiceStatus(
   card: CardWithInvoice,
-  year: number,
-  month: number,
   payments: Transaction[]
 ): { estado: Estado; pago: number; vencimento: string | null } {
-  const { cycle_end: cycleEnd, due_day: dueDay } = card;
-  if (!cycleEnd || !dueDay) {
+  const { cycle_end: cycleEnd, cycle_due: vencimento } = card;
+  if (!cycleEnd || !vencimento) {
     return { estado: "aberta", pago: 0, vencimento: null };
   }
 
-  const vencimento = isoDate(year, month, Math.min(dueDay, lastDayOfMonth(year, month)));
   const hoje = todayISO();
 
   if (hoje < cycleEnd) {
@@ -102,7 +87,7 @@ export function CardDetail({
   payments: Transaction[];
   children?: React.ReactNode;
 }) {
-  const { estado, pago, vencimento } = invoiceStatus(card, year, month, payments);
+  const { estado, pago, vencimento } = invoiceStatus(card, payments);
   const falta = card.fatura_mes - pago;
   const pctLimite = card.credit_limit > 0 ? (card.utilizado_total / card.credit_limit) * 100 : 0;
 

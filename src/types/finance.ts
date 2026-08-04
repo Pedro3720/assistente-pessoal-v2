@@ -95,6 +95,8 @@ export interface CardWithInvoice extends CreditCard {
   cycle_start: string | null;
   /** dia do fechamento desta fatura; null quando o cartão não tem ciclo */
   cycle_end: string | null;
+  /** data completa do vencimento desta fatura; null quando o cartão não tem dia de vencimento */
+  cycle_due: string | null;
 }
 
 export interface Subscription {

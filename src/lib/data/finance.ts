@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, shiftMonth } from "@/lib/dates";
-import { cycleWindow } from "@/lib/finance/billing-cycle";
+import { cycleWindow, dueDate } from "@/lib/finance/billing-cycle";
 import type {
   Bank,
   BankWithBalance,
@@ -111,6 +111,7 @@ export async function getFinanceData(year: number, month: number) {
       disponivel,
       cycle_start: janela?.start ?? null,
       cycle_end: janela?.end ?? null,
+      cycle_due: dueDate(c.due_day, year, month),
     };
   });
 

@@ -76,3 +76,14 @@ export function cycleWindow(
 export function bestPurchaseDay(closingDay: number): number {
   return closingDay >= 31 ? 1 : closingDay + 1;
 }
+
+/**
+ * Data completa do vencimento da fatura que vence em (year, month).
+ * O cartão guarda só o dia; o mês e o ano vêm de quem pergunta, e o dia é
+ * travado no último dia do mês quando o mês é mais curto.
+ * Devolve null quando o cartão não tem dia de vencimento.
+ */
+export function dueDate(dueDay: number | null, year: number, month: number): string | null {
+  if (!dueDay) return null;
+  return iso(year, month, Math.min(dueDay, lastDayOfMonth(year, month)));
+}
