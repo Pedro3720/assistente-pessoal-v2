@@ -87,7 +87,8 @@ export interface BankWithBalance extends Bank {
 export interface CardWithInvoice extends CreditCard {
   invoice: number;        // = fatura_mes (compat)
   fatura_mes: number;     // a pagar este mês
-  em_aberto: number;      // parcelas de meses futuros
+  em_aberto: number;      // utilizado fora da fatura do ciclo: parcelas futuras,
+                          // compras fora da janela e (com ciclo) o opening_invoice
   utilizado_total: number;// total consumindo limite
   disponivel: number;     // credit_limit - utilizado_total
   /** primeiro dia da janela da fatura; null quando o cartão não tem ciclo */

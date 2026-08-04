@@ -322,7 +322,7 @@ export function CardManager({
                   {detailsOpen && (
                     <div className="mt-2 space-y-1.5 border-t border-border pt-2.5">
                       <DetailRow label="Próxima fatura" value={formatBRL(card.fatura_mes)} dotClass="bg-amber-500" />
-                      <DetailRow label="Lançamentos futuros" value={formatBRL(card.em_aberto)} dotClass="bg-primary" />
+                      <DetailRow label="Fora da fatura atual" value={formatBRL(card.em_aberto)} dotClass="bg-primary" />
                       <DetailRow
                         label="Disponível para uso"
                         value={formatBRL(card.disponivel)}

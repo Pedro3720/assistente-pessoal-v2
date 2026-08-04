@@ -81,9 +81,10 @@ export async function getFinanceData(year: number, month: number) {
     // utilizado_total continua acumulado sobre a vida toda do cartão:
     // limite é consumido por saldo, não por ciclo.
     let utilizado = num(c.opening_invoice);
-    // opening_invoice NÃO entra na fatura do ciclo: ela é anterior a qualquer
-    // ciclo e reapareceria em todas, inflando todas.
-    let faturaMes = 0;
+    // opening_invoice é anterior a qualquer ciclo: com ciclo, ele fica fora da
+    // fatura (senão reapareceria em todas). Sem ciclo, o comportamento é o
+    // antigo, de mês-calendário acumulado, e ele entra.
+    let faturaMes = janela ? 0 : num(c.opening_invoice);
 
     for (const t of allTx) {
       if (t.card_id !== c.id || t.type !== "expense") continue;
