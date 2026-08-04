@@ -135,6 +135,30 @@ export async function getFinanceData(year: number, month: number) {
 
 export type FinanceData = Awaited<ReturnType<typeof getFinanceData>>;
 
+/**
+ * Pagamentos de fatura de cartão numa janela ampla o bastante para cobrir o
+ * ciclo, que pode começar no mês anterior ao vencimento quando o cartão fecha
+ * depois do dia de vencimento. Sem essa folga, uma fatura já paga apareceria
+ * como fechada (ver invoiceStatus em components/finance/card-detail.tsx).
+ */
+export async function getCardPayments(year: number, month: number): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const prev = shiftMonth(year, month, -1);
+  const { start } = monthBounds(prev.year, prev.month);
+  const { end } = monthBounds(year, month);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("is_card_payment", true)
+    .not("card_id", "is", null)
+    .gte("occurred_on", start)
+    .lte("occurred_on", end);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Transaction[];
+}
+
 export type StatementEntry = Transaction & { balance: number };
 
 /**

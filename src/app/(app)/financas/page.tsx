@@ -4,6 +4,7 @@ import {
   getSubscriptions,
   getMonthlyPlan,
   getMonthlyExpenseSeries,
+  getCardPayments,
 } from "@/lib/data/finance";
 import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
 import { CategorizationQueue } from "@/components/finance/categorization-queue";
@@ -87,28 +88,9 @@ export default async function FinancasPage({
     banks.map((b) => [b.id, b.icon.startsWith("bank:") ? b.icon.slice(5) : null])
   );
 
-  // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
-  // datas (Task 8). Os blocos seguintes (movimentações, parcelamentos,
-  // projeção, gerenciar) entram como children em tasks futuras da Onda 19.
-  // Pré-renderizado aqui (Server Component) e entregue como ReactNode por
-  // cartão, porque o CardWallet é "use client" e não pode receber função
-  // como prop.
-  const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
-    cards.map((c) => [
-      c.id,
-      <CardDetail
-        key={c.id}
-        card={c}
-        year={year}
-        month={month}
-        payments={monthTransactions.filter((t) => t.is_card_payment && t.card_id === c.id)}
-      />,
-    ])
-  );
-
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan, pluggyItems, paraCategorizar, monthlyExpenseSeries] =
+  const [statement, subs, plan, pluggyItems, paraCategorizar, monthlyExpenseSeries, cardPayments] =
     await Promise.all([
       selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
       getSubscriptions(year, month).catch(() => ({
@@ -124,7 +106,29 @@ export default async function FinancasPage({
       getPluggyItems().catch(() => []),
       getPendingCategorization().catch(() => []),
       getMonthlyExpenseSeries(year, month).catch(() => []),
+      getCardPayments(year, month).catch(() => []),
     ]);
+
+  // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
+  // datas (Task 8). Os blocos seguintes (movimentações, parcelamentos,
+  // projeção, gerenciar) entram como children em tasks futuras da Onda 19.
+  // Pré-renderizado aqui (Server Component) e entregue como ReactNode por
+  // cartão, porque o CardWallet é "use client" e não pode receber função
+  // como prop. Pagamentos vêm de getCardPayments (janela mês anterior +
+  // atual), não de monthTransactions: o ciclo pode começar no mês anterior
+  // ao vencimento quando o cartão fecha depois do dia de vencimento.
+  const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      <CardDetail
+        key={c.id}
+        card={c}
+        year={year}
+        month={month}
+        payments={cardPayments.filter((t) => t.card_id === c.id)}
+      />,
+    ])
+  );
 
   const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
