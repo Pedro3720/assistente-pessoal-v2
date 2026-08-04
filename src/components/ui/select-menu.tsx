@@ -27,6 +27,8 @@ export function SelectMenu({
   className = "",
   footer,
   onEditOption,
+  autoOpen = false,
+  onClose,
 }: {
   value: string;
   options: SelectOption[];
@@ -36,8 +38,12 @@ export function SelectMenu({
   className?: string;
   footer?: React.ReactNode;
   onEditOption?: (opt: SelectOption) => void;
+  /** abre o painel assim que monta; usado por quem troca um rótulo por um seletor no lugar */
+  autoOpen?: boolean;
+  /** dispara quando o painel fecha sem o usuário escolher uma opção (Escape, clique fora ou o próprio botão) */
+  onClose?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [mounted, setMounted] = useState(false);
   const [busca, setBusca] = useState("");
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
@@ -70,14 +76,23 @@ export function SelectMenu({
     });
   }, [open, options.length, footer]);
 
+  // fecha "sem escolha" (Escape ou clique fora): distinto do fechamento que
+  // acontece ao clicar numa opção (esse já tem seu próprio setOpen(false) no
+  // onClick da opção, sem passar por aqui), por isso só este caminho avisa
+  // onClose, que quem chama usa para voltar ao estado anterior à edição.
+  const closeSemEscolha = () => {
+    setOpen(false);
+    onClose?.();
+  };
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closeSemEscolha();
     };
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (!panelRef.current?.contains(t) && !btnRef.current?.contains(t)) setOpen(false);
+      if (!panelRef.current?.contains(t) && !btnRef.current?.contains(t)) closeSemEscolha();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onDown);
@@ -85,6 +100,7 @@ export function SelectMenu({
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onDown);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const selected = options.find((o) => o.value === value);
@@ -95,7 +111,7 @@ export function SelectMenu({
         ref={btnRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? closeSemEscolha() : setOpen(true))}
         aria-haspopup="listbox"
         aria-expanded={open}
         className={`flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5 text-xs transition-colors hover:border-primary/40 disabled:opacity-50 ${className}`}

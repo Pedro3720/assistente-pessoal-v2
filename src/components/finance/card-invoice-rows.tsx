@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateTransactionCategory } from "@/lib/actions/finance";
@@ -16,28 +16,6 @@ import type { Category, Transaction } from "@/types/finance";
 function ddmm(iso: string): string {
   const [, m, d] = iso.split("-");
   return `${d}/${m}`;
-}
-
-/**
- * SelectMenu abre o painel só ao clicar no próprio botão; aqui a entrada em
- * modo de edição já É o clique do usuário na categoria, então o primeiro
- * clique dispara os dois: troca o chip pelo SelectMenu E abre o painel dele,
- * em vez de exigir um segundo clique só para abrir. O `useEffect` roda uma
- * vez por montagem (o componente é remontado a cada linha que entra em
- * edição), e dispara um clique real no botão que o próprio SelectMenu
- * renderiza, imitando o que o usuário faria em seguida.
- */
-function AutoOpenSelect(props: React.ComponentProps<typeof SelectMenu>) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    wrapRef.current?.querySelector("button")?.click();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return (
-    <div ref={wrapRef}>
-      <SelectMenu {...props} />
-    </div>
-  );
 }
 
 /**
@@ -119,7 +97,6 @@ export function CardInvoiceRows({
             const cat = catId ? (catById.get(catId) ?? null) : null;
             const salvando = savingId === t.id;
             const editando = editingId === t.id;
-            const Select = editando ? AutoOpenSelect : null;
 
             return (
               <DataTableRow
@@ -131,14 +108,16 @@ export function CardInvoiceRows({
                 <span className="min-w-0 flex-1 truncate font-medium">{t.description}</span>
 
                 <span className="w-40 shrink-0">
-                  {Select ? (
-                    <Select
+                  {editando ? (
+                    <SelectMenu
                       value={catId ? String(catId) : ""}
                       options={options}
                       disabled={salvando}
                       placeholder="Sem categoria"
                       className="w-full"
+                      autoOpen
                       onChange={(v) => trocarCategoria(t, v ? Number(v) : null)}
+                      onClose={() => setEditingId(null)}
                     />
                   ) : (
                     <button
