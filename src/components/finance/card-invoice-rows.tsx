@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { updateTransaction } from "@/lib/actions/finance";
+import { updateTransactionCategory } from "@/lib/actions/finance";
 import { DataTable, DataTableRow } from "@/components/ui/data-table";
 import { BrandAvatar } from "@/components/ui/brand-avatar";
 import { CategoryChip } from "@/components/ui/category-chip";
@@ -81,19 +81,7 @@ export function CardInvoiceRows({
     setOverrides((o) => ({ ...o, [t.id]: novoId }));
     setSavingId(t.id);
     try {
-      // updateTransaction valida o objeto inteiro (não há Server Action de
-      // atualizar só a categoria, ver relatório da Task 9), então a chamada
-      // reenvia a transação como está e troca apenas category_id.
-      await updateTransaction(t.id, {
-        description: t.description,
-        amount: Number(t.amount),
-        type: t.type,
-        category_id: novoId,
-        bank_id: t.bank_id,
-        card_id: t.card_id,
-        is_card_payment: t.is_card_payment,
-        occurred_on: t.occurred_on,
-      });
+      await updateTransactionCategory(t.id, novoId);
       router.refresh();
     } catch (e) {
       setOverrides((o) => ({ ...o, [t.id]: anterior }));

@@ -9,6 +9,9 @@ import { z } from "zod";
 /** id de linha (bigint identity): inteiro positivo. */
 export const idParam = z.coerce.number().int().positive();
 
+/** category_id de uma transação: inteiro positivo, ou null para "sem categoria". */
+export const categoryIdParam = z.number().int().positive().nullable();
+
 /** uuid de grupo (purchase_group / transfer_group). */
 export const uuidParam = z.string().uuid();
 

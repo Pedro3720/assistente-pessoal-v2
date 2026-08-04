@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/auth/session";
 import { enforceRate } from "@/lib/ratelimit";
-import { idParam, uuidParam } from "@/lib/validation/common";
+import { idParam, uuidParam, categoryIdParam } from "@/lib/validation/common";
 import { shiftMonth } from "@/lib/dates";
 import {
   transactionInput,
@@ -158,6 +158,24 @@ export async function updateTransaction(id: number, raw: unknown) {
   const input = normalizeTx(transactionInput.parse(raw));
   const { supabase } = await requireUser();
   const { error } = await supabase.from("transactions").update(input).eq("id", rowId);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+/**
+ * Troca só a categoria de uma transação (ex.: linha da fatura do cartão).
+ * `updateTransaction` exige o objeto inteiro e um reenvio parcial dos demais
+ * campos "como estavam" cria lost update se algo mudou nesse meio tempo; esta
+ * action evita isso tocando apenas a coluna `category_id`.
+ */
+export async function updateTransactionCategory(id: number, categoryId: number | null) {
+  const rowId = idParam.parse(id);
+  const catId = categoryIdParam.parse(categoryId);
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category_id: catId })
+    .eq("id", rowId);
   if (error) throw new Error(error.message);
   revalidate();
 }
