@@ -12,7 +12,8 @@ import { MonthNav } from "@/components/finance/month-nav";
 import { AccountsSummary } from "@/components/finance/accounts-summary";
 import { AccountsCard } from "@/components/finance/accounts-card";
 import { CardsCard } from "@/components/finance/cards-card";
-import { CardManager } from "@/components/finance/card-manager";
+import { CardWallet } from "@/components/finance/card-wallet";
+import { Money } from "@/components/ui/money";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
@@ -77,6 +78,28 @@ export default async function FinancasPage({
   const { banks, cards, categories, monthTransactions, totals } = data;
 
   const invoicesTotal = cards.reduce((s, c) => s + c.invoice, 0);
+
+  // banks.icon segue o mesmo formato que EntityIcon já resolve para marca de
+  // banco: "bank:<slug>". Fora desse formato (ícone do catálogo ou emoji
+  // legado), o cartão cai no fallback de cor do CardArt.
+  const bankSlugById: Record<number, string | null> = Object.fromEntries(
+    banks.map((b) => [b.id, b.icon.startsWith("bank:") ? b.icon.slice(5) : null])
+  );
+
+  // Detalhe do estado aberto da carteira: nesta task só nome do cartão e
+  // valor da fatura. O detalhe completo (limite, datas, movimentações,
+  // parcelamentos, projeção) entra em tasks seguintes. Pré-renderizado aqui
+  // (Server Component) e entregue como ReactNode por cartão, porque o
+  // CardWallet é "use client" e não pode receber função como prop.
+  const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      <div key={c.id} className="rounded-xl border border-border p-4">
+        <p className="text-sm font-semibold">{c.name}</p>
+        <Money value={c.fatura_mes} className="mt-1 text-lg font-bold" />
+      </div>,
+    ])
+  );
 
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
@@ -216,7 +239,7 @@ export default async function FinancasPage({
             />
           </Reveal>
           <Reveal>
-            <CardManager cards={cards} banks={banks} />
+            <CardWallet cards={cards} bankSlugById={bankSlugById} renderDetail={cardDetailById} />
           </Reveal>
         </div>
       )}
