@@ -94,11 +94,16 @@ export function CardInvoiceRows({
 
   return (
     <div>
-      <div className="flex items-center justify-between px-1 pb-2">
+      <div className="flex items-center justify-between gap-3 px-1 pb-2">
         <h3 className="text-sm font-semibold">Movimentações da fatura</h3>
-        {janela && (
+        {janela ? (
           <span className="num text-xs text-muted-foreground">
             {ddmm(janela.start)} a {ddmm(janela.end)}
+          </span>
+        ) : (
+          <span className="text-right text-xs text-muted-foreground">
+            Sem fechamento e vencimento definidos, a fatura aparece acumulada. Defina as
+            datas no cartão para ver por ciclo.
           </span>
         )}
       </div>
