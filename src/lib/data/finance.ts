@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, shiftMonth } from "@/lib/dates";
+import { cycleWindow } from "@/lib/finance/billing-cycle";
 import type {
   Bank,
   BankWithBalance,
@@ -75,18 +76,31 @@ export async function getFinanceData(year: number, month: number) {
   };
 
   const cards: CardWithInvoice[] = cardsRaw.map((c) => {
+    const janela = cycleWindow(c.closing_day, c.due_day, year, month);
+
+    // utilizado_total continua acumulado sobre a vida toda do cartão:
+    // limite é consumido por saldo, não por ciclo.
     let utilizado = num(c.opening_invoice);
-    let faturaMes = num(c.opening_invoice);
+    // opening_invoice NÃO entra na fatura do ciclo: ela é anterior a qualquer
+    // ciclo e reapareceria em todas, inflando todas.
+    let faturaMes = 0;
+
     for (const t of allTx) {
       if (t.card_id !== c.id || t.type !== "expense") continue;
       const delta = t.is_card_payment ? -num(t.amount) : num(t.amount);
       utilizado += delta;
-      if (t.is_card_payment || billingKey(t.occurred_on) <= curKey) faturaMes += delta;
+
+      const dentro = janela
+        ? t.occurred_on >= janela.start && t.occurred_on <= janela.end
+        : billingKey(t.occurred_on) <= curKey; // cartão sem ciclo: comportamento antigo
+      if (dentro) faturaMes += delta;
     }
+
     utilizado = Math.max(utilizado, 0);
     faturaMes = Math.max(faturaMes, 0);
     const em_aberto = Math.max(utilizado - faturaMes, 0);
     const disponivel = num(c.credit_limit) - utilizado;
+
     return {
       ...c,
       invoice: faturaMes,
@@ -94,6 +108,8 @@ export async function getFinanceData(year: number, month: number) {
       em_aberto,
       utilizado_total: utilizado,
       disponivel,
+      cycle_start: janela?.start ?? null,
+      cycle_end: janela?.end ?? null,
     };
   });
 

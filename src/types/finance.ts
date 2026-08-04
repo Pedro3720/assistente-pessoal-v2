@@ -90,6 +90,10 @@ export interface CardWithInvoice extends CreditCard {
   em_aberto: number;      // parcelas de meses futuros
   utilizado_total: number;// total consumindo limite
   disponivel: number;     // credit_limit - utilizado_total
+  /** primeiro dia da janela da fatura; null quando o cartão não tem ciclo */
+  cycle_start: string | null;
+  /** dia do fechamento desta fatura; null quando o cartão não tem ciclo */
+  cycle_end: string | null;
 }
 
 export interface Subscription {
