@@ -33,6 +33,14 @@ export interface CreditCard {
   closing_day: number | null;
   due_day: number | null;
   color: string;
+  /** bandeira: visa, mastercard, elo, amex, hipercard */
+  network: string | null;
+  /** nome impresso no cartão */
+  holder: string | null;
+  /** quatro últimos dígitos; nunca o número completo */
+  last4: string | null;
+  /** variante: standard, gold, platinum, black. Define o tom da arte */
+  tier: string | null;
 }
 
 export interface Transaction {

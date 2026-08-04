@@ -8,7 +8,23 @@ import { formatBRL, parseBRL } from "@/lib/money";
 import { createCard, updateCard, deleteCard } from "@/lib/actions/finance";
 import { CARD_COLORS } from "@/lib/finance/defaults";
 import { MoneyInput } from "./money-input";
+import { SelectMenu, type SelectOption } from "@/components/ui/select-menu";
 import type { BankWithBalance, CardWithInvoice } from "@/types/finance";
+
+const NETWORK_OPTIONS: SelectOption[] = [
+  { value: "visa", label: "Visa" },
+  { value: "mastercard", label: "Mastercard" },
+  { value: "elo", label: "Elo" },
+  { value: "amex", label: "Amex" },
+  { value: "hipercard", label: "Hipercard" },
+];
+
+const TIER_OPTIONS: SelectOption[] = [
+  { value: "standard", label: "Padrão" },
+  { value: "gold", label: "Gold" },
+  { value: "platinum", label: "Platinum" },
+  { value: "black", label: "Black" },
+];
 
 export function CardManager({
   cards,
@@ -27,12 +43,17 @@ export function CardManager({
   const [closing, setClosing] = useState("");
   const [due, setDue] = useState("");
   const [color, setColor] = useState(CARD_COLORS[0]);
+  const [network, setNetwork] = useState("");
+  const [holder, setHolder] = useState("");
+  const [last4, setLast4] = useState("");
+  const [tier, setTier] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [openDetails, setOpenDetails] = useState<Record<number, boolean>>({});
 
   function reset() {
     setName(""); setBankId(""); setLimit(""); setOpening("");
     setClosing(""); setDue(""); setColor(CARD_COLORS[0]);
+    setNetwork(""); setHolder(""); setLast4(""); setTier("");
     setAdding(false); setEditingId(null);
   }
 
@@ -45,6 +66,10 @@ export function CardManager({
     setClosing(card.closing_day ? String(card.closing_day) : "");
     setDue(card.due_day ? String(card.due_day) : "");
     setColor(card.color);
+    setNetwork(card.network ?? "");
+    setHolder(card.holder ?? "");
+    setLast4(card.last4 ?? "");
+    setTier(card.tier ?? "");
     setAdding(true);
   }
 
@@ -59,6 +84,10 @@ export function CardManager({
       closing_day: closing ? Number(closing) : null,
       due_day: due ? Number(due) : null,
       color,
+      network: network || null,
+      holder: holder.trim() || null,
+      last4: last4 || null,
+      tier: tier || null,
     };
     try {
       if (editingId) await updateCard(editingId, input);
@@ -146,6 +175,48 @@ export function CardManager({
                 max={31}
                 value={due}
                 onChange={(e) => setDue(e.target.value)}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Bandeira</label>
+              <SelectMenu
+                value={network}
+                options={NETWORK_OPTIONS}
+                onChange={setNetwork}
+                placeholder="Selecionar"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Variante</label>
+              <SelectMenu
+                value={tier}
+                options={TIER_OPTIONS}
+                onChange={setTier}
+                placeholder="Selecionar"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Titular</label>
+              <input
+                value={holder}
+                onChange={(e) => setHolder(e.target.value)}
+                placeholder="Nome impresso no cartão"
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Quatro últimos dígitos</label>
+              <input
+                inputMode="numeric"
+                maxLength={4}
+                value={last4}
+                onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="0000"
                 className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
               />
             </div>
