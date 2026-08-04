@@ -119,7 +119,6 @@ export function CardWallet({
                     initial={false}
                     animate={{ y: pos.y, rotate: pos.rot }}
                     whileHover={reduzido ? undefined : { y: pos.y - 12 }}
-                    whileFocus={reduzido ? undefined : { y: pos.y - 12 }}
                     className={`absolute inset-x-0 top-0 block text-left ${Z_LEQUE[i]} hover:z-40 focus-visible:z-40`}
                   >
                     <CardArt card={card} bankSlug={bankSlugById[card.id] ?? null} size="stack" />
@@ -198,7 +197,14 @@ export function CardWallet({
                 <motion.button
                   key={card.id}
                   data-card-id={card.id}
-                  layoutId={`card-${card.id}`}
+                  // namespace próprio ("mini-", não "card-"): o hero acima já usa
+                  // `card-${card.id}` para o cartão ativo, e os dois ficam montados
+                  // ao mesmo tempo no estado `open`. layoutId repetido em elementos
+                  // simultâneos não é o caso de uso do motion (é para um elemento
+                  // sair e outro entrar); com o mesmo id aqui, o item da fileira
+                  // some ou pisca porque a projeção de layout é disputada com o
+                  // hero. Não trocar de volta para `card-${card.id}`.
+                  layoutId={`mini-${card.id}`}
                   transition={mola}
                   aria-pressed={card.id === ativo.id}
                   onClick={() => abrir(card.id)}
