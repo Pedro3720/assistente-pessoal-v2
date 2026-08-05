@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, shiftMonth } from "@/lib/dates";
 import { cycleWindow, dueDate } from "@/lib/finance/billing-cycle";
+import type { InstallmentRow } from "@/lib/finance/installments";
 import type {
   Bank,
   BankWithBalance,
@@ -158,6 +159,25 @@ export async function getCardPayments(year: number, month: number): Promise<Tran
 
   if (error) throw new Error(error.message);
   return (data ?? []) as Transaction[];
+}
+
+/**
+ * Todas as parcelas de compras parceladas no cartão (Task 10, Onda 19), sem
+ * filtro de mês: para saber qual é a parcela atual de cada parcelamento e
+ * quanto ainda falta, é preciso ver as parcelas futuras também, que não estão
+ * em `monthTransactions` (esse só cobre o mês visualizado). Só as colunas
+ * necessárias e só linhas de cartão com `purchase_group` preenchido, não a
+ * tabela inteira.
+ */
+export async function getInstallmentRows(): Promise<InstallmentRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("description,amount,card_id,purchase_group,installments,installment_no,occurred_on")
+    .not("purchase_group", "is", null)
+    .not("card_id", "is", null);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as InstallmentRow[];
 }
 
 export type StatementEntry = Transaction & { balance: number };

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/auth/session";
 import { enforceRate } from "@/lib/ratelimit";
-import { idParam, uuidParam, categoryIdParam } from "@/lib/validation/common";
+import { idParam, uuidParam, categoryIdParam, descriptionParam } from "@/lib/validation/common";
 import { shiftMonth } from "@/lib/dates";
 import {
   transactionInput,
@@ -234,6 +234,23 @@ export async function createInstallmentPurchase(raw: unknown) {
   });
 
   const { error } = await supabase.from("transactions").insert(rows);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
+/**
+ * Renomeia TODAS as parcelas da mesma compra: elas são o mesmo item, e
+ * renomear só a da fatura aberta deixaria a lista inconsistente nos meses
+ * seguintes (o mês seguinte mostraria o título antigo).
+ */
+export async function renameInstallmentGroup(purchaseGroup: string, titulo: string) {
+  const group = uuidParam.parse(purchaseGroup);
+  const desc = descriptionParam.parse(titulo);
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ description: desc })
+    .eq("purchase_group", group);
   if (error) throw new Error(error.message);
   revalidate();
 }

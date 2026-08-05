@@ -15,6 +15,9 @@ export const categoryIdParam = z.number().int().positive().nullable();
 /** uuid de grupo (purchase_group / transfer_group). */
 export const uuidParam = z.string().uuid();
 
+/** título curto livre (ex.: nome de parcelamento renomeado): não vazio, até 120 caracteres. */
+export const descriptionParam = z.string().trim().min(1, "Título obrigatório").max(120, "Título muito longo");
+
 /** endpoint de inscrição de push (URL do serviço de push do navegador). */
 export const pushEndpointParam = z.string().url().max(2048);
 
