@@ -108,6 +108,7 @@ export function IconPicker({
             ref={panelRef}
             role="dialog"
             aria-label="Escolher ícone"
+            data-portal-root
             style={{ top: pos.top, left: pos.left, width: pos.width }}
             className="fixed z-[120] rounded-xl border border-border bg-popover p-2 shadow-2xl"
           >

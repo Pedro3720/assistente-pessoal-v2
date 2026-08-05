@@ -134,6 +134,11 @@ export function SelectMenu({
           <div
             ref={panelRef}
             role="listbox"
+            // marca de portal que useOutsideClick respeita: sem ela, o
+            // mousedown numa opção conta como clique fora para quem envolve
+            // este seletor (a carteira de cartões), que fecha e desmonta o
+            // painel antes de o onClick da opção disparar.
+            data-portal-root
             style={{ top: pos.top, left: pos.left, width: pos.width }}
             className="fixed z-[110] max-h-80 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-2xl"
           >
