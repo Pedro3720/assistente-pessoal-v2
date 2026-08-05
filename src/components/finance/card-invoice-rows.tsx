@@ -107,7 +107,11 @@ export function CardInvoiceRows({
 
                 <span className="min-w-0 flex-1 truncate font-medium">{t.description}</span>
 
-                <span className="w-40 shrink-0">
+                {/* a coluna some abaixo de sm pela mesma regra da tabela de
+                    Transações (transactions-section.tsx): a linha soma ~360px
+                    de largura mínima e o DataTable é overflow-hidden, então
+                    num aparelho de 375px o valor ficava cortado. */}
+                <span className="hidden w-40 shrink-0 sm:block">
                   {editando ? (
                     <SelectMenu
                       value={catId ? String(catId) : ""}

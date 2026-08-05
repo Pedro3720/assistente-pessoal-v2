@@ -7,18 +7,20 @@ import { cn } from "@/lib/utils";
 import { CardDetailActions } from "./card-detail-actions";
 import type { BankWithBalance, CardWithInvoice, Transaction } from "@/types/finance";
 
-type Estado = "aberta" | "fechada" | "paga";
+type Estado = "aberta" | "fechada" | "paga" | "vazia";
 
 const SELO: Record<Estado, string> = {
   aberta: "bg-positive/15 text-positive",
   paga: "bg-muted text-muted-foreground",
   fechada: "bg-negative/15 text-negative",
+  vazia: "bg-muted text-muted-foreground",
 };
 
 const ROTULO: Record<Estado, string> = {
   aberta: "Aberta",
   paga: "Paga",
   fechada: "Fechada",
+  vazia: "Sem fatura",
 };
 
 /** "DD/MM" a partir de um "YYYY-MM-DD". O ano fica de fora: a fatura em foco
@@ -31,6 +33,10 @@ function ddmm(iso: string): string {
 /**
  * Estado da fatura, sem campo novo no banco:
  *
+ * - Sem fatura: nada a pagar no ciclo. Selo neutro, não de alerta: mês sem
+ *   compra no cartão é rotina, e chamar isso de "Fechada" (selo negativo)
+ *   assustava à toa. É o primeiro caso testado porque não faz diferença se
+ *   fechou ou venceu quando não há valor.
  * - Aberta: sem ciclo definido (não dá pra saber se fechou, é o menos errado
  *   dos três) ou hoje é anterior ao fechamento.
  * - Paga: existe ao menos um pagamento (`is_card_payment`) entre o fechamento
@@ -46,6 +52,11 @@ function invoiceStatus(
   payments: Transaction[]
 ): { estado: Estado; pago: number; vencimento: string | null } {
   const { cycle_end: cycleEnd, cycle_due: vencimento } = card;
+
+  if (card.fatura_mes <= 0) {
+    return { estado: "vazia", pago: 0, vencimento: vencimento ?? null };
+  }
+
   if (!cycleEnd || !vencimento) {
     return { estado: "aberta", pago: 0, vencimento: null };
   }

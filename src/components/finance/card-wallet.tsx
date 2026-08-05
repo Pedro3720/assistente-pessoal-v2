@@ -78,6 +78,27 @@ export function CardWallet({
     setEstado("open");
   }
 
+  /**
+   * Esc volta ao leque, mas só quando veio de dentro da carteira.
+   *
+   * O onKeyDown desta div recebe o evento sintético do React, que sobe pela
+   * árvore do React inclusive atravessando portais: o modal de editar cartão e
+   * o painel do SelectMenu estão em `document.body` no DOM, mas continuam
+   * filhos daqui na árvore. Sem esta checagem, Esc para fechar o seletor ou o
+   * modal fechava a carteira junto e levava o formulário preenchido.
+   *
+   * A checagem é de contenção no DOM (`ref.current.contains`), não por
+   * marcador de portal: assim vale para qualquer portal, marcado ou não, hoje
+   * e no futuro. Handler interno que está no DOM da carteira (o rename de
+   * parcelamento em card-installments.tsx) precisa do próprio
+   * `stopPropagation`, porque contenção não o exclui.
+   */
+  function aoTeclar(e: React.KeyboardEvent) {
+    if (e.key !== "Escape") return;
+    if (!ref.current?.contains(e.target as Node)) return;
+    setEstado("fan");
+  }
+
   // no estado aberto, o ativo é trazido para o centro visível da fileira,
   // tanto ao abrir quanto ao trocar de cartão clicando na própria fileira
   useEffect(() => {
@@ -120,7 +141,7 @@ export function CardWallet({
   return (
     <div
       ref={ref}
-      onKeyDown={(e) => e.key === "Escape" && setEstado("fan")}
+      onKeyDown={aoTeclar}
       className="glass card-glow rounded-2xl border border-border p-5"
     >
       {cabecalho}

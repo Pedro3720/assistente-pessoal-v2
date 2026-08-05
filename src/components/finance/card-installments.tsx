@@ -74,6 +74,10 @@ export function CardInstallments({ groups }: { groups: InstallmentGroup[] }) {
                         e.preventDefault();
                         (e.target as HTMLInputElement).blur();
                       } else if (e.key === "Escape") {
+                        // este input está no DOM da carteira, então o Esc sobe
+                        // até o onKeyDown dela e fecharia a carteira inteira
+                        // junto com o cancelamento da edição
+                        e.stopPropagation();
                         setEditingGroup(null);
                       }
                     }}
