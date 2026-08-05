@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, shiftMonth } from "@/lib/dates";
-import { cycleWindow, dueDate } from "@/lib/finance/billing-cycle";
+import { dueDate } from "@/lib/finance/billing-cycle";
+import { buildCardInvoice } from "@/lib/finance/invoice";
 import type { InstallmentRow } from "@/lib/finance/installments";
 import type {
   Bank,
@@ -29,7 +30,15 @@ export async function getFinanceData(year: number, month: number) {
   const supabase = await createClient();
   const { start, end } = monthBounds(year, month);
 
-  const [banksRes, cardsRes, catsRes, allTxRes, monthTxRes] = await Promise.all([
+  // Folga para as linhas da fatura: a janela do ciclo pode começar dois meses
+  // antes do vencimento (cartão que fecha 25 e vence 10 tem a fatura de agosto
+  // indo de 26/06 a 25/07), então três meses cobrem qualquer configuração.
+  // É a mesma ideia da folga de getCardPayments, com um mês a mais porque ali
+  // só interessa o pagamento, que acontece entre o fechamento e o vencimento.
+  const cicloFrom = shiftMonth(year, month, -2);
+  const { start: cycleFetchStart } = monthBounds(cicloFrom.year, cicloFrom.month);
+
+  const [banksRes, cardsRes, catsRes, allTxRes, monthTxRes, cardTxRes] = await Promise.all([
     supabase.from("banks").select("*").order("name"),
     supabase.from("credit_cards").select("*").order("name"),
     supabase.from("categories").select("*").order("name"),
@@ -42,6 +51,13 @@ export async function getFinanceData(year: number, month: number) {
       .gte("occurred_on", start)
       .lte("occurred_on", end)
       .order("occurred_on", { ascending: false }),
+    supabase
+      .from("transactions")
+      .select("*")
+      .not("card_id", "is", null)
+      .gte("occurred_on", cycleFetchStart)
+      .lte("occurred_on", end)
+      .order("occurred_on", { ascending: false }),
   ]);
 
   const err =
@@ -49,7 +65,8 @@ export async function getFinanceData(year: number, month: number) {
     cardsRes.error ||
     catsRes.error ||
     allTxRes.error ||
-    monthTxRes.error;
+    monthTxRes.error ||
+    cardTxRes.error;
   if (err) throw new Error(err.message);
 
   const banksRaw = (banksRes.data ?? []) as Bank[];
@@ -60,6 +77,8 @@ export async function getFinanceData(year: number, month: number) {
     "id" | "amount" | "type" | "bank_id" | "card_id" | "is_card_payment" | "occurred_on"
   >[];
   const monthTransactions = (monthTxRes.data ?? []) as Transaction[];
+  // transações de cartão numa janela larga o bastante para o ciclo inteiro
+  const cardTransactions = (cardTxRes.data ?? []) as Transaction[];
 
   const banks: BankWithBalance[] = banksRaw.map((b) => {
     let balance = num(b.opening_balance);
@@ -70,48 +89,28 @@ export async function getFinanceData(year: number, month: number) {
     return { ...b, balance };
   });
 
-  const curKey = year * 12 + (month - 1);
-  const billingKey = (occurred_on: string) => {
-    const [yy, mm] = occurred_on.split("-").map(Number);
-    return yy * 12 + (mm - 1);
-  };
+  // Fatura de cada cartão: valor, janela e linhas saem todos de buildCardInvoice
+  // (lib/finance/invoice.ts). O mapa de linhas viaja junto com os cartões para
+  // que a lista de movimentações da carteira mostre exatamente o que compõe o
+  // valor do cabeçalho, em vez de refazer o filtro por conta própria.
+  const invoiceRowsByCardId: Record<number, Transaction[]> = {};
 
   const cards: CardWithInvoice[] = cardsRaw.map((c) => {
-    const janela = cycleWindow(c.closing_day, c.due_day, year, month);
+    const fatura = buildCardInvoice(c, allTx, cardTransactions, year, month);
+    invoiceRowsByCardId[c.id] = fatura.rows;
 
-    // utilizado_total continua acumulado sobre a vida toda do cartão:
-    // limite é consumido por saldo, não por ciclo.
-    let utilizado = num(c.opening_invoice);
-    // opening_invoice é anterior a qualquer ciclo: com ciclo, ele fica fora da
-    // fatura (senão reapareceria em todas). Sem ciclo, o comportamento é o
-    // antigo, de mês-calendário acumulado, e ele entra.
-    let faturaMes = janela ? 0 : num(c.opening_invoice);
-
-    for (const t of allTx) {
-      if (t.card_id !== c.id || t.type !== "expense") continue;
-      const delta = t.is_card_payment ? -num(t.amount) : num(t.amount);
-      utilizado += delta;
-
-      const dentro = janela
-        ? t.occurred_on >= janela.start && t.occurred_on <= janela.end
-        : billingKey(t.occurred_on) <= curKey; // cartão sem ciclo: comportamento antigo
-      if (dentro) faturaMes += delta;
-    }
-
-    utilizado = Math.max(utilizado, 0);
-    faturaMes = Math.max(faturaMes, 0);
-    const em_aberto = Math.max(utilizado - faturaMes, 0);
-    const disponivel = num(c.credit_limit) - utilizado;
+    const em_aberto = Math.max(fatura.utilizado - fatura.total, 0);
+    const disponivel = num(c.credit_limit) - fatura.utilizado;
 
     return {
       ...c,
-      invoice: faturaMes,
-      fatura_mes: faturaMes,
+      invoice: fatura.total,
+      fatura_mes: fatura.total,
       em_aberto,
-      utilizado_total: utilizado,
+      utilizado_total: fatura.utilizado,
       disponivel,
-      cycle_start: janela?.start ?? null,
-      cycle_end: janela?.end ?? null,
+      cycle_start: fatura.window?.start ?? null,
+      cycle_end: fatura.window?.end ?? null,
       cycle_due: dueDate(c.due_day, year, month),
     };
   });
@@ -131,6 +130,7 @@ export async function getFinanceData(year: number, month: number) {
     cards,
     categories,
     monthTransactions,
+    invoiceRowsByCardId,
     totals: { income, expense, balance: income - expense },
   };
 }

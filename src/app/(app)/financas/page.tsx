@@ -83,7 +83,7 @@ export default async function FinancasPage({
       <FinanceLoadError message={e instanceof Error ? e.message : "Erro desconhecido"} />
     );
   }
-  const { banks, cards, categories, monthTransactions, totals } = data;
+  const { banks, cards, categories, monthTransactions, invoiceRowsByCardId, totals } = data;
 
   const invoicesTotal = cards.reduce((s, c) => s + c.invoice, 0);
 
@@ -156,26 +156,12 @@ export default async function FinancasPage({
     ])
   );
 
-  // Movimentações da fatura de cada cartão (Task 9, Onda 19): mesmo critério
-  // de fatura_mes em getFinanceData (card_id, type "expense", dentro da
-  // janela do ciclo), para o total da lista bater com o valor mostrado no
-  // CardDetail. Sem ciclo definido (cartão sem closing_day), cai no
-  // mês-calendário inteiro, que já é o que monthTransactions cobre; nesse
-  // caso o total pode não bater com fatura_mes, que ali é cumulativo desde a
-  // abertura do cartão (comportamento antigo mantido por getFinanceData,
-  // não algo que esta task tenta resolver).
-  const invoiceRowsByCardId: Record<number, typeof monthTransactions> = Object.fromEntries(
-    cards.map((c) => [
-      c.id,
-      monthTransactions.filter((t) => {
-        if (t.card_id !== c.id || t.type !== "expense") return false;
-        if (c.cycle_start && c.cycle_end) {
-          return t.occurred_on >= c.cycle_start && t.occurred_on <= c.cycle_end;
-        }
-        return true;
-      }),
-    ])
-  );
+  // As movimentações da fatura (Task 9, Onda 19) NÃO são montadas aqui: elas
+  // vêm de `invoiceRowsByCardId`, que getFinanceData produz com a mesma
+  // chamada de `buildCardInvoice` que gerou `fatura_mes`. Refazer o filtro
+  // nesta página foi justamente o que fez a lista e o cabeçalho discordarem
+  // (a interseção com o mês-calendário perdia a parte da janela que cai no
+  // mês anterior, e o pagamento de fatura entrava como se fosse compra).
 
   // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
   // datas (Task 8), com as movimentações da fatura (Task 9), os
