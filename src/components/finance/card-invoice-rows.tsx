@@ -98,46 +98,61 @@ export function CardInvoiceRows({
             const salvando = savingId === t.id;
             const editando = editingId === t.id;
 
+            // controle de categoria: o mesmo estado de edição e o mesmo
+            // SelectMenu aparecem em dois lugares (coluna dedicada em sm+,
+            // segunda linha da descrição abaixo de sm) sem duplicar a lógica
+            // de salvar, que mora só em trocarCategoria.
+            const categoriaControl = editando ? (
+              <SelectMenu
+                value={catId ? String(catId) : ""}
+                options={options}
+                disabled={salvando}
+                placeholder="Sem categoria"
+                className="w-full"
+                autoOpen
+                onChange={(v) => trocarCategoria(t, v ? Number(v) : null)}
+                onClose={() => setEditingId(null)}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingId(t.id)}
+                disabled={salvando}
+                className="flex w-full items-center rounded-lg px-1 py-1 text-left hover:bg-accent disabled:pointer-events-none"
+              >
+                {cat ? (
+                  <CategoryChip name={cat.name} color="var(--muted-foreground)" icon={cat.icon} />
+                ) : (
+                  <span className="text-xs text-subtle-foreground">Sem categoria</span>
+                )}
+              </button>
+            );
+
             return (
               <DataTableRow
                 key={t.id}
                 className={cn(salvando && "pointer-events-none opacity-50")}
               >
-                <BrandAvatar name={t.description} size={28} />
+                {/* decorativo: abaixo de sm a descrição já identifica a
+                    compra, e o espaço libera as ~40px que a segunda linha
+                    (categoria) precisa para respirar dentro da mesma altura
+                    de linha. */}
+                <BrandAvatar name={t.description} size={28} className="hidden sm:flex" />
 
-                <span className="min-w-0 flex-1 truncate font-medium">{t.description}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{t.description}</span>
+                  {/* abaixo de sm a categoria não é rótulo, é controle: clicar
+                      abre o seletor e salva na hora (a mesma função nova da
+                      Task 9). Escondê-la junto com a coluna, como a tabela de
+                      Transações faz com o rótulo dela, tiraria essa função do
+                      caso de uso principal do app (instalado via Capacitor, o
+                      celular é o normal, não o degradado). */}
+                  <div className="sm:hidden">{categoriaControl}</div>
+                </div>
 
-                {/* a coluna some abaixo de sm pela mesma regra da tabela de
-                    Transações (transactions-section.tsx): a linha soma ~360px
-                    de largura mínima e o DataTable é overflow-hidden, então
-                    num aparelho de 375px o valor ficava cortado. */}
-                <span className="hidden w-40 shrink-0 sm:block">
-                  {editando ? (
-                    <SelectMenu
-                      value={catId ? String(catId) : ""}
-                      options={options}
-                      disabled={salvando}
-                      placeholder="Sem categoria"
-                      className="w-full"
-                      autoOpen
-                      onChange={(v) => trocarCategoria(t, v ? Number(v) : null)}
-                      onClose={() => setEditingId(null)}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(t.id)}
-                      disabled={salvando}
-                      className="flex w-full items-center rounded-lg px-1 py-1 text-left hover:bg-accent disabled:pointer-events-none"
-                    >
-                      {cat ? (
-                        <CategoryChip name={cat.name} color="var(--muted-foreground)" icon={cat.icon} />
-                      ) : (
-                        <span className="text-xs text-subtle-foreground">Sem categoria</span>
-                      )}
-                    </button>
-                  )}
-                </span>
+                {/* em sm+ a categoria volta a ser coluna dedicada de 160px;
+                    abaixo disso ela já apareceu como segunda linha acima. */}
+                <span className="hidden w-40 shrink-0 sm:block">{categoriaControl}</span>
 
                 <Money
                   value={-Number(t.amount)}

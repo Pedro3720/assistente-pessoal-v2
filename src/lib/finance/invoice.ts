@@ -49,7 +49,13 @@ export type InvoiceCardLike = {
 export type CardInvoice<T> = {
   /** janela do ciclo desta fatura; null quando o cartão não tem ciclo definido */
   window: CycleWindow | null;
-  /** valor da fatura em foco, nunca negativo */
+  /**
+   * valor da fatura em foco, nunca negativo. A invariante "total é a soma das
+   * `rows`" só vale com ciclo: sem ciclo (falta closing_day ou due_day) o
+   * total é acumulado desde a abertura do cartão e as linhas são filtradas
+   * pelo mês-calendário, então os dois legitimamente não batem (é por isso
+   * que a tela mostra o aviso de fatura acumulada nesse caso).
+   */
   total: number;
   /** linhas que compõem a fatura, mais recentes primeiro */
   rows: T[];
