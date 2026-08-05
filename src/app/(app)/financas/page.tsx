@@ -303,7 +303,7 @@ export default async function FinancasPage({
                 <AccountsCard banks={banks} />
               </Reveal>
               <Reveal>
-                <CardsCard cards={cards} />
+                <CardsCard cards={cards} bankSlugById={bankSlugById} offset={offset} />
               </Reveal>
             </div>
           </div>
