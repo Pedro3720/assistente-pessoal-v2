@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-03.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-05.**
 
 ---
 
@@ -66,6 +66,13 @@
   `Money`/limites de dinheiro. `npm run build` limpo depois de cada bloco. Relatório completo
   (decisões, valores de cor, contraste calculado) em `.superpowers/sdd/final-fix-report.md`
   (fora do git, `.superpowers/` é ignorado).
+- **Onda 19 (2026-08-05): COMPLETA na branch `feat/onda19-carteira-cartoes`** — carteira de
+  cartões com identidade visual e ciclo de fatura real, 14 tasks (ver 3.22). Migração
+  `20260701000019_card_identity.sql` (colunas `network`/`holder`/`last4`/`tier` em
+  `credit_cards`, todas opcionais) **já rodada pelo dono**. `fatura_mes` passou a ser calculada
+  pela janela do ciclo de fatura em vez de ser todo o `opening_invoice` acumulado; isso muda os
+  números que já apareciam no Dashboard e no rail em qualquer cartão com `closing_day`/`due_day`
+  preenchidos (ver pendência na seção 4). **Ainda não mesclada na `main`, sem push.**
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -901,6 +908,62 @@ rendering React component" vem do `next-themes` 0.4.6, que injeta um `<script>` 
 o tema antes da primeira pintura. `theme-provider.tsx` tem um único commit no histórico (o
 "first commit") e a onda não encostou nele. É aviso, não falha.
 
+### 3.22 Onda 19: carteira de cartões com identidade e ciclo de fatura real
+(branch `feat/onda19-carteira-cartoes`) — 2026-08-05
+Carteira de cartões nova, com arte por emissor e fatura calculada pelo ciclo real (antes,
+`closing_day`/`due_day` eram texto solto na tela e nenhuma conta os usava). 14 tasks, cada
+uma com brief e relatório próprios em `.superpowers/sdd/task-*-brief.md`/`task-*-report.md`,
+`npm run build` limpo em todas. Nenhuma dependência nova: `motion` e `lucide-react` já
+estavam no projeto (Task 14 conferiu `git diff main --stat -- package.json` vazio).
+
+- **Dados:** migração `supabase/migrations/20260701000019_card_identity.sql`, colunas
+  `network`/`holder`/`last4`/`tier` em `credit_cards`, todas opcionais e com `check` (network
+  restrito a `visa`/`mastercard`/`elo`/`amex`/`hipercard`; `last4` só 4 dígitos; tier restrito
+  a `standard`/`gold`/`platinum`/`black`). **Já rodada pelo dono.** Nunca guardamos número
+  completo, CVV ou validade.
+- **Biblioteca de emissores:** o gerador de logos (`scripts/gen-banks.mjs`) foi de 28 para 41
+  bancos, acrescentando Cora, InfinitePay, Wise, PayPal, Stripe, Revolut, Efí, Ton, Iugu,
+  Asaas, NG Cash, Avenue e Nomad. `src/lib/finance/banks-extra.ts` cobre emissor fora do
+  pacote gerado; `src/lib/finance/issuers.ts` une as duas listas num só lookup. **Dez das
+  treze cores novas são estimativa, não fonte oficial** (as de menor confiança: NG Cash, Ton
+  e Iugu); corrigir é trocar o hex em `gen-banks.mjs` e rodar o gerador de novo.
+- **Ciclo de fatura:** `src/lib/finance/billing-cycle.ts` (funções puras: `cycleWindow`,
+  `bestPurchaseDay`, `dueDate`). `fatura_mes` (`src/lib/data/finance.ts`) passou a somar só as
+  transações dentro da janela do ciclo em vez do `opening_invoice` inteiro; `opening_invoice`
+  fica fora da fatura do mês quando há ciclo definido, mas continua entrando no
+  `utilizado_total` (limite consumido). Isso muda os valores que já apareciam no Dashboard e
+  no rail para qualquer cartão com `closing_day`/`due_day` preenchidos (ver pendência na
+  seção 4).
+- **Arte e carteira:** `card-art.tsx` (arte composta a partir do emissor, selo sem filtro de
+  cor, tom pela variante do cartão) e `card-wallet.tsx` (leque vertical, grade e cartão
+  aberto, animados com `motion`/`layoutId`), mais o hook `use-outside-click.ts`. **Bandeira
+  ainda sai como rótulo de texto**: os 5 SVGs de `public/networks/` (visa/mastercard/elo/
+  amex/hipercard) não existem; `NETWORK_SVG` em `card-art.tsx` está vazio de propósito e
+  precisa ganhar a entrada quando cada arquivo chegar. **`public/banks/renner.png` também não
+  existe**; o cartão Renner cai no fallback de cor até o arquivo chegar.
+- **Aba Contas nova**, recebeu o bloco de contas bancárias que antes vivia dentro de Cartões.
+- **Detalhe do cartão:** `card-detail.tsx` (fatura, estado derivado, limite, três datas),
+  `card-invoice-rows.tsx` (movimentações com categoria editável na própria linha),
+  `card-installments.tsx` (parcelamentos com título editável), `card-forecast.tsx` (projeção
+  de seis ciclos), `card-detail-actions.tsx` (editar e excluir o cartão). **Renomear
+  parcelamento e trocar categoria de movimentação nunca foram testados contra dados reais**
+  (só build e leitura de código).
+- **Rail da Visão geral** ganhou miniatura do cartão com link para a aba Cartões.
+- **Achados de memória (explicam decisões do código, não são bugs abertos):** o app ficou
+  sem nenhum caminho para criar, editar ou excluir cartão entre as Tasks 6 e 12, porque a
+  carteira substituiu a listagem antiga e ninguém herdou essas ações; corrigido na Task 12
+  (`card-detail-actions.tsx`). A carteira indexava o mapa de bancos por id de **cartão** em
+  vez de id de **banco**, o que fazia o selo do emissor sair errado; corrigido na Task 13.
+- **Fechamento (Task 14, esta sessão):** varredura `rg "—|–" src` sem ocorrência em texto
+  visível ao usuário (as poucas ocorrências restantes são comentários de código, aceitável
+  pelo brief); `git diff main --stat -- package.json package-lock.json` vazio; `npm run
+  build` limpo, sem erro nem aviso novo; consolidação desta entrada. **Não foi possível
+  fazer a conferência visual manual** (Step 4 do brief): o app exige login no Supabase e
+  esta sessão não tem credenciais; fica registrada como pendência do dono na seção 4, com
+  destaque.
+- **Fora de escopo desta onda:** os 5 SVGs de bandeira e o `renner.png` (assets do dono), e a
+  correção das cores estimadas de emissor (depende de fonte oficial de cada marca).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
@@ -956,6 +1019,28 @@ o tema antes da primeira pintura. `theme-provider.tsx` tem um único commit no h
 >    Tarefas, Senhas, Sugestões, Perfil e Admin herdaram os tokens (cor/raio/fonte) automaticamente
 >    por serem CSS global, mas continuam com os componentes antigos (cards manuscritos, sem
 >    `DataTable`/`PanelHeader`/etc.). Migrar essas telas para o sistema novo é onda futura.
+
+> **Atualização 2026-08-05 (Onda 19, carteira de cartões):**
+> 1. **Conferência visual manual, destaque: NENHUMA tela da carteira foi vista por olho
+>    humano.** Percorrer a aba Cartões nos dois temas, em desktop e celular: leque, botão de
+>    ver todos, grade, cartão aberto, fileira rolável, edição de categoria e de título de
+>    parcelamento. Não deu pra fazer nesta sessão porque o app exige login no Supabase e a
+>    sessão não tem credenciais. No app instalado (Capacitor), conferir também que a carteira
+>    responde ao toque e que o scroll da fileira não briga com o scroll da página.
+> 2. **Os valores de fatura mudaram ao ligar o ciclo real.** Conferir o Dashboard e o rail
+>    contra o app do banco, cartão por cartão, para cada cartão com `closing_day`/`due_day`
+>    preenchidos.
+> 3. **`public/banks/renner.png` não existe.** Enquanto isso o cartão Renner cai no fallback
+>    de cor em vez do logo do banco.
+> 4. **Os 5 SVGs de bandeira em `public/networks/` não existem** (`visa`, `mastercard`,
+>    `elo`, `amex`, `hipercard`). Até chegarem, a bandeira sai como rótulo de texto. Ao
+>    adicionar cada arquivo, acrescentar a entrada em `NETWORK_SVG` (`src/components/finance/
+>    card-art.tsx`).
+> 5. **Dez das treze cores de emissor novas são estimativa, não fonte oficial** (as de menor
+>    confiança: NG Cash, Ton e Iugu). Corrigir é trocar o hex em `scripts/gen-banks.mjs` e
+>    rodar o gerador de novo.
+> 6. **Renomear parcelamento e trocar categoria de movimentação nunca foram testados contra
+>    dados reais**, só por leitura de código e `npm run build`.
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
