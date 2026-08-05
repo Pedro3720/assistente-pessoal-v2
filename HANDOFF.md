@@ -73,6 +73,28 @@
   pela janela do ciclo de fatura em vez de ser todo o `opening_invoice` acumulado; isso muda os
   números que já apareciam no Dashboard e no rail em qualquer cartão com `closing_day`/`due_day`
   preenchidos (ver pendência na seção 4). **Ainda não mesclada na `main`, sem push.**
+- **Onda 19, revisão final da branch (2026-08-05):** a revisão da branch inteira achou 3 Critical
+  e 3 Important na costura entre as tasks, todos corrigidos em 4 commits (`d2d33dd`, `eecc364`,
+  `fe0e3c0`, `3737476`):
+  1. **Fatura e lista discordavam.** A janela do ciclo era decidida em quatro lugares. Nasceu
+     `buildCardInvoice` em `src/lib/finance/invoice.ts` (função pura: devolve janela, total,
+     linhas e utilizado); `getFinanceData` chama uma vez por cartão e devolve
+     `invoiceRowsByCardId`, que `financas/page.tsx` só repassa. `getFinanceData` ganhou uma
+     consulta de transações de cartão com folga de três meses (a janela do ciclo pode começar
+     dois meses antes do vencimento). Pagamento de fatura saiu do total e das linhas do ciclo;
+     continua abatendo `utilizado_total`.
+  2. **Portais e clique fora.** `useOutsideClick` agora respeita `data-portal-root` (marcador
+     genérico, antes era `data-modal-root` e só o `Modal` tinha). Os quatro portais do projeto
+     (`modal`, `select-menu`, `icon-picker`, `import-modal`) estão marcados. Portal novo precisa
+     do marcador.
+  3. **Detalhes:** linha da fatura esconde a categoria abaixo de `sm` (mesma regra da aba
+     Transações); `Esc` dentro de portal não fecha mais a carteira; fatura zerada mostra o selo
+     neutro "Sem fatura" no lugar de "Fechada".
+  4. **Renomear parcelamento** reaplica o sufixo `(k/n)` linha a linha em vez de gravar o mesmo
+     texto no grupo inteiro (antes, renomear apagava a identificação da parcela).
+
+  `npm run build` limpo. Relatório completo em `.superpowers/sdd/final-fix-report.md` (fora do
+  git, `.superpowers/` é ignorado).
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
