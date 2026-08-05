@@ -150,7 +150,11 @@ export function CardWallet({
                     whileHover={reduzido ? undefined : { y: pos.y - 12 }}
                     className={`absolute inset-x-0 top-0 block text-left ${Z_LEQUE[i]} hover:z-40 focus-visible:z-40`}
                   >
-                    <CardArt card={card} bankSlug={bankSlugById[card.id] ?? null} size="stack" />
+                    <CardArt
+                      card={card}
+                      bankSlug={card.bank_id != null ? bankSlugById[card.bank_id] ?? null : null}
+                      size="stack"
+                    />
                   </motion.button>
                 );
               })}
@@ -195,7 +199,11 @@ export function CardWallet({
                   onClick={() => abrir(card.id)}
                   className="block w-full text-left"
                 >
-                  <CardArt card={card} bankSlug={bankSlugById[card.id] ?? null} size="stack" />
+                  <CardArt
+                    card={card}
+                    bankSlug={card.bank_id != null ? bankSlugById[card.bank_id] ?? null : null}
+                    size="stack"
+                  />
                 </motion.button>
               ))}
             </div>
@@ -211,7 +219,11 @@ export function CardWallet({
               onClick={() => abrir(ativo.id)}
               className="mx-auto block w-full max-w-[280px] text-left"
             >
-              <CardArt card={ativo} bankSlug={bankSlugById[ativo.id] ?? null} size="hero" />
+              <CardArt
+                card={ativo}
+                bankSlug={ativo.bank_id != null ? bankSlugById[ativo.bank_id] ?? null : null}
+                size="hero"
+              />
             </motion.button>
 
             {/* fileira sem sobreposição: cartões inteiros, lado a lado,
@@ -241,7 +253,11 @@ export function CardWallet({
                     card.id === ativo.id ? "outline outline-2 outline-offset-2 outline-primary" : ""
                   }`}
                 >
-                  <CardArt card={card} bankSlug={bankSlugById[card.id] ?? null} size="mini" />
+                  <CardArt
+                    card={card}
+                    bankSlug={card.bank_id != null ? bankSlugById[card.bank_id] ?? null : null}
+                    size="mini"
+                  />
                 </motion.button>
               ))}
             </div>
