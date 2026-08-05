@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, LayoutGrid } from "lucide-react";
+import { ChevronLeft, LayoutGrid, Plus } from "lucide-react";
 import { motion, LayoutGroup } from "motion/react";
 import { CardArt } from "./card-art";
+import { CardForm } from "./card-manager";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import type { CardWithInvoice } from "@/types/finance";
+import type { BankWithBalance, CardWithInvoice } from "@/types/finance";
 
 type Estado = "fan" | "grid" | "open";
 
@@ -35,10 +36,13 @@ const Z_LEQUE = ["z-0", "z-10", "z-20", "z-30"];
 export function CardWallet({
   cards,
   bankSlugById,
+  banks,
   renderDetail,
 }: {
   cards: CardWithInvoice[];
   bankSlugById: Record<number, string | null>;
+  /** contas para o seletor "conta vinculada" do formulário de novo cartão. */
+  banks: BankWithBalance[];
   /**
    * Detalhe de cada cartão, indexado por id, já pronto como ReactNode.
    *
@@ -54,6 +58,7 @@ export function CardWallet({
 }) {
   const [estado, setEstado] = useState<Estado>("fan");
   const [ativoId, setAtivoId] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const filaRef = useRef<HTMLDivElement>(null);
   const reduzido = useReducedMotion();
@@ -81,10 +86,33 @@ export function CardWallet({
     el?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [estado, ativoId]);
 
+  // depois de excluir o cartão aberto (Task 12), `cards` chega sem ele no
+  // próximo refresh, mas `ativoId` (estado local) continua apontando pra lá:
+  // sem isso a carteira ficaria travada numa tela em branco em vez de voltar
+  // ao leque.
+  useEffect(() => {
+    if (estado === "open" && ativoId != null && !ativo) setEstado("fan");
+  }, [estado, ativoId, ativo]);
+
+  const cabecalho = (
+    <div className="mb-4 flex items-center justify-between">
+      <h3 className="font-semibold">Cartões</h3>
+      <button
+        type="button"
+        onClick={() => setAdding(true)}
+        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-accent"
+      >
+        <Plus className="h-3 w-3" /> Adicionar
+      </button>
+    </div>
+  );
+
   if (cards.length === 0) {
     return (
       <div className="glass card-glow rounded-2xl border border-border p-5">
+        {cabecalho}
         <p className="text-center text-sm text-muted-foreground">Nenhum cartão cadastrado.</p>
+        {adding && <CardForm banks={banks} onClose={() => setAdding(false)} />}
       </div>
     );
   }
@@ -95,6 +123,7 @@ export function CardWallet({
       onKeyDown={(e) => e.key === "Escape" && setEstado("fan")}
       className="glass card-glow rounded-2xl border border-border p-5"
     >
+      {cabecalho}
       <LayoutGroup>
         {estado === "fan" && (
           <div>
@@ -221,6 +250,8 @@ export function CardWallet({
       </LayoutGroup>
 
       {estado === "open" && ativo ? <div className="mt-4">{renderDetail[ativo.id]}</div> : null}
+
+      {adding && <CardForm banks={banks} onClose={() => setAdding(false)} />}
     </div>
   );
 }

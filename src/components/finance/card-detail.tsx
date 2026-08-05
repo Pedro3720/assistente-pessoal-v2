@@ -4,7 +4,8 @@ import { formatBRL } from "@/lib/money";
 import { monthLabel, todayISO } from "@/lib/dates";
 import { bestPurchaseDay } from "@/lib/finance/billing-cycle";
 import { cn } from "@/lib/utils";
-import type { CardWithInvoice, Transaction } from "@/types/finance";
+import { CardDetailActions } from "./card-detail-actions";
+import type { BankWithBalance, CardWithInvoice, Transaction } from "@/types/finance";
 
 type Estado = "aberta" | "fechada" | "paga";
 
@@ -69,14 +70,15 @@ function invoiceStatus(
 /**
  * Cabeçalho do detalhe do cartão aberto na carteira: valor da fatura,
  * janela do ciclo, estado, limite e as três datas de referência. `children`
- * recebe os blocos seguintes (movimentações, parcelamentos, projeção,
- * gerenciar), que entram em tasks futuras da Onda 19.
+ * recebe os blocos seguintes (movimentações, parcelamentos, projeção). O
+ * rodapé de gerenciar (editar/excluir, Task 12) vem depois de `children`.
  */
 export function CardDetail({
   card,
   year,
   month,
   payments,
+  banks,
   children,
 }: {
   card: CardWithInvoice;
@@ -85,6 +87,8 @@ export function CardDetail({
   month: number;
   /** transações de pagamento (is_card_payment) deste cartão, já filtradas. */
   payments: Transaction[];
+  /** contas para o seletor "conta vinculada" do formulário de editar. */
+  banks: BankWithBalance[];
   children?: React.ReactNode;
 }) {
   const { estado, pago, vencimento } = invoiceStatus(card, payments);
@@ -146,6 +150,8 @@ export function CardDetail({
       </div>
 
       {children}
+
+      <CardDetailActions card={card} banks={banks} />
     </div>
   );
 }

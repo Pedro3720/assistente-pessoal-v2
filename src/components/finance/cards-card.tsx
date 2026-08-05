@@ -28,10 +28,11 @@ function getLuminance(hexColor: string): number {
 
 /**
  * O cartão não tem campo de ícone (só `color`, escolhida pela própria pessoa
- * no CardManager). Em vez do BrandAvatar, que cai numa inicial com tom cinza
- * calculado por hash do nome (BRANDS nasce vazio de propósito em
- * lib/finance/brands.ts), usamos a cor real do cartão: é identidade que já
- * existe e o CardManager já mostra como uma bolinha ao lado do nome.
+ * ao criar ou editar o cartão no formulário do `CardForm`). Em vez do
+ * BrandAvatar, que cai numa inicial com tom cinza calculado por hash do nome
+ * (BRANDS nasce vazio de propósito em lib/finance/brands.ts), usamos a cor
+ * real do cartão: é identidade que já existe e o `CardArt` já mostra na
+ * carteira de cartões.
  */
 function CardAvatar({ name, color, size = 28 }: { name: string; color: string; size?: number }) {
   const word = name.trim().split(/\s+/)[0] ?? "";

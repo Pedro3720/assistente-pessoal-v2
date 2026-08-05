@@ -196,6 +196,7 @@ export default async function FinancasPage({
         year={year}
         month={month}
         payments={cardPayments.filter((t) => t.card_id === c.id)}
+        banks={banks}
       >
         <CardInvoiceRows
           transactions={invoiceRowsByCardId[c.id] ?? []}
@@ -326,7 +327,7 @@ export default async function FinancasPage({
       {/* carteira de cartões de crédito */}
       {aba === "cartoes" && (
         <Reveal>
-          <CardWallet cards={cards} bankSlugById={bankSlugById} renderDetail={cardDetailById} />
+          <CardWallet cards={cards} bankSlugById={bankSlugById} banks={banks} renderDetail={cardDetailById} />
         </Reveal>
       )}
 
