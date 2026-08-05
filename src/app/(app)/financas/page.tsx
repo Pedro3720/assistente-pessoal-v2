@@ -18,6 +18,7 @@ import { CardWallet } from "@/components/finance/card-wallet";
 import { CardDetail } from "@/components/finance/card-detail";
 import { CardInvoiceRows } from "@/components/finance/card-invoice-rows";
 import { CardInstallments } from "@/components/finance/card-installments";
+import { CardForecast } from "@/components/finance/card-forecast";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
@@ -30,6 +31,7 @@ import { MonthlyExpenseChart } from "@/components/finance/monthly-expense-chart"
 import { pluggyConfigurada } from "@/lib/pluggy/client";
 import { buildCategorySlices } from "@/lib/finance/category-chart";
 import { buildInstallmentGroups } from "@/lib/finance/installments";
+import { buildCardForecast } from "@/lib/finance/forecast";
 import { Reveal } from "@/components/effects/reveal";
 import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
 import { Segmented } from "@/components/ui/segmented";
@@ -133,6 +135,27 @@ export default async function FinancasPage({
   );
   const installmentGroupsByCard = buildInstallmentGroups(installmentRows, cycleEndByCard);
 
+  // Projeção das próximas faturas (Task 11, Onda 19): seis ciclos seguintes
+  // ao visualizado (o em foco já aparece no cabeçalho do CardDetail), cada um
+  // somando as mesmas parcelas futuras da Task 10 (installmentRows) e as
+  // assinaturas ativas vinculadas ao cartão. subs.subscriptions já vem
+  // carregado para a aba Recorrentes, sem filtro de mês (é a lista toda,
+  // ativas e inativas), por isso nenhuma consulta nova entra aqui.
+  const forecastByCard: Record<number, ReturnType<typeof buildCardForecast>> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      buildCardForecast(
+        c.id,
+        c.closing_day,
+        c.due_day,
+        installmentRows,
+        subs.subscriptions,
+        year,
+        month
+      ),
+    ])
+  );
+
   // Movimentações da fatura de cada cartão (Task 9, Onda 19): mesmo critério
   // de fatura_mes em getFinanceData (card_id, type "expense", dentro da
   // janela do ciclo), para o total da lista bater com o valor mostrado no
@@ -155,10 +178,11 @@ export default async function FinancasPage({
   );
 
   // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
-  // datas (Task 8), com as movimentações da fatura (Task 9) e os
-  // parcelamentos em aberto (Task 10) como children. Os blocos seguintes
-  // (projeção, gerenciar) entram em tasks futuras da Onda 19. Pré-renderizado
-  // aqui (Server Component) e entregue como ReactNode por cartão, porque o
+  // datas (Task 8), com as movimentações da fatura (Task 9), os
+  // parcelamentos em aberto (Task 10) e a projeção das próximas faturas
+  // (Task 11) como children. O bloco de gerenciar cartão entra em task futura
+  // da Onda 19. Pré-renderizado aqui (Server Component) e entregue como
+  // ReactNode por cartão, porque o
   // CardWallet é "use client" e não pode receber função como prop. Pagamentos
   // vêm de getCardPayments (janela mês anterior + atual), não de
   // monthTransactions: o ciclo pode começar no mês anterior ao vencimento
@@ -179,6 +203,7 @@ export default async function FinancasPage({
           janela={c.cycle_start && c.cycle_end ? { start: c.cycle_start, end: c.cycle_end } : null}
         />
         <CardInstallments groups={installmentGroupsByCard[c.id] ?? []} />
+        <CardForecast rows={forecastByCard[c.id] ?? []} />
       </CardDetail>,
     ])
   );
