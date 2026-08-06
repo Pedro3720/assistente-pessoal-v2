@@ -167,15 +167,31 @@ export function CardWallet({
                     aria-pressed={card.id === ativoId}
                     onClick={() => abrir(card.id)}
                     initial={false}
-                    animate={{ y: pos.y, rotate: pos.rot }}
-                    whileHover={reduzido ? undefined : { y: pos.y - 12 }}
-                    className={`absolute inset-x-0 top-0 block text-left ${Z_LEQUE[i]} hover:z-40 focus-visible:z-40`}
+                    // O escalonamento do leque vai em `top`, que é propriedade
+                    // de LAYOUT, e não em `y`, que é transform. O layoutId
+                    // precisa ser dono exclusivo do transform deste elemento:
+                    // a projeção de layout interpola posição escrevendo
+                    // transform, e um `animate` com y/rotate aqui disputa a
+                    // mesma propriedade. O sintoma é a transição para o
+                    // destaque saltar em vez de deslizar.
+                    style={{ top: pos.y }}
+                    className={`absolute inset-x-0 block text-left ${Z_LEQUE[i]} hover:z-40 focus-visible:z-40`}
                   >
-                    <CardArt
-                      card={card}
-                      bankSlug={card.bank_id != null ? bankSlugById[card.bank_id] ?? null : null}
-                      size="stack"
-                    />
+                    {/* inclinação e o leve levantar no hover moram num
+                        elemento interno, justamente para não disputar o
+                        transform de quem carrega o layoutId */}
+                    <motion.div
+                      initial={false}
+                      animate={{ rotate: pos.rot, y: 0 }}
+                      whileHover={reduzido ? undefined : { y: -12 }}
+                      transition={mola}
+                    >
+                      <CardArt
+                        card={card}
+                        bankSlug={card.bank_id != null ? bankSlugById[card.bank_id] ?? null : null}
+                        size="stack"
+                      />
+                    </motion.div>
                   </motion.button>
                 );
               })}
