@@ -57,12 +57,27 @@ contar:
 - `totals.expense`, que alimenta o Dashboard e o total do mês;
 - a série do gráfico de saídas por mês.
 
-### 4.3 Exibição no extrato
+### 4.3 Exibição no extrato: nada a fazer
 
-`src/components/finance/statement.tsx` hoje mostra o rótulo fixo "Pagamento de
-fatura" no lugar da categoria. Passa a mostrar a categoria quando houver, e a
-cair no rótulo antigo quando não houver. Sem isso, a categoria preenchida não
-apareceria justamente na tela em que o pagamento é conferido.
+A primeira versão deste spec dizia que `src/components/finance/statement.tsx`
+precisava passar a mostrar a categoria. **Ele já faz isso.** Ao escrever o plano,
+a leitura do código real mostrou:
+
+```tsx
+const label = cat
+  ? cat.name
+  : t.is_card_payment
+    ? "Pagamento de fatura"
+    : "Sem categoria";
+```
+
+Como `cat` vem de `t.category_id ? catById.get(t.category_id) : null`, um
+pagamento com categoria já exibe o nome dela, e o rótulo fixo só aparece na
+ausência de categoria. É exatamente o comportamento desejado.
+
+O erro veio de escrever esta seção a partir de um grep raso, sem abrir o arquivo.
+Fica registrado como correção em vez de apagado, porque quem ler o plano vai ver
+a mesma observação e é melhor que os dois documentos concordem.
 
 ## 5. O que NÃO muda
 
