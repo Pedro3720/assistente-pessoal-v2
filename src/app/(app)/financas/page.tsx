@@ -197,7 +197,10 @@ export default async function FinancasPage({
 
   const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
-    if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
+    // Pagamento de fatura conta como despesa (Onda 20, decisão do dono): o
+    // mesmo gasto passa a ser contado na compra e no pagamento. Ver o spec
+    // 2026-08-06 para o porquê antes de "corrigir" isso.
+    if (t.type !== "expense" || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "tag";

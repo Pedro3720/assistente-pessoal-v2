@@ -119,10 +119,12 @@ export async function getFinanceData(year: number, month: number) {
     .filter((t) => t.type === "income" && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
   // Compra no cartão CONTA como despesa do mês (visão de competência) e mantém
-  // sua categoria. Pagamento de fatura NÃO é despesa nova — é quitação de dívida —
-  // então fica de fora do total e da quebra por categoria (evita contar duas vezes).
+  // sua categoria. Pagamento de fatura entra no total de despesas (Onda 20,
+  // decisão do dono): o mesmo gasto é contado na compra e no pagamento. O
+  // cálculo da fatura, em lib/finance/invoice.ts, continua tratando pagamento
+  // à parte.
   const expense = monthTransactions
-    .filter((t) => t.type === "expense" && !t.is_card_payment && !t.is_transfer)
+    .filter((t) => t.type === "expense" && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
 
   return {
@@ -476,8 +478,9 @@ export type MonthlyPlanData = Awaited<ReturnType<typeof getMonthlyPlan>>;
 /**
  * Saídas somadas por mês, terminando três meses depois do mês visto, para o
  * gráfico dar contexto de passado e de compromissos já lançados à frente.
- * Exclui transferência e pagamento de fatura, que não são despesa nova, pela
- * mesma regra do donut (ver byCat em app/(app)/financas/page.tsx).
+ * Exclui transferência. Pagamento de fatura conta como despesa (Onda 20,
+ * decisão do dono), pela mesma regra do donut e de totals.expense (ver byCat
+ * em app/(app)/financas/page.tsx).
  */
 export async function getMonthlyExpenseSeries(
   year: number,
@@ -506,7 +509,9 @@ export async function getMonthlyExpenseSeries(
   }
 
   for (const t of data) {
-    if (t.type !== "expense" || t.is_transfer || t.is_card_payment) continue;
+    // Mesmo critério do donut e de totals.expense: os três precisam
+    // concordar, senão a mesma tela mostra dois valores para a mesma coisa.
+    if (t.type !== "expense" || t.is_transfer) continue;
     const [y, m] = t.occurred_on.split("-").map(Number);
     const key = `${y}-${m - 1}`;
     if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + Number(t.amount));
