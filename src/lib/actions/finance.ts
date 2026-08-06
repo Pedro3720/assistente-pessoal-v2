@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/auth/session";
 import { enforceRate } from "@/lib/ratelimit";
-import { idParam, uuidParam } from "@/lib/validation/common";
+import { idParam, uuidParam, categoryIdParam, descriptionParam } from "@/lib/validation/common";
 import { shiftMonth } from "@/lib/dates";
 import {
   transactionInput,
@@ -162,6 +162,24 @@ export async function updateTransaction(id: number, raw: unknown) {
   revalidate();
 }
 
+/**
+ * Troca só a categoria de uma transação (ex.: linha da fatura do cartão).
+ * `updateTransaction` exige o objeto inteiro e um reenvio parcial dos demais
+ * campos "como estavam" cria lost update se algo mudou nesse meio tempo; esta
+ * action evita isso tocando apenas a coluna `category_id`.
+ */
+export async function updateTransactionCategory(id: number, categoryId: number | null) {
+  const rowId = idParam.parse(id);
+  const catId = categoryIdParam.parse(categoryId);
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category_id: catId })
+    .eq("id", rowId);
+  if (error) throw new Error(error.message);
+  revalidate();
+}
+
 export async function deleteTransaction(id: number) {
   const rowId = idParam.parse(id);
   const { supabase } = await requireUser();
@@ -217,6 +235,51 @@ export async function createInstallmentPurchase(raw: unknown) {
 
   const { error } = await supabase.from("transactions").insert(rows);
   if (error) throw new Error(error.message);
+  revalidate();
+}
+
+/**
+ * Renomeia TODAS as parcelas da mesma compra: elas são o mesmo item, e
+ * renomear só a da fatura aberta deixaria a lista inconsistente nos meses
+ * seguintes (o mês seguinte mostraria o título antigo).
+ *
+ * O sufixo "(k/n)" é reaplicado linha a linha, no mesmo formato que
+ * `createInstallmentPurchase` grava. Um UPDATE único com o texto puro para o
+ * grupo inteiro deixava N linhas idênticas na aba Transações, sem como saber
+ * qual parcela é qual: perda de dado irreversível, disparada por uma
+ * conveniência de UI. Por isso a action lê as linhas antes de escrever.
+ */
+export async function renameInstallmentGroup(purchaseGroup: string, titulo: string) {
+  const group = uuidParam.parse(purchaseGroup);
+  // o título que chega da UI já vem sem o sufixo (buildInstallmentGroups o
+  // remove para exibir); tirar de novo protege de quem digitar o sufixo à mão
+  // e acabar com "Monitor (3/10) (3/10)".
+  const desc = descriptionParam
+    .parse(titulo)
+    .replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "")
+    .trim();
+  if (!desc) throw new Error("Título obrigatório");
+
+  const { supabase } = await requireUser();
+
+  const { data: parcelas, error: readError } = await supabase
+    .from("transactions")
+    .select("id,installment_no,installments")
+    .eq("purchase_group", group);
+  if (readError) throw new Error(readError.message);
+  if (!parcelas || parcelas.length === 0) return;
+
+  const results = await Promise.all(
+    parcelas.map((p) => {
+      const k = Number(p.installment_no) || 0;
+      const n = Number(p.installments) || 0;
+      const description = k > 0 && n > 1 ? `${desc} (${k}/${n})` : desc;
+      return supabase.from("transactions").update({ description }).eq("id", p.id);
+    })
+  );
+  const falhou = results.find((r) => r.error);
+  if (falhou?.error) throw new Error(falhou.error.message);
+
   revalidate();
 }
 

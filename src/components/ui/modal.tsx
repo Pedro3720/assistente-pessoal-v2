@@ -61,6 +61,7 @@ export function Modal({
           animate="visible"
           exit="exit"
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          data-portal-root
           onClick={close}
         >
           <motion.div

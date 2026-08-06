@@ -363,7 +363,6 @@ export function TransactionsSection({
                     onChange={(e) => {
                       setIsCardPayment(e.target.checked);
                       if (e.target.checked) {
-                        setCategoryId("");
                         setIsTransfer(false);
                         setToBankId("");
                       }
@@ -393,7 +392,7 @@ export function TransactionsSection({
               </div>
             )}
 
-            {!isCardPayment && !isTransfer && (
+            {!isTransfer && (
               <div className="space-y-1">
                 <label className="text-sm font-medium">Categoria</label>
                 <select

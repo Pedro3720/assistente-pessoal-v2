@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-03.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-06.**
 
 ---
 
@@ -25,7 +25,7 @@
 - Stack: Next 16.2.9 (App Router) · React 19 · TS strict · Tailwind v4 · @supabase/ssr + supabase-js · Zod ·
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
-## 2. Estado atual (2026-07-23)
+## 2. Estado atual (2026-08-06)
 - **`main` = `origin/main`** (publicado na Vercel; Ondas 8 e 9 no ar, incluindo o fix #31 do modal de
   importar). Base anterior: `ccbef74`.
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
@@ -66,6 +66,41 @@
   `Money`/limites de dinheiro. `npm run build` limpo depois de cada bloco. Relatório completo
   (decisões, valores de cor, contraste calculado) em `.superpowers/sdd/final-fix-report.md`
   (fora do git, `.superpowers/` é ignorado).
+- **Onda 19 (2026-08-05): COMPLETA na branch `feat/onda19-carteira-cartoes`** — carteira de
+  cartões com identidade visual e ciclo de fatura real, 14 tasks (ver 3.22). Migração
+  `20260701000019_card_identity.sql` (colunas `network`/`holder`/`last4`/`tier` em
+  `credit_cards`, todas opcionais) **já rodada pelo dono**. `fatura_mes` passou a ser calculada
+  pela janela do ciclo de fatura em vez de ser todo o `opening_invoice` acumulado; isso muda os
+  números que já apareciam no Dashboard e no rail em qualquer cartão com `closing_day`/`due_day`
+  preenchidos (ver pendência na seção 4). **Ainda não mesclada na `main`, sem push.**
+- **Onda 19, revisão final da branch (2026-08-05):** a revisão da branch inteira achou 3 Critical
+  e 3 Important na costura entre as tasks, todos corrigidos em 4 commits (`d2d33dd`, `eecc364`,
+  `fe0e3c0`, `3737476`):
+  1. **Fatura e lista discordavam.** A janela do ciclo era decidida em quatro lugares. Nasceu
+     `buildCardInvoice` em `src/lib/finance/invoice.ts` (função pura: devolve janela, total,
+     linhas e utilizado); `getFinanceData` chama uma vez por cartão e devolve
+     `invoiceRowsByCardId`, que `financas/page.tsx` só repassa. `getFinanceData` ganhou uma
+     consulta de transações de cartão com folga de três meses (a janela do ciclo pode começar
+     dois meses antes do vencimento). Pagamento de fatura saiu do total e das linhas do ciclo;
+     continua abatendo `utilizado_total`.
+  2. **Portais e clique fora.** `useOutsideClick` agora respeita `data-portal-root` (marcador
+     genérico, antes era `data-modal-root` e só o `Modal` tinha). Os quatro portais do projeto
+     (`modal`, `select-menu`, `icon-picker`, `import-modal`) estão marcados. Portal novo precisa
+     do marcador.
+  3. **Detalhes:** linha da fatura esconde a categoria abaixo de `sm` (mesma regra da aba
+     Transações); `Esc` dentro de portal não fecha mais a carteira; fatura zerada mostra o selo
+     neutro "Sem fatura" no lugar de "Fechada".
+  4. **Renomear parcelamento** reaplica o sufixo `(k/n)` linha a linha em vez de gravar o mesmo
+     texto no grupo inteiro (antes, renomear apagava a identificação da parcela).
+
+  `npm run build` limpo. Relatório completo em `.superpowers/sdd/final-fix-report.md` (fora do
+  git, `.superpowers/` é ignorado).
+- **Onda 20 (2026-08-06): COMPLETA, mesma branch `feat/onda19-carteira-cartoes`** — o pagamento
+  de fatura ganhou categoria e passou a contar como despesa no donut, em `totals.expense` e na
+  série de saídas por mês (ver 3.23). **Decisão consciente do dono: a partir de agora o mesmo
+  gasto é contado duas vezes** (na compra do cartão e no pagamento da fatura); ver 3.23 para o
+  porquê e o exemplo numérico. `invoice.ts` ficou de fora de propósito, continua tratando
+  pagamento como abatimento de `utilizado_total`. `npm run build` limpo.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -901,6 +936,132 @@ rendering React component" vem do `next-themes` 0.4.6, que injeta um `<script>` 
 o tema antes da primeira pintura. `theme-provider.tsx` tem um único commit no histórico (o
 "first commit") e a onda não encostou nele. É aviso, não falha.
 
+### 3.22 Onda 19: carteira de cartões com identidade e ciclo de fatura real
+(branch `feat/onda19-carteira-cartoes`) — 2026-08-05
+Carteira de cartões nova, com arte por emissor e fatura calculada pelo ciclo real (antes,
+`closing_day`/`due_day` eram texto solto na tela e nenhuma conta os usava). 14 tasks, cada
+uma com brief e relatório próprios em `.superpowers/sdd/task-*-brief.md`/`task-*-report.md`,
+`npm run build` limpo em todas. Nenhuma dependência nova: `motion` e `lucide-react` já
+estavam no projeto (Task 14 conferiu `git diff main --stat -- package.json` vazio).
+
+- **Dados:** migração `supabase/migrations/20260701000019_card_identity.sql`, colunas
+  `network`/`holder`/`last4`/`tier` em `credit_cards`, todas opcionais e com `check` (network
+  restrito a `visa`/`mastercard`/`elo`/`amex`/`hipercard`; `last4` só 4 dígitos; tier restrito
+  a `standard`/`gold`/`platinum`/`black`). **Já rodada pelo dono.** Nunca guardamos número
+  completo, CVV ou validade.
+- **Biblioteca de emissores:** o gerador de logos (`scripts/gen-banks.mjs`) foi de 28 para 41
+  bancos, acrescentando Cora, InfinitePay, Wise, PayPal, Stripe, Revolut, Efí, Ton, Iugu,
+  Asaas, NG Cash, Avenue e Nomad. `src/lib/finance/banks-extra.ts` cobre emissor fora do
+  pacote gerado; `src/lib/finance/issuers.ts` une as duas listas num só lookup. **Dez das
+  treze cores novas são estimativa, não fonte oficial** (as de menor confiança: NG Cash, Ton
+  e Iugu); corrigir é trocar o hex em `gen-banks.mjs` e rodar o gerador de novo.
+- **Ciclo de fatura:** `src/lib/finance/billing-cycle.ts` (funções puras: `cycleWindow`,
+  `bestPurchaseDay`, `dueDate`). `fatura_mes` (`src/lib/data/finance.ts`) passou a somar só as
+  transações dentro da janela do ciclo em vez do `opening_invoice` inteiro; `opening_invoice`
+  fica fora da fatura do mês quando há ciclo definido, mas continua entrando no
+  `utilizado_total` (limite consumido). Isso muda os valores que já apareciam no Dashboard e
+  no rail para qualquer cartão com `closing_day`/`due_day` preenchidos (ver pendência na
+  seção 4).
+- **Arte e carteira:** `card-art.tsx` (arte composta a partir do emissor, selo sem filtro de
+  cor, tom pela variante do cartão) e `card-wallet.tsx` (leque vertical, grade e cartão
+  aberto, animados com `motion`/`layoutId`), mais o hook `use-outside-click.ts`. **Bandeira
+  ainda sai como rótulo de texto**: os 5 SVGs de `public/networks/` (visa/mastercard/elo/
+  amex/hipercard) não existem; `NETWORK_SVG` em `card-art.tsx` está vazio de propósito e
+  precisa ganhar a entrada quando cada arquivo chegar. **`public/banks/renner.png` também não
+  existe**; o cartão Renner cai no fallback de cor até o arquivo chegar.
+- **Aba Contas nova**, recebeu o bloco de contas bancárias que antes vivia dentro de Cartões.
+- **Detalhe do cartão:** `card-detail.tsx` (fatura, estado derivado, limite, três datas),
+  `card-invoice-rows.tsx` (movimentações com categoria editável na própria linha),
+  `card-installments.tsx` (parcelamentos com título editável), `card-forecast.tsx` (projeção
+  de seis ciclos), `card-detail-actions.tsx` (editar e excluir o cartão). **Renomear
+  parcelamento e trocar categoria de movimentação nunca foram testados contra dados reais**
+  (só build e leitura de código).
+- **Rail da Visão geral** ganhou miniatura do cartão com link para a aba Cartões.
+- **Achados de memória (explicam decisões do código, não são bugs abertos):** o app ficou
+  sem nenhum caminho para criar, editar ou excluir cartão entre as Tasks 6 e 12, porque a
+  carteira substituiu a listagem antiga e ninguém herdou essas ações; corrigido na Task 12
+  (`card-detail-actions.tsx`). A carteira indexava o mapa de bancos por id de **cartão** em
+  vez de id de **banco**, o que fazia o selo do emissor sair errado; corrigido na Task 13.
+- **Fechamento (Task 14, esta sessão):** varredura `rg "—|–" src` sem ocorrência em texto
+  visível ao usuário (as poucas ocorrências restantes são comentários de código, aceitável
+  pelo brief); `git diff main --stat -- package.json package-lock.json` vazio; `npm run
+  build` limpo, sem erro nem aviso novo; consolidação desta entrada. **Não foi possível
+  fazer a conferência visual manual** (Step 4 do brief): o app exige login no Supabase e
+  esta sessão não tem credenciais; fica registrada como pendência do dono na seção 4, com
+  destaque.
+- **Fora de escopo desta onda:** os 5 SVGs de bandeira e o `renner.png` (assets do dono), e a
+  correção das cores estimadas de emissor (depende de fonte oficial de cada marca).
+
+### 3.23 Onda 20: pagamento de fatura ganha categoria e vira despesa nos totais
+(mesma branch `feat/onda19-carteira-cartoes`) — 2026-08-06
+Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/specs/` e
+`docs/superpowers/plans/` (`2026-08-06-*`), brief/relatório de cada task em
+`.superpowers/sdd/task-*-brief.md`/`task-*-report.md`. Sem migração de banco.
+
+- **Task 1 (commit `f7e581d`):** o campo Categoria, no formulário de lançamento
+  (`src/components/finance/transactions-section.tsx`), deixou de ficar escondido quando o
+  lançamento é "Pagamento de fatura" (`isCardPayment`); só transferência continua sem
+  categoria, de propósito (não faz sentido categorizar dinheiro que só muda de lugar).
+- **Task 2 (commit `87bc809`):** pagamento de fatura passou a contar como despesa em três
+  agregados, todos precisavam mudar juntos para a tela não mostrar números que discordam
+  entre si: o donut de categorias (`byCat` em `src/app/(app)/financas/page.tsx`), o
+  `totals.expense` e a série de saídas por mês `getMonthlyExpenseSeries` (ambos em
+  `src/lib/data/finance.ts`). Antes os três excluíam `is_card_payment`; agora só excluem
+  `is_transfer`.
+- **Dupla contagem é decisão consciente do dono, não bug.** Com a mudança, o mesmo gasto passa
+  a ser contado duas vezes nesses três agregados: uma vez quando a compra no cartão entra na
+  categoria dela (ex.: R$ 200 em "Mercado" no dia da compra), outra vez quando o pagamento da
+  fatura inteira entra na categoria escolhida no lançamento do pagamento (ex.: R$ 1.500 de
+  fatura paga, categorizados como "Cartão de crédito" ou repartidos como o dono preferir). O
+  total de despesas do mês, nesse exemplo, sobe R$ 1.500 mesmo sem gasto novo ter acontecido.
+  **O dono viu essa consequência com exemplo numérico antes de pedir a mudança** (é o motivo de
+  existir a Onda 20); quem ler isso daqui a seis meses e achar que é bug duplicando valor: não
+  é, é o comportamento pedido. Se quiser reverter, é só voltar a excluir `is_card_payment` nos
+  três lugares acima (Task 2, commit `87bc809`). **Cuidado ao procurar esses três lugares com
+  `rg is_card_payment`: a busca acha um quarto ponto, `getSubscriptions`
+  (`src/lib/data/finance.ts`, `.eq("is_card_payment", false)`), que não é um dos três agregados
+  e não entra na reversão.** Aquele filtro é o detector de assinatura recorrente (identifica
+  cobrança repetida no cartão) e fica como está, de propósito; reverter a Onda 20 mexendo nele
+  por engano quebra a detecção de assinaturas.
+- **`src/lib/finance/invoice.ts` ficou de fora de propósito.** Lá, pagamento de fatura continua
+  abatendo `utilizado_total` (saldo de limite do cartão) e fica fora do total do ciclo/fatura do
+  mês (`total`, dentro da janela calculada por `buildCardInvoice`). **Não uniformizar isso com
+  os outros três agregados.** Aplicar o pagamento dentro da janela do ciclo foi exatamente o bug
+  Critical corrigido na revisão final da Onda 19 (ver 3.22, item 1): fazia a fatura seguinte
+  zerar em todo cartão com `closing_day`/`due_day` preenchidos, porque o pagamento da fatura
+  anterior "cancelava" a fatura nova dentro da mesma janela. Fatura, limite e disponível de cada
+  cartão precisam continuar exatamente iguais depois desta onda; só os três agregados de
+  Finanças (donut, `totals.expense`, série de saídas) sobem.
+- **Totais de meses passados mudaram e não houve migração do histórico.** Todo lançamento de
+  pagamento de fatura já existente no banco não tem categoria (o campo era escondido antes da
+  Task 1) e vai aparecer como "Sem categoria" no donut até o dono preencher manualmente, um por
+  um. Não houve script de backfill nem foi pedido; decisão do dono.
+- **Importação de extrato continua trazendo pagamento sem categoria.** `import-modal.tsx` e o
+  parser de OFX ficaram fora do escopo desta onda de propósito; quem importa um pagamento de
+  fatura do extrato do banco também vai precisar categorizar manualmente depois.
+- **Achado na revisão final: o limite mensal por categoria passa a ser consumido pelo
+  pagamento da fatura.** `byCat`, em `src/app/(app)/financas/page.tsx`, carrega
+  `limit: cat?.monthly_limit` no mesmo mapa que agora inclui o valor do pagamento de fatura
+  categorizado; `category-legend.tsx` usa esse total (compra + pagamento) como valor do
+  medidor (`Meter`) contra o limite. Exemplo: categoria "Alimentação" com limite de R$ 800 e
+  R$ 600 de compras no mês; se o dono categorizar R$ 500 do pagamento da fatura nessa mesma
+  categoria, o medidor passa a mostrar 138% e "R$ 0,00 restante", com apenas R$ 600 de gasto
+  real em comida. **Recomendação: não categorizar pagamento de fatura em categoria que tenha
+  limite mensal definido**, justamente para não estourar o medidor com um valor que já é
+  contado em dobro por decisão consciente (ver bullet acima). É consequência direta de contar
+  o pagamento como despesa nos agregados; a alternativa (excluir o pagamento só do cálculo do
+  medidor, mantendo nos outros três agregados) foi considerada e descartada, porque reabriria
+  a mesma discordância entre agregados que a Task 2 desta onda existe para evitar (medidor
+  dizendo uma coisa, donut e `totals.expense` dizendo outra).
+- **Fechamento (esta task, commit a seguir):** `rg "—|–" src` sem ocorrência em string visível
+  ao usuário; as ocorrências restantes são todas comentário de código em vários arquivos (não
+  só `finance.ts`), aceitável pelo brief. `git diff 1c598b4..HEAD --stat` (intervalo dos
+  commits desta onda, em vez de comparar com `main`, porque a branch também carrega a Onda 19
+  inteira e um diff contra `main` listaria arquivo demais) mostrou só os três arquivos
+  esperados: `financas/page.tsx`, `transactions-section.tsx`, `lib/data/finance.ts`. `npm run
+  build` limpo, sem erro nem aviso novo. Relatório completo em
+  `.superpowers/sdd/task-3-report.md` (fora do git, `.superpowers/` é ignorado).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
@@ -956,6 +1117,57 @@ o tema antes da primeira pintura. `theme-provider.tsx` tem um único commit no h
 >    Tarefas, Senhas, Sugestões, Perfil e Admin herdaram os tokens (cor/raio/fonte) automaticamente
 >    por serem CSS global, mas continuam com os componentes antigos (cards manuscritos, sem
 >    `DataTable`/`PanelHeader`/etc.). Migrar essas telas para o sistema novo é onda futura.
+
+> **Atualização 2026-08-05 (Onda 19, carteira de cartões):**
+> 1. **Conferência visual manual, destaque: NENHUMA tela da carteira foi vista por olho
+>    humano.** Percorrer a aba Cartões nos dois temas, em desktop e celular: leque, botão de
+>    ver todos, grade, cartão aberto, fileira rolável, edição de categoria e de título de
+>    parcelamento. Não deu pra fazer nesta sessão porque o app exige login no Supabase e a
+>    sessão não tem credenciais. No app instalado (Capacitor), conferir também que a carteira
+>    responde ao toque e que o scroll da fileira não briga com o scroll da página.
+> 2. **Os valores de fatura mudaram ao ligar o ciclo real.** Conferir o Dashboard e o rail
+>    contra o app do banco, cartão por cartão, para cada cartão com `closing_day`/`due_day`
+>    preenchidos.
+> 3. **`public/banks/renner.png` não existe.** Enquanto isso o cartão Renner cai no fallback
+>    de cor em vez do logo do banco.
+> 4. **Os 5 SVGs de bandeira em `public/networks/` não existem** (`visa`, `mastercard`,
+>    `elo`, `amex`, `hipercard`). Até chegarem, a bandeira sai como rótulo de texto. Ao
+>    adicionar cada arquivo, acrescentar a entrada em `NETWORK_SVG` (`src/components/finance/
+>    card-art.tsx`).
+> 5. **Dez das treze cores de emissor novas são estimativa, não fonte oficial** (as de menor
+>    confiança: NG Cash, Ton e Iugu). Corrigir é trocar o hex em `scripts/gen-banks.mjs` e
+>    rodar o gerador de novo.
+> 6. **Renomear parcelamento e trocar categoria de movimentação nunca foram testados contra
+>    dados reais**, só por leitura de código e `npm run build`.
+
+> **Atualização 2026-08-06 (Onda 20, categoria no pagamento de fatura):**
+> 1. **Comparar antes e depois, cartão por cartão e mês por mês.** A lista completa do que
+>    sobe ou desce pelo mesmo valor (a soma dos pagamentos de fatura já lançados no mês):
+>    - No Dashboard: "Despesas" (card de estatística) **e "Saldo do mês"** (mesmo card e
+>      rodapé do painel de Finanças, `src/app/(app)/page.tsx`) **cai** por esse valor. Este é
+>      o efeito mais visível da onda (o número que mais chama atenção ao abrir o app);
+>      esperar por ele antes de estranhar o saldo mais baixo.
+>    - Na aba Finanças: total do donut de categorias e a barra do mês corrente no gráfico de
+>      saídas.
+>    - Na aba Contas: o indicador "Despesas" dentro do `AccountsSummary`
+>      (`src/components/finance/accounts-summary.tsx`) também sobe, mesmo total.
+>    - Fatura, limite e disponível de cada cartão (aba Cartões) devem ter ficado **exatamente
+>      iguais**; se algum desses três mudou, é bug, avisar antes de usar.
+> 2. **Categorizar os pagamentos de fatura já lançados, com cuidado com limite mensal.** Eles
+>    não têm categoria (o campo estava escondido antes desta onda) e aparecem como "Sem
+>    categoria" no donut. Não houve migração de histórico, por decisão sua; entrar em cada
+>    lançamento de pagamento e escolher a categoria manualmente. **Evitar categoria com limite
+>    mensal definido**: o medidor da categoria (`category-legend.tsx`) passa a contar o valor
+>    do pagamento junto com as compras normais, então uma categoria com limite pode aparecer
+>    estourada sem gasto real ter mudado (detalhe e exemplo numérico na seção 3.23).
+> 3. **Pagamento importado do extrato continua sem categoria.** Ao importar extrato com
+>    pagamento de fatura, categorizar manualmente depois da importação; a importação em si não
+>    mudou nesta onda.
+> 4. **Atenção para quem for reverter:** `rg is_card_payment` acha um quarto lugar,
+>    `getSubscriptions` (`src/lib/data/finance.ts`, `.eq("is_card_payment", false)`), além dos
+>    três agregados da Task 2. **Aquele filtro é o detector de assinatura recorrente e fica como
+>    está, de propósito**; não faz parte da dupla contagem e não deve ser tocado ao reverter a
+>    Onda 20 (reverter é só voltar a excluir `is_card_payment` nos três agregados de 3.23).
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,

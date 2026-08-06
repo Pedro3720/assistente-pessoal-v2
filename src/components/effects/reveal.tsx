@@ -37,7 +37,9 @@ export function Reveal({
     const targets: gsap.TweenTarget = stagger ? Array.from(node.children) : node;
 
     if (prefersReducedMotion()) {
-      gsap.set(targets, { opacity: 1, y: 0 });
+      // clearProps aqui pelo mesmo motivo do tween abaixo: sem ele o elemento
+      // fica com transform de identidade e vira bloco de contenção.
+      gsap.set(targets, { opacity: 1, y: 0, clearProps: "transform" });
       return;
     }
 
@@ -58,6 +60,14 @@ export function Reveal({
           ease: "power3.out",
           delay,
           stagger: stagger ? 0.09 : 0,
+          // Sem isto o GSAP deixa `transform: translate(0px, 0px)` inline ao
+          // terminar. Transform de identidade ainda é transform: ele cria um
+          // bloco de contenção e um sistema de coordenadas novo, e isso quebra
+          // a projeção de layout do `motion` (layoutId mede posição de tela
+          // com getBoundingClientRect). Foi o que impediu a animação do leque
+          // de cartões de acontecer, já que a carteira vive dentro de um
+          // Reveal. Vale para qualquer uso futuro de motion aqui dentro.
+          clearProps: "transform",
         });
         observer.disconnect();
       },

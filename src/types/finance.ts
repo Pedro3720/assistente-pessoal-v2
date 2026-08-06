@@ -33,6 +33,14 @@ export interface CreditCard {
   closing_day: number | null;
   due_day: number | null;
   color: string;
+  /** bandeira: visa, mastercard, elo, amex, hipercard */
+  network: string | null;
+  /** nome impresso no cartão */
+  holder: string | null;
+  /** quatro últimos dígitos; nunca o número completo */
+  last4: string | null;
+  /** variante: standard, gold, platinum, black. Define o tom da arte */
+  tier: string | null;
 }
 
 export interface Transaction {
@@ -78,10 +86,18 @@ export interface BankWithBalance extends Bank {
 /** Cartão com os valores de fatura/limite calculados. */
 export interface CardWithInvoice extends CreditCard {
   invoice: number;        // = fatura_mes (compat)
-  fatura_mes: number;     // a pagar este mês
-  em_aberto: number;      // parcelas de meses futuros
+  fatura_mes: number;     // valor do ciclo em foco, pago ou não: o pagamento
+                          // já saiu do total e o estado "Paga" é derivado à parte
+  em_aberto: number;      // utilizado fora da fatura do ciclo: parcelas futuras,
+                          // compras fora da janela e (com ciclo) o opening_invoice
   utilizado_total: number;// total consumindo limite
   disponivel: number;     // credit_limit - utilizado_total
+  /** primeiro dia da janela da fatura; null quando o cartão não tem ciclo */
+  cycle_start: string | null;
+  /** dia do fechamento desta fatura; null quando o cartão não tem ciclo */
+  cycle_end: string | null;
+  /** data completa do vencimento desta fatura; null quando o cartão não tem dia de vencimento */
+  cycle_due: string | null;
 }
 
 export interface Subscription {

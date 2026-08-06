@@ -39,6 +39,19 @@ export const BANKS: Bank[] = [
   { slug: "mercadopago", nome: "Mercado Pago", cor: "#00A6E0" },
   { slug: "pagbank", nome: "PagBank", cor: "#0F9B4F" },
   { slug: "stone", nome: "Stone", cor: "#00A868" },
+  { slug: "cora", nome: "Cora", cor: "#000000" },
+  { slug: "infinitepay", nome: "InfinitePay", cor: "#00D563" },
+  { slug: "wise", nome: "Wise", cor: "#9FE870" },
+  { slug: "paypal", nome: "PayPal", cor: "#003087" },
+  { slug: "stripe", nome: "Stripe", cor: "#635BFF" },
+  { slug: "revolut", nome: "Revolut", cor: "#000000" },
+  { slug: "efibank", nome: "Efí", cor: "#FF6B00" },
+  { slug: "ton", nome: "Ton", cor: "#FF5031" },
+  { slug: "iugu", nome: "Iugu", cor: "#0B1F3B" },
+  { slug: "asaas", nome: "Asaas", cor: "#0057C2" },
+  { slug: "ngcash", nome: "NG Cash", cor: "#FF2D78" },
+  { slug: "avenue", nome: "Avenue", cor: "#0B6E4F" },
+  { slug: "nomad", nome: "Nomad", cor: "#0F172A" },
 ];
 
 const PORSLUG = new Map(BANKS.map((b) => [b.slug, b]));

@@ -24,6 +24,23 @@
   systematic-debugging para bug, etc.); só depois comece a mexer.
 - Vale mesmo para pedidos que parecem simples. Perguntas puras, sem modificação, não precisam.
 
+## Limite de sessão: trabalhar sempre em ponto de parada seguro
+
+- **O dono quer que o trabalho pare antes de estourar o limite de sessão.** O assistente
+  **não tem acesso ao percentual de uso**: não existe ferramenta que informe "você está em
+  98%". O sinal de limite só chega como erro, depois de estourado (foi o que matou um
+  subagente no meio da Onda 18).
+- Como a parada não pode ser prevista, ela precisa ser **sempre segura**. Na prática:
+  - Trabalho longo roda por tasks pequenas, cada uma terminando em commit. Nunca deixe
+    mudança grande sem commit "para commitar tudo junto no fim".
+  - O ledger em `.superpowers/sdd/progress.md` é atualizado **assim que** cada task fecha,
+    não no fim da onda. Ele é o mapa de recuperação: depois de um corte, confie nele e no
+    `git log`, não na memória da conversa.
+  - Ao retomar depois de um corte, **cheque o ledger antes de despachar qualquer coisa** e
+    reinicie na primeira task não marcada como completa. Nunca refaça task já completa.
+- Se o dono avisar que está perto do limite, **pare no fim da task corrente**, commite,
+  atualize o ledger e faça um resumo curto do que falta.
+
 ## Planejamento detalhado antes de implementar (obrigatório)
 
 - **Toda modificação no projeto passa pela fase de planejamento completa, nesta ordem:**

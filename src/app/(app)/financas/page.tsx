@@ -4,15 +4,21 @@ import {
   getSubscriptions,
   getMonthlyPlan,
   getMonthlyExpenseSeries,
+  getCardPayments,
+  getInstallmentRows,
 } from "@/lib/data/finance";
 import { getPluggyItems, getPendingCategorization } from "@/lib/data/pluggy";
 import { CategorizationQueue } from "@/components/finance/categorization-queue";
-import { currentYearMonth, shiftMonth, monthLabel, todayISO } from "@/lib/dates";
+import { currentYearMonth, shiftMonth, monthLabel, monthBounds, todayISO } from "@/lib/dates";
 import { MonthNav } from "@/components/finance/month-nav";
 import { AccountsSummary } from "@/components/finance/accounts-summary";
 import { AccountsCard } from "@/components/finance/accounts-card";
 import { CardsCard } from "@/components/finance/cards-card";
-import { CardManager } from "@/components/finance/card-manager";
+import { CardWallet } from "@/components/finance/card-wallet";
+import { CardDetail } from "@/components/finance/card-detail";
+import { CardInvoiceRows } from "@/components/finance/card-invoice-rows";
+import { CardInstallments } from "@/components/finance/card-installments";
+import { CardForecast } from "@/components/finance/card-forecast";
 import { CategoryManagerButton } from "@/components/finance/category-manager-button";
 import { TransactionsSection } from "@/components/finance/transactions-section";
 import { Statement } from "@/components/finance/statement";
@@ -24,6 +30,8 @@ import { CategoryLegend } from "@/components/finance/category-legend";
 import { MonthlyExpenseChart } from "@/components/finance/monthly-expense-chart";
 import { pluggyConfigurada } from "@/lib/pluggy/client";
 import { buildCategorySlices } from "@/lib/finance/category-chart";
+import { buildInstallmentGroups } from "@/lib/finance/installments";
+import { buildCardForecast } from "@/lib/finance/forecast";
 import { Reveal } from "@/components/effects/reveal";
 import { PanelHeader, PanelContext } from "@/components/ui/panel-header";
 import { Segmented } from "@/components/ui/segmented";
@@ -35,6 +43,7 @@ import { Segmented } from "@/components/ui/segmented";
 const TAB_ITEMS = [
   { value: "visao", label: "Visão geral" },
   { value: "transacoes", label: "Transações" },
+  { value: "contas", label: "Contas" },
   { value: "cartoes", label: "Cartões" },
   { value: "agendadas", label: "Agendadas" },
   { value: "recorrentes", label: "Recorrentes" },
@@ -74,33 +83,124 @@ export default async function FinancasPage({
       <FinanceLoadError message={e instanceof Error ? e.message : "Erro desconhecido"} />
     );
   }
-  const { banks, cards, categories, monthTransactions, totals } = data;
+  const { banks, cards, categories, monthTransactions, invoiceRowsByCardId, totals } = data;
 
   const invoicesTotal = cards.reduce((s, c) => s + c.invoice, 0);
 
+  // banks.icon segue o mesmo formato que EntityIcon já resolve para marca de
+  // banco: "bank:<slug>". Fora desse formato (ícone do catálogo ou emoji
+  // legado), o cartão cai no fallback de cor do CardArt.
+  const bankSlugById: Record<number, string | null> = Object.fromEntries(
+    banks.map((b) => [b.id, b.icon.startsWith("bank:") ? b.icon.slice(5) : null])
+  );
+
   const selectedBankId =
     banks.find((b) => String(b.id) === conta)?.id ?? banks[0]?.id;
-  const [statement, subs, plan, pluggyItems, paraCategorizar, monthlyExpenseSeries] =
-    await Promise.all([
-      selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
-      getSubscriptions(year, month).catch(() => ({
-        subscriptions: [],
-        candidates: [],
-        monthlyTotal: 0,
-      })),
-      getMonthlyPlan(year, month).catch(() => ({
-        items: [],
-        suggestions: [],
-        totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
-      })),
-      getPluggyItems().catch(() => []),
-      getPendingCategorization().catch(() => []),
-      getMonthlyExpenseSeries(year, month).catch(() => []),
-    ]);
+  const [
+    statement,
+    subs,
+    plan,
+    pluggyItems,
+    paraCategorizar,
+    monthlyExpenseSeries,
+    cardPayments,
+    installmentRows,
+  ] = await Promise.all([
+    selectedBankId ? getBankStatement(selectedBankId, year, month) : Promise.resolve(null),
+    getSubscriptions(year, month).catch(() => ({
+      subscriptions: [],
+      candidates: [],
+      monthlyTotal: 0,
+    })),
+    getMonthlyPlan(year, month).catch(() => ({
+      items: [],
+      suggestions: [],
+      totals: { previstoReceber: 0, previstoPagar: 0, saldoPrevisto: 0, pendentes: 0 },
+    })),
+    getPluggyItems().catch(() => []),
+    getPendingCategorization().catch(() => []),
+    getMonthlyExpenseSeries(year, month).catch(() => []),
+    getCardPayments(year, month).catch(() => []),
+    getInstallmentRows().catch(() => []),
+  ]);
+
+  // Parcelamentos em aberto de cada cartão (Task 10, Onda 19): a "parcela
+  // atual" é a maior já lançada dentro da janela da fatura em foco, não a
+  // maior linha que existe (createInstallmentPurchase já cria todas de uma
+  // vez, com occurred_on em meses futuros). Cartão sem ciclo definido cai no
+  // mês-calendário visualizado, mesmo fallback do resto da página.
+  const monthEnd = monthBounds(year, month).end;
+  const cycleEndByCard: Record<number, string> = Object.fromEntries(
+    cards.map((c) => [c.id, c.cycle_end ?? monthEnd])
+  );
+  const installmentGroupsByCard = buildInstallmentGroups(installmentRows, cycleEndByCard);
+
+  // Projeção das próximas faturas (Task 11, Onda 19): seis ciclos seguintes
+  // ao visualizado (o em foco já aparece no cabeçalho do CardDetail), cada um
+  // somando as mesmas parcelas futuras da Task 10 (installmentRows) e as
+  // assinaturas ativas vinculadas ao cartão. subs.subscriptions já vem
+  // carregado para a aba Recorrentes, sem filtro de mês (é a lista toda,
+  // ativas e inativas), por isso nenhuma consulta nova entra aqui.
+  const forecastByCard: Record<number, ReturnType<typeof buildCardForecast>> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      buildCardForecast(
+        c.id,
+        c.closing_day,
+        c.due_day,
+        installmentRows,
+        subs.subscriptions,
+        year,
+        month
+      ),
+    ])
+  );
+
+  // As movimentações da fatura (Task 9, Onda 19) NÃO são montadas aqui: elas
+  // vêm de `invoiceRowsByCardId`, que getFinanceData produz com a mesma
+  // chamada de `buildCardInvoice` que gerou `fatura_mes`. Refazer o filtro
+  // nesta página foi justamente o que fez a lista e o cabeçalho discordarem
+  // (a interseção com o mês-calendário perdia a parte da janela que cai no
+  // mês anterior, e o pagamento de fatura entrava como se fosse compra).
+
+  // Detalhe do estado aberto da carteira: cabeçalho da fatura, limite e
+  // datas (Task 8), com as movimentações da fatura (Task 9), os
+  // parcelamentos em aberto (Task 10) e a projeção das próximas faturas
+  // (Task 11) como children. O bloco de gerenciar cartão entra em task futura
+  // da Onda 19. Pré-renderizado aqui (Server Component) e entregue como
+  // ReactNode por cartão, porque o
+  // CardWallet é "use client" e não pode receber função como prop. Pagamentos
+  // vêm de getCardPayments (janela mês anterior + atual), não de
+  // monthTransactions: o ciclo pode começar no mês anterior ao vencimento
+  // quando o cartão fecha depois do dia de vencimento.
+  const cardDetailById: Record<number, React.ReactNode> = Object.fromEntries(
+    cards.map((c) => [
+      c.id,
+      <CardDetail
+        key={c.id}
+        card={c}
+        year={year}
+        month={month}
+        payments={cardPayments.filter((t) => t.card_id === c.id)}
+        banks={banks}
+      >
+        <CardInvoiceRows
+          transactions={invoiceRowsByCardId[c.id] ?? []}
+          categories={categories}
+          janela={c.cycle_start && c.cycle_end ? { start: c.cycle_start, end: c.cycle_end } : null}
+        />
+        <CardInstallments groups={installmentGroupsByCard[c.id] ?? []} />
+        <CardForecast rows={forecastByCard[c.id] ?? []} />
+      </CardDetail>,
+    ])
+  );
 
   const byCat = new Map<string, { icon: string; total: number; limit: number | null }>();
   for (const t of monthTransactions) {
-    if (t.type !== "expense" || t.is_card_payment || t.is_transfer) continue;
+    // Pagamento de fatura conta como despesa (Onda 20, decisão do dono): o
+    // mesmo gasto passa a ser contado na compra e no pagamento. Ver o spec
+    // 2026-08-06 para o porquê antes de "corrigir" isso.
+    if (t.type !== "expense" || t.is_transfer) continue;
     const cat = categories.find((c) => c.id === t.category_id);
     const key = cat ? cat.name : "Sem categoria";
     const icon = cat?.icon ?? "tag";
@@ -192,33 +292,32 @@ export default async function FinancasPage({
                 <AccountsCard banks={banks} />
               </Reveal>
               <Reveal>
-                <CardsCard cards={cards} />
+                <CardsCard cards={cards} bankSlugById={bankSlugById} offset={offset} />
               </Reveal>
             </div>
           </div>
         </>
       )}
 
-      {/* contas e cartões: a criação e a exclusão de conta moram no
-          AccountsSummary (Onda 18 só validou AccountsCard/CardsCard como
-          exibição; a ação de criar/excluir conta continua só aqui até uma
-          onda futura levar isso para um formulário próprio) */}
+      {/* contas bancárias: criar e excluir conta */}
+      {aba === "contas" && (
+        <Reveal>
+          <AccountsSummary
+            banks={banks}
+            income={totals.income}
+            expense={totals.expense}
+            invoicesTotal={invoicesTotal}
+            podeConectar={pluggyConfigurada()}
+            pluggyItems={pluggyItems}
+          />
+        </Reveal>
+      )}
+
+      {/* carteira de cartões de crédito */}
       {aba === "cartoes" && (
-        <div className="space-y-6">
-          <Reveal>
-            <AccountsSummary
-              banks={banks}
-              income={totals.income}
-              expense={totals.expense}
-              invoicesTotal={invoicesTotal}
-              podeConectar={pluggyConfigurada()}
-              pluggyItems={pluggyItems}
-            />
-          </Reveal>
-          <Reveal>
-            <CardManager cards={cards} banks={banks} />
-          </Reveal>
-        </div>
+        <Reveal>
+          <CardWallet cards={cards} bankSlugById={bankSlugById} banks={banks} renderDetail={cardDetailById} />
+        </Reveal>
       )}
 
       {/* assinaturas recorrentes */}

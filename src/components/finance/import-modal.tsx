@@ -191,7 +191,11 @@ export function ImportModal({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      data-portal-root
+      onClick={onClose}
+    >
       <div
         className="flex w-full max-w-5xl flex-col rounded-2xl border border-border bg-popover shadow-2xl"
         style={{ maxHeight: "92vh" }}

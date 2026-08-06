@@ -29,6 +29,10 @@ export const cardInput = z.object({
   closing_day: z.number().int().min(1).max(31).nullable().default(null),
   due_day: z.number().int().min(1).max(31).nullable().default(null),
   color: z.string().default("#3b82f6"),
+  network: z.enum(["visa", "mastercard", "elo", "amex", "hipercard"]).nullable().optional(),
+  holder: z.string().trim().max(60).nullable().optional(),
+  last4: z.string().regex(/^[0-9]{4}$/, "Informe os quatro últimos dígitos").nullable().optional(),
+  tier: z.enum(["standard", "gold", "platinum", "black"]).nullable().optional(),
 });
 export type CardInput = z.infer<typeof cardInput>;
 

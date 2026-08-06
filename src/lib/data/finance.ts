@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds, shiftMonth } from "@/lib/dates";
+import { dueDate } from "@/lib/finance/billing-cycle";
+import { buildCardInvoice } from "@/lib/finance/invoice";
+import type { InstallmentRow } from "@/lib/finance/installments";
 import type {
   Bank,
   BankWithBalance,
@@ -27,7 +30,15 @@ export async function getFinanceData(year: number, month: number) {
   const supabase = await createClient();
   const { start, end } = monthBounds(year, month);
 
-  const [banksRes, cardsRes, catsRes, allTxRes, monthTxRes] = await Promise.all([
+  // Folga para as linhas da fatura: a janela do ciclo pode começar dois meses
+  // antes do vencimento (cartão que fecha 25 e vence 10 tem a fatura de agosto
+  // indo de 26/06 a 25/07), então três meses cobrem qualquer configuração.
+  // É a mesma ideia da folga de getCardPayments, com um mês a mais porque ali
+  // só interessa o pagamento, que acontece entre o fechamento e o vencimento.
+  const cicloFrom = shiftMonth(year, month, -2);
+  const { start: cycleFetchStart } = monthBounds(cicloFrom.year, cicloFrom.month);
+
+  const [banksRes, cardsRes, catsRes, allTxRes, monthTxRes, cardTxRes] = await Promise.all([
     supabase.from("banks").select("*").order("name"),
     supabase.from("credit_cards").select("*").order("name"),
     supabase.from("categories").select("*").order("name"),
@@ -40,6 +51,13 @@ export async function getFinanceData(year: number, month: number) {
       .gte("occurred_on", start)
       .lte("occurred_on", end)
       .order("occurred_on", { ascending: false }),
+    supabase
+      .from("transactions")
+      .select("*")
+      .not("card_id", "is", null)
+      .gte("occurred_on", cycleFetchStart)
+      .lte("occurred_on", end)
+      .order("occurred_on", { ascending: false }),
   ]);
 
   const err =
@@ -47,7 +65,8 @@ export async function getFinanceData(year: number, month: number) {
     cardsRes.error ||
     catsRes.error ||
     allTxRes.error ||
-    monthTxRes.error;
+    monthTxRes.error ||
+    cardTxRes.error;
   if (err) throw new Error(err.message);
 
   const banksRaw = (banksRes.data ?? []) as Bank[];
@@ -58,6 +77,8 @@ export async function getFinanceData(year: number, month: number) {
     "id" | "amount" | "type" | "bank_id" | "card_id" | "is_card_payment" | "occurred_on"
   >[];
   const monthTransactions = (monthTxRes.data ?? []) as Transaction[];
+  // transações de cartão numa janela larga o bastante para o ciclo inteiro
+  const cardTransactions = (cardTxRes.data ?? []) as Transaction[];
 
   const banks: BankWithBalance[] = banksRaw.map((b) => {
     let balance = num(b.opening_balance);
@@ -68,32 +89,29 @@ export async function getFinanceData(year: number, month: number) {
     return { ...b, balance };
   });
 
-  const curKey = year * 12 + (month - 1);
-  const billingKey = (occurred_on: string) => {
-    const [yy, mm] = occurred_on.split("-").map(Number);
-    return yy * 12 + (mm - 1);
-  };
+  // Fatura de cada cartão: valor, janela e linhas saem todos de buildCardInvoice
+  // (lib/finance/invoice.ts). O mapa de linhas viaja junto com os cartões para
+  // que a lista de movimentações da carteira mostre exatamente o que compõe o
+  // valor do cabeçalho, em vez de refazer o filtro por conta própria.
+  const invoiceRowsByCardId: Record<number, Transaction[]> = {};
 
   const cards: CardWithInvoice[] = cardsRaw.map((c) => {
-    let utilizado = num(c.opening_invoice);
-    let faturaMes = num(c.opening_invoice);
-    for (const t of allTx) {
-      if (t.card_id !== c.id || t.type !== "expense") continue;
-      const delta = t.is_card_payment ? -num(t.amount) : num(t.amount);
-      utilizado += delta;
-      if (t.is_card_payment || billingKey(t.occurred_on) <= curKey) faturaMes += delta;
-    }
-    utilizado = Math.max(utilizado, 0);
-    faturaMes = Math.max(faturaMes, 0);
-    const em_aberto = Math.max(utilizado - faturaMes, 0);
-    const disponivel = num(c.credit_limit) - utilizado;
+    const fatura = buildCardInvoice(c, allTx, cardTransactions, year, month);
+    invoiceRowsByCardId[c.id] = fatura.rows;
+
+    const em_aberto = Math.max(fatura.utilizado - fatura.total, 0);
+    const disponivel = num(c.credit_limit) - fatura.utilizado;
+
     return {
       ...c,
-      invoice: faturaMes,
-      fatura_mes: faturaMes,
+      invoice: fatura.total,
+      fatura_mes: fatura.total,
       em_aberto,
-      utilizado_total: utilizado,
+      utilizado_total: fatura.utilizado,
       disponivel,
+      cycle_start: fatura.window?.start ?? null,
+      cycle_end: fatura.window?.end ?? null,
+      cycle_due: dueDate(c.due_day, year, month),
     };
   });
 
@@ -101,10 +119,12 @@ export async function getFinanceData(year: number, month: number) {
     .filter((t) => t.type === "income" && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
   // Compra no cartão CONTA como despesa do mês (visão de competência) e mantém
-  // sua categoria. Pagamento de fatura NÃO é despesa nova — é quitação de dívida —
-  // então fica de fora do total e da quebra por categoria (evita contar duas vezes).
+  // sua categoria. Pagamento de fatura entra no total de despesas (Onda 20,
+  // decisão do dono): o mesmo gasto é contado na compra e no pagamento. O
+  // cálculo da fatura, em lib/finance/invoice.ts, continua tratando pagamento
+  // à parte.
   const expense = monthTransactions
-    .filter((t) => t.type === "expense" && !t.is_card_payment && !t.is_transfer)
+    .filter((t) => t.type === "expense" && !t.is_transfer)
     .reduce((s, t) => s + num(t.amount), 0);
 
   return {
@@ -112,11 +132,55 @@ export async function getFinanceData(year: number, month: number) {
     cards,
     categories,
     monthTransactions,
+    invoiceRowsByCardId,
     totals: { income, expense, balance: income - expense },
   };
 }
 
 export type FinanceData = Awaited<ReturnType<typeof getFinanceData>>;
+
+/**
+ * Pagamentos de fatura de cartão numa janela ampla o bastante para cobrir o
+ * ciclo, que pode começar no mês anterior ao vencimento quando o cartão fecha
+ * depois do dia de vencimento. Sem essa folga, uma fatura já paga apareceria
+ * como fechada (ver invoiceStatus em components/finance/card-detail.tsx).
+ */
+export async function getCardPayments(year: number, month: number): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const prev = shiftMonth(year, month, -1);
+  const { start } = monthBounds(prev.year, prev.month);
+  const { end } = monthBounds(year, month);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("is_card_payment", true)
+    .not("card_id", "is", null)
+    .gte("occurred_on", start)
+    .lte("occurred_on", end);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Transaction[];
+}
+
+/**
+ * Todas as parcelas de compras parceladas no cartão (Task 10, Onda 19), sem
+ * filtro de mês: para saber qual é a parcela atual de cada parcelamento e
+ * quanto ainda falta, é preciso ver as parcelas futuras também, que não estão
+ * em `monthTransactions` (esse só cobre o mês visualizado). Só as colunas
+ * necessárias e só linhas de cartão com `purchase_group` preenchido, não a
+ * tabela inteira.
+ */
+export async function getInstallmentRows(): Promise<InstallmentRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("description,amount,card_id,purchase_group,installments,installment_no,occurred_on")
+    .not("purchase_group", "is", null)
+    .not("card_id", "is", null);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as InstallmentRow[];
+}
 
 export type StatementEntry = Transaction & { balance: number };
 
@@ -414,8 +478,9 @@ export type MonthlyPlanData = Awaited<ReturnType<typeof getMonthlyPlan>>;
 /**
  * Saídas somadas por mês, terminando três meses depois do mês visto, para o
  * gráfico dar contexto de passado e de compromissos já lançados à frente.
- * Exclui transferência e pagamento de fatura, que não são despesa nova, pela
- * mesma regra do donut (ver byCat em app/(app)/financas/page.tsx).
+ * Exclui transferência. Pagamento de fatura conta como despesa (Onda 20,
+ * decisão do dono), pela mesma regra do donut e de totals.expense (ver byCat
+ * em app/(app)/financas/page.tsx).
  */
 export async function getMonthlyExpenseSeries(
   year: number,
@@ -431,7 +496,7 @@ export async function getMonthlyExpenseSeries(
 
   const { data, error } = await supabase
     .from("transactions")
-    .select("amount, occurred_on, type, is_transfer, is_card_payment")
+    .select("amount, occurred_on, type, is_transfer")
     .gte("occurred_on", start)
     .lte("occurred_on", end);
 
@@ -444,7 +509,9 @@ export async function getMonthlyExpenseSeries(
   }
 
   for (const t of data) {
-    if (t.type !== "expense" || t.is_transfer || t.is_card_payment) continue;
+    // Mesmo critério do donut e de totals.expense: os três precisam
+    // concordar, senão a mesma tela mostra dois valores para a mesma coisa.
+    if (t.type !== "expense" || t.is_transfer) continue;
     const [y, m] = t.occurred_on.split("-").map(Number);
     const key = `${y}-${m - 1}`;
     if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + Number(t.amount));
