@@ -363,7 +363,6 @@ export function TransactionsSection({
                     onChange={(e) => {
                       setIsCardPayment(e.target.checked);
                       if (e.target.checked) {
-                        setCategoryId("");
                         setIsTransfer(false);
                         setToBankId("");
                       }

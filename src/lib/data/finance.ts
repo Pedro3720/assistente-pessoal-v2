@@ -496,7 +496,7 @@ export async function getMonthlyExpenseSeries(
 
   const { data, error } = await supabase
     .from("transactions")
-    .select("amount, occurred_on, type, is_transfer, is_card_payment")
+    .select("amount, occurred_on, type, is_transfer")
     .gte("occurred_on", start)
     .lte("occurred_on", end);
 
