@@ -101,6 +101,16 @@
   gasto é contado duas vezes** (na compra do cartão e no pagamento da fatura); ver 3.23 para o
   porquê e o exemplo numérico. `invoice.ts` ficou de fora de propósito, continua tratando
   pagamento como abatimento de `utilizado_total`. `npm run build` limpo.
+- **Ondas 19 e 20 NO AR (2026-08-06):** a branch `feat/onda19-carteira-cartoes` (39 commits) foi
+  mesclada na `main` com `--no-ff` (merge `1ababba`) e empurrada para `origin/main`; a Vercel
+  publicou. A branch de trabalho foi apagada. `main` = `origin/main` de novo.
+  **Ainda pendente do dono:** nada das duas ondas foi visto rodando por uma pessoa. Conferir na
+  tela (a) que as faturas batem com o app do banco, lembrando que os valores mudam para cima
+  porque a Onda 19 corrigiu o pagamento sendo descontado da fatura seguinte, e (b) que o
+  "Saldo do mês" caiu pelo total dos pagamentos de fatura, efeito esperado da Onda 20.
+  Recomendação: não classificar pagamento de fatura numa categoria com limite mensal, senão o
+  limite estoura sozinho pela dupla contagem. A animação do leque de cartões segue sem resolver
+  (ver 3.22).
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
