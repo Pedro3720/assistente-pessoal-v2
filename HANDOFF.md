@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-05.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-06.**
 
 ---
 
@@ -25,7 +25,7 @@
 - Stack: Next 16.2.9 (App Router) · React 19 · TS strict · Tailwind v4 · @supabase/ssr + supabase-js · Zod ·
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
-## 2. Estado atual (2026-07-23)
+## 2. Estado atual (2026-08-06)
 - **`main` = `origin/main`** (publicado na Vercel; Ondas 8 e 9 no ar, incluindo o fix #31 do modal de
   importar). Base anterior: `ccbef74`.
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
@@ -95,6 +95,12 @@
 
   `npm run build` limpo. Relatório completo em `.superpowers/sdd/final-fix-report.md` (fora do
   git, `.superpowers/` é ignorado).
+- **Onda 20 (2026-08-06): COMPLETA, mesma branch `feat/onda19-carteira-cartoes`** — o pagamento
+  de fatura ganhou categoria e passou a contar como despesa no donut, em `totals.expense` e na
+  série de saídas por mês (ver 3.23). **Decisão consciente do dono: a partir de agora o mesmo
+  gasto é contado duas vezes** (na compra do cartão e no pagamento da fatura); ver 3.23 para o
+  porquê e o exemplo numérico. `invoice.ts` ficou de fora de propósito, continua tratando
+  pagamento como abatimento de `utilizado_total`. `npm run build` limpo.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -986,6 +992,57 @@ estavam no projeto (Task 14 conferiu `git diff main --stat -- package.json` vazi
 - **Fora de escopo desta onda:** os 5 SVGs de bandeira e o `renner.png` (assets do dono), e a
   correção das cores estimadas de emissor (depende de fonte oficial de cada marca).
 
+### 3.23 Onda 20: pagamento de fatura ganha categoria e vira despesa nos totais
+(mesma branch `feat/onda19-carteira-cartoes`) — 2026-08-06
+Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/specs/` e
+`docs/superpowers/plans/` (`2026-08-06-*`), brief/relatório de cada task em
+`.superpowers/sdd/task-*-brief.md`/`task-*-report.md`. Sem migração de banco.
+
+- **Task 1 (commit `f7e581d`):** o campo Categoria, no formulário de lançamento
+  (`src/components/finance/transactions-section.tsx`), deixou de ficar escondido quando o
+  lançamento é "Pagamento de fatura" (`isCardPayment`); só transferência continua sem
+  categoria, de propósito (não faz sentido categorizar dinheiro que só muda de lugar).
+- **Task 2 (commit `87bc809`):** pagamento de fatura passou a contar como despesa em três
+  agregados, todos precisavam mudar juntos para a tela não mostrar números que discordam
+  entre si: o donut de categorias (`byCat` em `src/app/(app)/financas/page.tsx`), o
+  `totals.expense` e a série de saídas por mês `getMonthlyExpenseSeries` (ambos em
+  `src/lib/data/finance.ts`). Antes os três excluíam `is_card_payment`; agora só excluem
+  `is_transfer`.
+- **Dupla contagem é decisão consciente do dono, não bug.** Com a mudança, o mesmo gasto passa
+  a ser contado duas vezes nesses três agregados: uma vez quando a compra no cartão entra na
+  categoria dela (ex.: R$ 200 em "Mercado" no dia da compra), outra vez quando o pagamento da
+  fatura inteira entra na categoria escolhida no lançamento do pagamento (ex.: R$ 1.500 de
+  fatura paga, categorizados como "Cartão de crédito" ou repartidos como o dono preferir). O
+  total de despesas do mês, nesse exemplo, sobe R$ 1.500 mesmo sem gasto novo ter acontecido.
+  **O dono viu essa consequência com exemplo numérico antes de pedir a mudança** (é o motivo de
+  existir a Onda 20); quem ler isso daqui a seis meses e achar que é bug duplicando valor: não
+  é, é o comportamento pedido. Se quiser reverter, é só voltar a excluir `is_card_payment` nos
+  três lugares acima (Task 2, commit `87bc809`).
+- **`src/lib/finance/invoice.ts` ficou de fora de propósito.** Lá, pagamento de fatura continua
+  abatendo `utilizado_total` (saldo de limite do cartão) e fica fora do total do ciclo/fatura do
+  mês (`total`, dentro da janela calculada por `buildCardInvoice`). **Não uniformizar isso com
+  os outros três agregados.** Aplicar o pagamento dentro da janela do ciclo foi exatamente o bug
+  Critical corrigido na revisão final da Onda 19 (ver 3.22, item 1): fazia a fatura seguinte
+  zerar em todo cartão com `closing_day`/`due_day` preenchidos, porque o pagamento da fatura
+  anterior "cancelava" a fatura nova dentro da mesma janela. Fatura, limite e disponível de cada
+  cartão precisam continuar exatamente iguais depois desta onda; só os três agregados de
+  Finanças (donut, `totals.expense`, série de saídas) sobem.
+- **Totais de meses passados mudaram e não houve migração do histórico.** Todo lançamento de
+  pagamento de fatura já existente no banco não tem categoria (o campo era escondido antes da
+  Task 1) e vai aparecer como "Sem categoria" no donut até o dono preencher manualmente, um por
+  um. Não houve script de backfill nem foi pedido; decisão do dono.
+- **Importação de extrato continua trazendo pagamento sem categoria.** `import-modal.tsx` e o
+  parser de OFX ficaram fora do escopo desta onda de propósito; quem importa um pagamento de
+  fatura do extrato do banco também vai precisar categorizar manualmente depois.
+- **Fechamento (esta task, commit a seguir):** `rg "—|–" src` sem ocorrência em string visível
+  ao usuário; as ocorrências restantes são todas comentário de código em vários arquivos (não
+  só `finance.ts`), aceitável pelo brief. `git diff 1c598b4..HEAD --stat` (intervalo dos
+  commits desta onda, em vez de comparar com `main`, porque a branch também carrega a Onda 19
+  inteira e um diff contra `main` listaria arquivo demais) mostrou só os três arquivos
+  esperados: `financas/page.tsx`, `transactions-section.tsx`, `lib/data/finance.ts`. `npm run
+  build` limpo, sem erro nem aviso novo. Relatório completo em
+  `.superpowers/sdd/task-3-report.md` (fora do git, `.superpowers/` é ignorado).
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
 
 > **Atualização 2026-07-23 (Onda 8):**
@@ -1063,6 +1120,20 @@ estavam no projeto (Task 14 conferiu `git diff main --stat -- package.json` vazi
 >    rodar o gerador de novo.
 > 6. **Renomear parcelamento e trocar categoria de movimentação nunca foram testados contra
 >    dados reais**, só por leitura de código e `npm run build`.
+
+> **Atualização 2026-08-06 (Onda 20, categoria no pagamento de fatura):**
+> 1. **Comparar antes e depois, cartão por cartão e mês por mês.** No Dashboard e na aba
+>    Finanças: "Despesas" do Dashboard, total do donut de categorias e a barra do mês corrente
+>    no gráfico de saídas devem ter subido pelo mesmo valor (a soma dos pagamentos de fatura já
+>    lançados no mês). Fatura, limite e disponível de cada cartão (aba Cartões) devem ter
+>    ficado exatamente iguais; se algum desses três mudou, é bug, avisar antes de usar.
+> 2. **Categorizar os pagamentos de fatura já lançados.** Eles não têm categoria (o campo
+>    estava escondido antes desta onda) e aparecem como "Sem categoria" no donut. Não houve
+>    migração de histórico, por decisão sua; entrar em cada lançamento de pagamento e escolher
+>    a categoria manualmente.
+> 3. **Pagamento importado do extrato continua sem categoria.** Ao importar extrato com
+>    pagamento de fatura, categorizar manualmente depois da importação; a importação em si não
+>    mudou nesta onda.
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
