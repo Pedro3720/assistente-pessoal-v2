@@ -1017,7 +1017,12 @@ Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/sp
   **O dono viu essa consequência com exemplo numérico antes de pedir a mudança** (é o motivo de
   existir a Onda 20); quem ler isso daqui a seis meses e achar que é bug duplicando valor: não
   é, é o comportamento pedido. Se quiser reverter, é só voltar a excluir `is_card_payment` nos
-  três lugares acima (Task 2, commit `87bc809`).
+  três lugares acima (Task 2, commit `87bc809`). **Cuidado ao procurar esses três lugares com
+  `rg is_card_payment`: a busca acha um quarto ponto, `getSubscriptions`
+  (`src/lib/data/finance.ts`, `.eq("is_card_payment", false)`), que não é um dos três agregados
+  e não entra na reversão.** Aquele filtro é o detector de assinatura recorrente (identifica
+  cobrança repetida no cartão) e fica como está, de propósito; reverter a Onda 20 mexendo nele
+  por engano quebra a detecção de assinaturas.
 - **`src/lib/finance/invoice.ts` ficou de fora de propósito.** Lá, pagamento de fatura continua
   abatendo `utilizado_total` (saldo de limite do cartão) e fica fora do total do ciclo/fatura do
   mês (`total`, dentro da janela calculada por `buildCardInvoice`). **Não uniformizar isso com
@@ -1034,6 +1039,20 @@ Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/sp
 - **Importação de extrato continua trazendo pagamento sem categoria.** `import-modal.tsx` e o
   parser de OFX ficaram fora do escopo desta onda de propósito; quem importa um pagamento de
   fatura do extrato do banco também vai precisar categorizar manualmente depois.
+- **Achado na revisão final: o limite mensal por categoria passa a ser consumido pelo
+  pagamento da fatura.** `byCat`, em `src/app/(app)/financas/page.tsx`, carrega
+  `limit: cat?.monthly_limit` no mesmo mapa que agora inclui o valor do pagamento de fatura
+  categorizado; `category-legend.tsx` usa esse total (compra + pagamento) como valor do
+  medidor (`Meter`) contra o limite. Exemplo: categoria "Alimentação" com limite de R$ 800 e
+  R$ 600 de compras no mês; se o dono categorizar R$ 500 do pagamento da fatura nessa mesma
+  categoria, o medidor passa a mostrar 138% e "R$ 0,00 restante", com apenas R$ 600 de gasto
+  real em comida. **Recomendação: não categorizar pagamento de fatura em categoria que tenha
+  limite mensal definido**, justamente para não estourar o medidor com um valor que já é
+  contado em dobro por decisão consciente (ver bullet acima). É consequência direta de contar
+  o pagamento como despesa nos agregados; a alternativa (excluir o pagamento só do cálculo do
+  medidor, mantendo nos outros três agregados) foi considerada e descartada, porque reabriria
+  a mesma discordância entre agregados que a Task 2 desta onda existe para evitar (medidor
+  dizendo uma coisa, donut e `totals.expense` dizendo outra).
 - **Fechamento (esta task, commit a seguir):** `rg "—|–" src` sem ocorrência em string visível
   ao usuário; as ocorrências restantes são todas comentário de código em vários arquivos (não
   só `finance.ts`), aceitável pelo brief. `git diff 1c598b4..HEAD --stat` (intervalo dos
@@ -1122,18 +1141,33 @@ Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/sp
 >    dados reais**, só por leitura de código e `npm run build`.
 
 > **Atualização 2026-08-06 (Onda 20, categoria no pagamento de fatura):**
-> 1. **Comparar antes e depois, cartão por cartão e mês por mês.** No Dashboard e na aba
->    Finanças: "Despesas" do Dashboard, total do donut de categorias e a barra do mês corrente
->    no gráfico de saídas devem ter subido pelo mesmo valor (a soma dos pagamentos de fatura já
->    lançados no mês). Fatura, limite e disponível de cada cartão (aba Cartões) devem ter
->    ficado exatamente iguais; se algum desses três mudou, é bug, avisar antes de usar.
-> 2. **Categorizar os pagamentos de fatura já lançados.** Eles não têm categoria (o campo
->    estava escondido antes desta onda) e aparecem como "Sem categoria" no donut. Não houve
->    migração de histórico, por decisão sua; entrar em cada lançamento de pagamento e escolher
->    a categoria manualmente.
+> 1. **Comparar antes e depois, cartão por cartão e mês por mês.** A lista completa do que
+>    sobe ou desce pelo mesmo valor (a soma dos pagamentos de fatura já lançados no mês):
+>    - No Dashboard: "Despesas" (card de estatística) **e "Saldo do mês"** (mesmo card e
+>      rodapé do painel de Finanças, `src/app/(app)/page.tsx`) **cai** por esse valor. Este é
+>      o efeito mais visível da onda (o número que mais chama atenção ao abrir o app);
+>      esperar por ele antes de estranhar o saldo mais baixo.
+>    - Na aba Finanças: total do donut de categorias e a barra do mês corrente no gráfico de
+>      saídas.
+>    - Na aba Contas: o indicador "Despesas" dentro do `AccountsSummary`
+>      (`src/components/finance/accounts-summary.tsx`) também sobe, mesmo total.
+>    - Fatura, limite e disponível de cada cartão (aba Cartões) devem ter ficado **exatamente
+>      iguais**; se algum desses três mudou, é bug, avisar antes de usar.
+> 2. **Categorizar os pagamentos de fatura já lançados, com cuidado com limite mensal.** Eles
+>    não têm categoria (o campo estava escondido antes desta onda) e aparecem como "Sem
+>    categoria" no donut. Não houve migração de histórico, por decisão sua; entrar em cada
+>    lançamento de pagamento e escolher a categoria manualmente. **Evitar categoria com limite
+>    mensal definido**: o medidor da categoria (`category-legend.tsx`) passa a contar o valor
+>    do pagamento junto com as compras normais, então uma categoria com limite pode aparecer
+>    estourada sem gasto real ter mudado (detalhe e exemplo numérico na seção 3.23).
 > 3. **Pagamento importado do extrato continua sem categoria.** Ao importar extrato com
 >    pagamento de fatura, categorizar manualmente depois da importação; a importação em si não
 >    mudou nesta onda.
+> 4. **Atenção para quem for reverter:** `rg is_card_payment` acha um quarto lugar,
+>    `getSubscriptions` (`src/lib/data/finance.ts`, `.eq("is_card_payment", false)`), além dos
+>    três agregados da Task 2. **Aquele filtro é o detector de assinatura recorrente e fica como
+>    está, de propósito**; não faz parte da dupla contagem e não deve ser tocado ao reverter a
+>    Onda 20 (reverter é só voltar a excluir `is_card_payment` nos três agregados de 3.23).
 
 ## 5. Regras de ouro / convenções
 - **Arquitetura:** Server Components **leem** (`src/lib/data/*`); Server Actions **mutam** (`src/lib/actions/*`,
