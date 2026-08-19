@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, updateTask } from "@/lib/actions/task";
-import { STATUS_META, PRIORITY_META, STATUS_ORDER, PRIORITY_ORDER } from "@/lib/tasks/constants";
+import { formatTimeBR } from "@/lib/dates";
+import {
+  STATUS_META,
+  PRIORITY_META,
+  STATUS_ORDER,
+  PRIORITY_ORDER,
+  TASK_REMINDER_OPTIONS,
+} from "@/lib/tasks/constants";
 import type { Task, TaskCategory, TaskStatus, TaskPriority } from "@/types/task";
 
 export function TaskModal({
@@ -23,6 +30,8 @@ export function TaskModal({
   const [status, setStatus] = useState<TaskStatus>(editing?.status ?? "pending");
   const [priority, setPriority] = useState<TaskPriority>(editing?.priority ?? "medium");
   const [dueOn, setDueOn] = useState(editing?.due_on ?? "");
+  const [dueTime, setDueTime] = useState(editing?.due_time ? formatTimeBR(editing.due_time) : "");
+  const [reminder, setReminder] = useState<number | null>(editing?.reminder_minutes ?? null);
   const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
   const [saving, setSaving] = useState(false);
 
@@ -32,12 +41,15 @@ export function TaskModal({
       return;
     }
     setSaving(true);
+    const hasTime = Boolean(dueOn && dueTime);
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
       status,
       priority,
       due_on: dueOn || null,
+      due_time: hasTime ? dueTime : null,
+      reminder_minutes: hasTime ? reminder : null,
       category_id: categoryId,
     };
     try {
@@ -144,13 +156,52 @@ export function TaskModal({
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Prazo (opcional)</label>
-            <input
-              type="date"
-              value={dueOn}
-              onChange={(e) => setDueOn(e.target.value)}
-              className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="date"
+                value={dueOn}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDueOn(v);
+                  if (!v) {
+                    setDueTime("");
+                    setReminder(null);
+                  }
+                }}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              />
+              <input
+                type="time"
+                value={dueTime}
+                disabled={!dueOn}
+                title={dueOn ? "Horário da tarefa" : "Escolha uma data primeiro"}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDueTime(v);
+                  // ao ganhar hora, já sugere 15 minutos antes; ao perder, zera
+                  setReminder(v ? (reminder ?? 15) : null);
+                }}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm disabled:opacity-50"
+              />
+            </div>
           </div>
+
+          {dueOn && dueTime && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Lembrete</label>
+              <select
+                value={reminder === null ? "" : String(reminder)}
+                onChange={(e) => setReminder(e.target.value === "" ? null : Number(e.target.value))}
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
+              >
+                {TASK_REMINDER_OPTIONS.map((opt) => (
+                  <option key={String(opt.value)} value={opt.value === null ? "" : String(opt.value)}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             onClick={save}

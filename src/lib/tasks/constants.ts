@@ -15,6 +15,26 @@ export const PRIORITY_META: Record<TaskPriority, { label: string; dot: string; t
 export const STATUS_ORDER: TaskStatus[] = ["pending", "in_progress", "completed"];
 export const PRIORITY_ORDER: TaskPriority[] = ["high", "medium", "low"];
 
+/**
+ * Opções de lembrete da tarefa. Separadas das do calendário de propósito: a
+ * tarefa tem "Na hora", o evento não, e acoplar as duas faria uma mudança no
+ * calendário mexer nas tarefas.
+ */
+export const TASK_REMINDER_OPTIONS: { value: number | null; label: string }[] = [
+  { value: null, label: "Sem lembrete" },
+  { value: 0, label: "Na hora" },
+  { value: 5, label: "5 minutos antes" },
+  { value: 15, label: "15 minutos antes" },
+  { value: 30, label: "30 minutos antes" },
+  { value: 60, label: "1 hora antes" },
+  { value: 1440, label: "1 dia antes" },
+];
+
+/** Rótulo do lembrete para leitura (card e detalhe). */
+export function reminderLabel(minutes: number | null): string {
+  return TASK_REMINDER_OPTIONS.find((o) => o.value === minutes)?.label ?? "Sem lembrete";
+}
+
 /** Cores disponíveis para as categorias de tarefas (#29). */
 export const TASK_CATEGORY_COLORS = [
   "#3b82f6", "#8b5cf6", "#ec4899", "#10b981",
