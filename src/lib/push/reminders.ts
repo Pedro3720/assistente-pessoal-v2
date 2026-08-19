@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { composeSP, spDateParts } from "@/lib/dates";
+import { composeSP, formatTimeBR, spDateParts } from "@/lib/dates";
 import type { EventRepeat } from "@/types/calendar";
 
 export interface DueReminder {
@@ -50,13 +50,21 @@ type EventRow = {
   repeat: EventRepeat;
   reminder_minutes: number | null;
 };
-type TaskRow = { id: number; user_id: string; title: string; due_on: string | null };
+type TaskRow = {
+  id: number;
+  user_id: string;
+  title: string;
+  due_on: string | null;
+  due_time: string | null;
+  reminder_minutes: number | null;
+};
 
 /**
  * Lembretes cujo instante de disparo caiu na janela (now-90s, now].
  * Recebe o client admin (service role) para ler de todos os usuários.
  *  - Evento: dispara em starts_at (da ocorrência) - reminder_minutes.
- *  - Tarefa pendente com due_on = hoje: dispara às 08:00 (SP).
+ *  - Tarefa não concluída: dispara em (due_on + due_time) - reminder_minutes.
+ *    Tarefa sem due_time ou sem reminder_minutes não notifica (decisão da Onda 21).
  */
 export async function getDueReminders(admin: SupabaseClient, now: Date): Promise<DueReminder[]> {
   const windowStart = now.getTime() - 90_000;
@@ -96,28 +104,31 @@ export async function getDueReminders(admin: SupabaseClient, now: Date): Promise
     }
   }
 
-  // ── Tarefas (vencem hoje; disparam às 08:00 SP) ──
-  const taskFire = new Date(composeSP(today, "08:00")).getTime();
-  if (inWindow(taskFire)) {
-    const { data: tkData, error: tkErr } = await admin
-      .from("tasks")
-      .select("id, user_id, title, due_on")
-      .neq("status", "completed")
-      .eq("due_on", today);
-    if (tkErr) throw new Error(tkErr.message);
-    for (const t of (tkData ?? []) as TaskRow[]) {
-      if (!t.due_on) continue;
-      out.push({
-        user_id: t.user_id,
-        kind: "task",
-        ref_id: t.id,
-        occurred_on: t.due_on,
-        title: "Tarefa vence hoje",
-        body: t.title,
-        url: "/tarefas",
-        tag: `task-${t.id}-${t.due_on}`,
-      });
-    }
+  // ── Tarefas (disparam em due_on + due_time, menos reminder_minutes) ──
+  const { data: tkData, error: tkErr } = await admin
+    .from("tasks")
+    .select("id, user_id, title, due_on, due_time, reminder_minutes")
+    .neq("status", "completed")
+    .not("due_time", "is", null)
+    .not("reminder_minutes", "is", null)
+    .in("due_on", dates);
+  if (tkErr) throw new Error(tkErr.message);
+
+  for (const t of (tkData ?? []) as TaskRow[]) {
+    if (!t.due_on || !t.due_time || t.reminder_minutes == null) continue;
+    const time = formatTimeBR(t.due_time);
+    const fireAt = new Date(composeSP(t.due_on, time)).getTime() - t.reminder_minutes * 60_000;
+    if (!inWindow(fireAt)) continue;
+    out.push({
+      user_id: t.user_id,
+      kind: "task",
+      ref_id: t.id,
+      occurred_on: t.due_on,
+      title: t.title,
+      body: `Vence às ${time}`,
+      url: "/tarefas",
+      tag: `task-${t.id}-${t.due_on}`,
+    });
   }
 
   return out;
