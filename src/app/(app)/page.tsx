@@ -6,7 +6,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getDashboardData, type DashboardData } from "@/lib/data/dashboard";
 import { getProfile } from "@/lib/data/profile";
-import { formatDateBR } from "@/lib/dates";
+import { formatDateBR, formatTimeBR } from "@/lib/dates";
 import { PRIORITY_META } from "@/lib/tasks/constants";
 import { Reveal } from "@/components/effects/reveal";
 import { AnimatedNumber } from "@/components/effects/animated-number";
@@ -234,6 +234,7 @@ export default async function Dashboard() {
                     {t.due_on && (
                       <span className={`shrink-0 text-xs ${overdue ? "font-medium text-negative" : "text-muted-foreground"}`}>
                         {formatDateBR(t.due_on)}
+                        {t.due_time ? ` · ${formatTimeBR(t.due_time)}` : ""}
                       </span>
                     )}
                   </div>
