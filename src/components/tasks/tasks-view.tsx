@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical, Tags } from "lucide-react";
+import { Plus, Edit3, Trash2, Check, CalendarClock, GripVertical, Tags, Bell } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -20,8 +20,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { deleteTask, setTaskStatus, reorderTasks } from "@/lib/actions/task";
 import { reorderWithinFilter } from "@/lib/tasks/reorder";
-import { STATUS_META, PRIORITY_META } from "@/lib/tasks/constants";
-import { todayISO, formatDateBR } from "@/lib/dates";
+import { STATUS_META, PRIORITY_META, reminderLabel } from "@/lib/tasks/constants";
+import { todayISO, formatDateBR, formatTimeBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
 import { TaskCategoryManager } from "./task-category-manager";
 import { Reveal } from "@/components/effects/reveal";
@@ -280,7 +280,7 @@ function SortableTask({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_META[t.priority].dot }} title={`Prioridade ${PRIORITY_META[t.priority].label}`} />
-          <h3 className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+          <h3 className={`line-clamp-2 text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
             {t.title}
           </h3>
         </div>
@@ -304,8 +304,16 @@ function SortableTask({
           {t.due_on && (
             <span className={`flex items-center gap-1 text-[11px] ${overdue ? "font-medium text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
               <CalendarClock className="h-3 w-3" />
-              <span className="num">{formatDateBR(t.due_on)}</span>
+              <span className="num">
+                {formatDateBR(t.due_on)}
+                {t.due_time ? ` · ${formatTimeBR(t.due_time)}` : ""}
+              </span>
               {overdue ? " · atrasada" : ""}
+            </span>
+          )}
+          {t.reminder_minutes !== null && (
+            <span className="flex items-center text-muted-foreground" title={reminderLabel(t.reminder_minutes)}>
+              <Bell className="h-3 w-3" />
             </span>
           )}
         </div>
