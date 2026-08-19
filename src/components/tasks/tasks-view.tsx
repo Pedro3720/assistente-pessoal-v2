@@ -23,6 +23,7 @@ import { reorderWithinFilter } from "@/lib/tasks/reorder";
 import { STATUS_META, PRIORITY_META, reminderLabel } from "@/lib/tasks/constants";
 import { todayISO, formatDateBR, formatTimeBR } from "@/lib/dates";
 import { TaskModal } from "./task-modal";
+import { TaskDetailModal } from "./task-detail-modal";
 import { TaskCategoryManager } from "./task-category-manager";
 import { Reveal } from "@/components/effects/reveal";
 import { EmptyState } from "@/components/effects/empty-state";
@@ -45,6 +46,7 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
   const [modalOpen, setModalOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [detail, setDetail] = useState<Task | null>(null);
   const [order, setOrder] = useState<Task[]>(tasks);
   // ressincroniza a ordem local quando o servidor devolve outra lista (após refresh)
   const orderKey = tasks.map((t) => t.id).join(",");
@@ -216,6 +218,7 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
                     onToggle={() => toggle(t)}
                     onEdit={() => { setEditing(t); setModalOpen(true); }}
                     onRemove={() => remove(t.id)}
+                    onOpen={() => setDetail(t)}
                   />
                 );
               })}
@@ -224,6 +227,16 @@ export function TasksView({ tasks, categories }: { tasks: Task[]; categories: Ta
         </DndContext>
       )}
 
+      {detail && (
+        <TaskDetailModal
+          task={detail}
+          category={detail.category_id ? catById.get(detail.category_id) ?? null : null}
+          onClose={() => setDetail(null)}
+          onToggle={() => { const t = detail; setDetail(null); toggle(t); }}
+          onEdit={() => { setEditing(detail); setDetail(null); setModalOpen(true); }}
+          onRemove={() => { const id = detail.id; setDetail(null); remove(id); }}
+        />
+      )}
       {modalOpen && <TaskModal editing={editing} categories={categories} onClose={() => setModalOpen(false)} />}
       {manageOpen && <TaskCategoryManager categories={categories} onClose={() => setManageOpen(false)} />}
     </div>
@@ -238,6 +251,7 @@ function SortableTask({
   onToggle,
   onEdit,
   onRemove,
+  onOpen,
 }: {
   t: Task;
   category: TaskCategory | null;
@@ -246,6 +260,7 @@ function SortableTask({
   onToggle: () => void;
   onEdit: () => void;
   onRemove: () => void;
+  onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: t.id,
@@ -256,10 +271,21 @@ function SortableTask({
     <div
       ref={setNodeRef}
       style={style}
-      className="glass card-glow flex items-start gap-3 rounded-2xl border border-border p-4"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      title="Ver detalhes"
+      className="glass card-glow flex cursor-pointer items-start gap-3 rounded-2xl border border-border p-4"
     >
       <button
         type="button"
+        onClick={(e) => e.stopPropagation()}
         className="mt-0.5 cursor-grab touch-none text-muted-foreground/50 hover:text-foreground active:cursor-grabbing"
         {...attributes}
         {...listeners}
@@ -268,7 +294,10 @@ function SortableTask({
         <GripVertical className="h-4 w-4" />
       </button>
       <button
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
           done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40 hover:border-primary"
         }`}
@@ -320,10 +349,10 @@ function SortableTask({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <button onClick={onEdit} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+        <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
           <Edit3 className="h-4 w-4" />
         </button>
-        <button onClick={onRemove} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
+        <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
