@@ -52,6 +52,11 @@ export function formatDateBR(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/** Normaliza hora do banco ou do formulário para exibição e composição: "14:30:00" → "14:30". */
+export function formatTimeBR(time: string): string {
+  return time.slice(0, 5);
+}
+
 /** Offset fixo de São Paulo (o Brasil não usa horário de verão desde 2019). */
 const SP_OFFSET = "-03:00";
 

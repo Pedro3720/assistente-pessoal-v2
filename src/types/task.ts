@@ -8,6 +8,8 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   due_on: string | null; // YYYY-MM-DD
+  due_time: string | null; // HH:mm (o banco devolve HH:mm:ss)
+  reminder_minutes: number | null; // minutos antes de due_on + due_time; 0 = na hora
   position: number;
   category_id: number | null;
 }
