@@ -1,7 +1,7 @@
 # ROTEIRO DE CONTINUIDADE — Zênite Assistente Pessoal (v2)
 
 > **Para o próximo chat:** leia este arquivo inteiro antes de agir. Ele diz onde o projeto está, o que já
-> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-06.**
+> foi feito, o que falta, e como continuar. **Atualizado: 2026-08-18.**
 
 ---
 
@@ -25,7 +25,7 @@
 - Stack: Next 16.2.9 (App Router) · React 19 · TS strict · Tailwind v4 · @supabase/ssr + supabase-js · Zod ·
   GSAP + Three.js · lucide-react · sonner · @dnd-kit · sharp (gerar assets) · IBM Plex Mono (números).
 
-## 2. Estado atual (2026-08-06)
+## 2. Estado atual (2026-08-18)
 - **`main` = `origin/main`** (publicado na Vercel; Ondas 8 e 9 no ar, incluindo o fix #31 do modal de
   importar). Base anterior: `ccbef74`.
 - App renomeado para **"Zênite Assistente Pessoal"** com logo (`public/logo.png`) e favicon (`src/app/icon.png`).
@@ -111,6 +111,14 @@
   Recomendação: não classificar pagamento de fatura numa categoria com limite mensal, senão o
   limite estoura sozinho pela dupla contagem. A animação do leque de cartões segue sem resolver
   (ver 3.22).
+- **Onda 21 (2026-08-18): COMPLETA na `main`, sem push** — horário opcional e lembrete na
+  tarefa, e modal de detalhe ao clicar (ver 3.24). Seis commits, de `be493a2` a `ab93b38`,
+  `npm run build` limpo em cada um. **Duas pendências suas:** (a) rodar a migração
+  `20260701000020_task_time_reminder.sql` no SQL Editor, sem a qual hora e lembrete não são
+  gravados (o app não quebra: `writeTolerant` descarta as colunas e a tarefa salva sem elas),
+  e (b) conferir as telas logado, que aqui não dá (o app exige login do Supabase). Efeito
+  esperado e combinado: **as tarefas antigas pararam de receber o push das 08:00**, porque
+  lembrete agora só existe com horário definido.
 
 ## 3. Histórico do que já foi entregue
 ### 3.1 Base + Melhorias v2/v3 (specs/planos `2026-07-02-melhorias-v2*` e `2026-07-03-melhorias-v3*`)
@@ -1072,7 +1080,78 @@ Duas tasks de código + esta de fechamento. Spec e plano em `docs/superpowers/sp
   build` limpo, sem erro nem aviso novo. Relatório completo em
   `.superpowers/sdd/task-3-report.md` (fora do git, `.superpowers/` é ignorado).
 
+### 3.24 Onda 21: horário e lembrete na tarefa, e modal de detalhe
+
+Spec `docs/superpowers/specs/2026-08-18-onda21-tarefas-horario-lembrete-detalhe-design.md`,
+plano `docs/superpowers/plans/2026-08-18-onda21-tarefas-horario-lembrete-detalhe.md`.
+Commits `be493a2`, `66f09b3`, `be71673`, `3f17787`, `4d7e02e`, `ab93b38`, direto na `main`.
+
+**O que mudou**
+
+- A tarefa passou a ter **horário opcional** (`due_time`) e **lembrete** (`reminder_minutes`),
+  ambos novos em `tasks` pela migração `20260701000020_task_time_reminder.sql`.
+- No modal de criar e editar, o campo de prazo virou Data + Hora lado a lado; a hora fica
+  desabilitada enquanto não houver data, e o select de Lembrete só aparece depois da hora
+  preenchida, já sugerindo "15 minutos antes". As opções vivem em `TASK_REMINDER_OPTIONS`
+  (`src/lib/tasks/constants.ts`), separadas das do calendário de propósito: a tarefa tem
+  "Na hora" (0 minuto) e o evento não.
+- No card da lista, o título passou de uma linha (`truncate`) para duas (`line-clamp-2`), a
+  linha do prazo mostra `20/08/2026 · 14:30` quando há hora, e um sino aparece quando há
+  lembrete.
+- **Clicar na tarefa abre um modal de detalhe** novo (`src/components/tasks/task-detail-modal.tsx`),
+  só leitura: título inteiro sem corte, chips, prazo com hora, lembrete por extenso, descrição
+  completa com as quebras de linha, e as ações Concluir/Reabrir, Editar e Excluir no rodapé.
+  Ele usa o primitivo `components/ui/modal.tsx`, então já vem com portal, `Esc` e trava de
+  scroll. A alça de arrastar, o círculo de concluir e os botões de editar e excluir param a
+  propagação, então continuam funcionando sem abrir o detalhe.
+- O dashboard mostra a hora ao lado da data na lista de tarefas pendentes.
+
+**A regra, e a consequência que você precisa saber**
+
+Lembrete só existe quando a tarefa tem horário. Foi decisão sua, tomada depois de a alternativa
+ser apresentada. A consequência: **saiu o disparo automático das 08:00** que toda tarefa
+pendente com prazo no dia recebia, e nenhuma tarefa antiga tem horário, então **elas pararam de
+notificar** até você abrir cada uma e definir uma hora. Não houve migração de dados para
+"consertar" isso, também por decisão sua.
+
+**Arquivos tocados:** `supabase/migrations/20260701000020_task_time_reminder.sql` (novo),
+`src/components/tasks/task-detail-modal.tsx` (novo), `src/lib/dates.ts` (`formatTimeBR`),
+`src/types/task.ts`, `src/lib/validation/task.ts`, `src/lib/actions/task.ts`,
+`src/lib/tasks/constants.ts`, `src/lib/push/reminders.ts`,
+`src/components/tasks/task-modal.tsx`, `src/components/tasks/tasks-view.tsx`,
+`src/app/(app)/page.tsx`.
+
+**Detalhes de implementação que valem para quem mexer depois**
+
+- A regra de integridade mora no **schema Zod** (`taskInput`), não na tela: sem data não há
+  hora, sem hora não há lembrete. Vale igual para `createTask` e `updateTask`.
+- `reminder_minutes = 0` significa "Na hora" e é valor válido. Toda checagem tem que ser
+  `=== null` / `!== null`; testar por truthiness trata "Na hora" como "sem lembrete".
+- A tolerância a coluna inexistente que existia só para `category_id` virou `writeTolerant`,
+  que cobre as três colunas opcionais (`category_id`, `due_time`, `reminder_minutes`). Ela usa
+  `PromiseLike` na assinatura porque o builder do Supabase é *thenable*, não `Promise`.
+- `getDueReminders` (push) agora calcula `composeSP(due_on, due_time)` menos o lembrete, na
+  mesma janela de 90 segundos dos eventos, e mantém o `tag` `task-<id>-<data>`, então a
+  deduplicação em `notified_reminders` continua valendo sem migração.
+
+**`npm run build` limpo em todas as tasks.** Varredura de travessão sem ocorrência em texto
+visível ao usuário.
+
+**Pendente de você (ver seção 4):** rodar a migração 0020 e conferir as telas logado.
+
 ## 4. PENDÊNCIAS que dependem de você (fora do código)
+
+> **Atualização 2026-08-18 (Onda 21, horário e lembrete na tarefa):**
+> - **Rodar `supabase/migrations/20260701000020_task_time_reminder.sql`** no Supabase → SQL Editor.
+>   Sem ela, a tarefa continua salvando, mas **hora e lembrete são descartados na gravação**
+>   (o `writeTolerant` tira as colunas que o banco não conhece, de propósito, para não quebrar o app).
+> - **Conferir as telas logado.** Aqui não deu: o app exige login do Supabase e eu não entro em
+>   conta sua. O que olhar: criar tarefa com data e hora e ver o horário na lista e no dashboard;
+>   clicar numa tarefa de título longo e conferir o detalhe; clicar no círculo de concluir, no lápis
+>   e na lixeira e confirmar que **não** abrem o detalhe; arrastar pela alça e ver que a ordem muda
+>   sem abrir nada.
+> - **O lembrete só chega se o `pg_cron` estiver ativo** (item 1 abaixo, que segue pendente desde a
+>   Onda 7). Isso vale para tarefa e para evento; não é efeito da Onda 21.
 
 > **Atualização 2026-07-23 (Onda 8):**
 > - **#25 login Google (pendente):** o `deleted_client` é mismatch de Client ID. Trocar, na **Vercel** e no
