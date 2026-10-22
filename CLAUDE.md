@@ -84,6 +84,10 @@
   depois.
 - A direção visual vigente está em `docs/superpowers/specs/` (spec de design mais recente).
   Leia antes de propor mudanças de estilo, para não brigar com o sistema já definido.
+- **Estilo-alvo para as próximas mudanças visuais: `docs/design/README.md`** ("Smoked Navy Glass",
+  aprovado em 22/10/2026), com imagens conceituais em `docs/design/conceitos/` e os prompts em
+  `docs/design/prompts.md`. Novas imagens conceituais (prompts para gerador de imagem) seguem esse
+  guia. O estilo ainda não foi implementado no código.
 
 ## Regras de escrita (texto visível ao usuário)
 
